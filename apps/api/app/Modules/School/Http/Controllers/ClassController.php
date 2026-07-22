@@ -3,6 +3,7 @@
 namespace App\Modules\School\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\TeacherResource;
 use App\Modules\School\Http\Requests\StoreClassRequest;
 use App\Modules\School\Http\Requests\UpdateClassRequest;
 use App\Modules\School\Models\AcademicYear;
@@ -24,18 +25,21 @@ class ClassController extends Controller
 
         $classes = SchoolClass::query()
             ->where('school_id', $schoolId)
-            // Column-limited: never expose the full User model (password
-            // hash included) over this endpoint. See Prompt 4 deliverable
-            // notes — the User model's #[Hidden(...)] attribute does not
-            // actually suppress these columns from toArray()/JSON, so
-            // relation loads must scope columns explicitly rather than
-            // relying on it.
+            // Column-limited eager load: a defensive belt-and-braces measure
+            // alongside User::$hidden and TeacherResource below — the class
+            // teacher relation resolves to a User, so it's never returned
+            // unscoped.
             ->with('classTeacher:id,name,email')
             ->orderBy('name')
             ->orderBy('section')
             ->get();
 
-        return ApiResponse::success($classes);
+        return ApiResponse::success(
+            $classes->map(fn (SchoolClass $class) => [
+                ...$class->toArray(),
+                'class_teacher' => $class->classTeacher ? new TeacherResource($class->classTeacher) : null,
+            ]),
+        );
     }
 
     public function store(StoreClassRequest $request): JsonResponse
@@ -53,13 +57,23 @@ class ClassController extends Controller
             'academic_year_id' => $academicYear->id,
         ]);
 
-        return ApiResponse::success($class->load(['classTeacher:id,name,email']), 'Class created successfully.', 201);
+        return ApiResponse::success(self::withTeacher($class), 'Class created successfully.', 201);
     }
 
     public function update(UpdateClassRequest $request, SchoolClass $class): JsonResponse
     {
         $class->update($request->validated());
 
-        return ApiResponse::success($class->load(['classTeacher:id,name,email']), 'Class updated successfully.');
+        return ApiResponse::success(self::withTeacher($class), 'Class updated successfully.');
+    }
+
+    private static function withTeacher(SchoolClass $class): array
+    {
+        $class->load('classTeacher:id,name,email');
+
+        return [
+            ...$class->toArray(),
+            'class_teacher' => $class->classTeacher ? new TeacherResource($class->classTeacher) : null,
+        ];
     }
 }
