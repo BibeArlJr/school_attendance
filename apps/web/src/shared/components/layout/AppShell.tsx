@@ -1,13 +1,25 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
+// Same persistence pattern as ThemeProvider (localStorage, read on init,
+// write on change).
+const SIDEBAR_COLLAPSED_KEY = 'school_erp.sidebar_collapsed';
+
+function getInitialCollapsed(): boolean {
+  return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
+}
+
 export function AppShell() {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(getInitialCollapsed);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
+  }, [collapsed]);
 
   return (
     <div className="flex h-svh overflow-hidden bg-muted/30">

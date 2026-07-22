@@ -1,7 +1,9 @@
+import { motion } from 'framer-motion';
 import { GraduationCap, ChevronLeft, X } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import { useAuthStore } from '@/features/auth/store/authStore';
 import { Button } from '@/shared/components/ui/button';
-import { MODULES } from '@/shared/constants/modules';
+import { MODULES, type ModuleDef } from '@/shared/constants/modules';
 import { cn } from '@/shared/lib/utils';
 
 interface SidebarProps {
@@ -12,10 +14,12 @@ interface SidebarProps {
 }
 
 function SidebarContent({
+  modules,
   collapsed,
   onNavigate,
   headerExtra,
 }: {
+  modules: ModuleDef[];
   collapsed: boolean;
   onNavigate?: () => void;
   headerExtra?: React.ReactNode;
@@ -31,15 +35,16 @@ function SidebarContent({
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-2">
-        {MODULES.map((module) => (
+        {modules.map((module) => (
           <NavLink
             key={module.key}
             to={module.path}
             onClick={onNavigate}
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-3 rounded-md px-2.5 py-2 text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-md px-2.5 py-2 text-sm font-medium outline-none transition-colors',
                 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                'focus-visible:bg-sidebar-accent focus-visible:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring',
                 isActive && 'bg-sidebar-accent text-sidebar-accent-foreground',
                 collapsed && 'justify-center px-0',
               )
@@ -56,16 +61,18 @@ function SidebarContent({
 }
 
 export function Sidebar({ collapsed, onToggleCollapsed, mobileOpen, onCloseMobile }: SidebarProps) {
+  const role = useAuthStore((state) => state.user?.role);
+  const visibleModules = role ? MODULES.filter((module) => module.allowedRoles.includes(role)) : [];
+
   return (
     <>
       {/* Desktop sidebar */}
-      <aside
-        className={cn(
-          'hidden shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200 ease-in-out md:flex',
-          collapsed ? 'w-16' : 'w-60',
-        )}
+      <motion.aside
+        animate={{ width: collapsed ? 64 : 240 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+        className="hidden shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar md:flex"
       >
-        <SidebarContent collapsed={collapsed} />
+        <SidebarContent modules={visibleModules} collapsed={collapsed} />
         <div className="border-t border-sidebar-border p-2">
           <Button
             variant="ghost"
@@ -77,7 +84,7 @@ export function Sidebar({ collapsed, onToggleCollapsed, mobileOpen, onCloseMobil
             <ChevronLeft className={cn('size-4 transition-transform', collapsed && 'rotate-180')} />
           </Button>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* Mobile off-canvas drawer */}
       {mobileOpen && (
@@ -89,6 +96,7 @@ export function Sidebar({ collapsed, onToggleCollapsed, mobileOpen, onCloseMobil
           />
           <aside className="absolute inset-y-0 left-0 flex w-64 flex-col border-r border-sidebar-border bg-sidebar">
             <SidebarContent
+              modules={visibleModules}
               collapsed={false}
               onNavigate={onCloseMobile}
               headerExtra={
