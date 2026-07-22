@@ -30,7 +30,9 @@ brew install php composer postgresql@16
 brew services start postgresql@16
 ```
 
-## 1. Backend setup (`apps/api`)
+## Setup (one-time)
+
+### Backend (`apps/api`)
 
 ```bash
 cd apps/api
@@ -60,38 +62,68 @@ DB_PASSWORD=
 FRONTEND_URL=http://localhost:5173
 ```
 
-Run migrations and seed the demo school + admin user:
+Run migrations and seed the demo users:
 
 ```bash
 php artisan migrate
 php artisan db:seed
 ```
 
-Start the API:
-
-```bash
-php artisan serve --port=8000
-```
-
-The API is now at `http://localhost:8000/api`.
-
-## 2. Frontend setup (`apps/web`)
+### Frontend (`apps/web`)
 
 ```bash
 cd apps/web
 npm install
 cp .env.example .env
-npm run dev
 ```
-
-The app is now at `http://localhost:5173`.
 
 `.env` values:
 
 ```
 VITE_API_URL=http://localhost:8000/api
 VITE_USE_MOCK_NOTIFICATIONS=true
+VITE_USE_MOCK_GATE_FEED=true
 ```
+
+## Running the app
+
+### Recommended: one command, from the repo root
+
+```bash
+npm install
+npm run dev
+```
+
+This starts both the API (`php artisan serve`) and the frontend (`vite`)
+together, with output clearly prefixed `[api]` / `[web]` so it's obvious
+which process logged what. It also checks that PostgreSQL is actually
+running before starting anything — if it isn't, you get a clear message
+telling you how to start it instead of a confusing connection-refused
+error a few steps downstream:
+
+```
+✖ PostgreSQL is not running (or not reachable on the default port).
+
+Start it, then re-run `npm run dev`. On macOS with Homebrew:
+  brew services start postgresql@16
+```
+
+Once both are up: the app is at `http://localhost:5173`, the API at
+`http://localhost:8000/api`.
+
+### Manual, two terminals (fallback / to see what's actually happening)
+
+```bash
+# Terminal 1
+cd apps/api && php artisan serve --port=8000
+
+# Terminal 2
+cd apps/web && npm run dev
+```
+
+This is what `npm run dev` at the root does for you — reach for this only
+if you need to watch one app's output in isolation, or debug the startup
+of just one side.
 
 ## Demo login
 
@@ -127,6 +159,25 @@ npm run format
 npm run build
 ```
 
+## Backend conventions
+
+- **Never return a raw `User` model (or a relation that resolves to one)
+  directly from a controller or response.** Always route it through
+  `App\Http\Resources\UserResource`, or a narrower purpose-built resource
+  (e.g. `TeacherResource` for the `classTeacher` relation on `SchoolClass`,
+  which only ever needs `id`/`name`/`email`) if `UserResource`'s full field
+  set doesn't apply.
+
+  `User::$hidden` (`protected $hidden = ['password', 'remember_token'];`)
+  suppresses those columns at the model level and covers `toArray()`,
+  `toJson()`, and nested eager-loaded relations — but a Resource wrap is
+  still required everywhere as defense in depth, not as redundant busywork:
+  it fixes the field list explicitly regardless of what a future migration,
+  column addition, or `$hidden` edit might change. Do not rely on `$hidden`
+  alone, and do not use column-limited eager loads (`->with('relation:col1,col2')`)
+  as a substitute for a Resource — that only narrows what's *fetched*, not
+  what a controller is allowed to *return*.
+
 ## Project layout
 
 ```
@@ -134,6 +185,8 @@ school-erp/
 ├── apps/
 │   ├── web/    React + TypeScript frontend
 │   └── api/    Laravel backend
+├── scripts/
+│   └── check-postgres.js   # pre-flight check used by `npm run dev`
 ├── docs/
 │   ├── architecture/service-pattern.md
 │   └── adr/
