@@ -2,6 +2,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { UserRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { IdCard } from '../types';
+import { BarcodeImage } from './BarcodeImage';
 import { studentIdCardPath } from '@/app/router/routes';
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
 import { Badge } from '@/shared/components/ui/badge';
@@ -53,6 +54,19 @@ export function buildIdCardColumns(): ColumnDef<IdCard>[] {
     {
       accessorKey: 'barcode_value',
       header: 'Barcode',
+      cell: ({ row }) => (
+        // Fixed white background regardless of theme — same reasoning as
+        // IdCardView: a barcode needs a light background + dark bars to
+        // stay scannable, in dark mode and on paper alike.
+        <div className="inline-block rounded bg-white p-1">
+          <BarcodeImage
+            value={row.original.barcode_value}
+            height={28}
+            fontSize={10}
+            margin={4}
+          />
+        </div>
+      ),
     },
     {
       accessorKey: 'status',

@@ -4,6 +4,10 @@ import { useEffect, useRef } from 'react';
 interface BarcodeImageProps {
   value: string;
   className?: string;
+  height?: number;
+  fontSize?: number;
+  displayValue?: boolean;
+  margin?: number;
 }
 
 /**
@@ -11,7 +15,14 @@ interface BarcodeImageProps {
  * per this phase's Standing Clause 2, the barcode value and its rendering
  * are real; only physical printing happens outside the system.
  */
-export function BarcodeImage({ value, className }: BarcodeImageProps) {
+export function BarcodeImage({
+  value,
+  className,
+  height = 60,
+  fontSize = 14,
+  displayValue = true,
+  margin = 8,
+}: BarcodeImageProps) {
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -20,12 +31,12 @@ export function BarcodeImage({ value, className }: BarcodeImageProps) {
     }
     JsBarcode(svgRef.current, value, {
       format: 'CODE128',
-      displayValue: true,
-      fontSize: 14,
-      height: 60,
-      margin: 8,
+      displayValue,
+      fontSize,
+      height,
+      margin,
     });
-  }, [value]);
+  }, [value, height, fontSize, displayValue, margin]);
 
   return <svg ref={svgRef} className={className} role="img" aria-label={`Barcode ${value}`} />;
 }
