@@ -51,6 +51,16 @@ export const studentsApi = {
   },
 };
 
+function toClassPayload(values: ClassFormValues) {
+  return {
+    ...values,
+    class_teacher_id:
+      values.class_teacher_id && values.class_teacher_id !== 'none'
+        ? Number(values.class_teacher_id)
+        : null,
+  };
+}
+
 export const classesApi = {
   async list(): Promise<SchoolClass[]> {
     const { data } = await apiClient.get<ApiSuccessResponse<SchoolClass[]>>('/classes');
@@ -58,12 +68,18 @@ export const classesApi = {
   },
 
   async create(values: ClassFormValues): Promise<SchoolClass> {
-    const { data } = await apiClient.post<ApiSuccessResponse<SchoolClass>>('/classes', values);
+    const { data } = await apiClient.post<ApiSuccessResponse<SchoolClass>>(
+      '/classes',
+      toClassPayload(values),
+    );
     return data.data;
   },
 
   async update(id: number, values: ClassFormValues): Promise<SchoolClass> {
-    const { data } = await apiClient.put<ApiSuccessResponse<SchoolClass>>(`/classes/${id}`, values);
+    const { data } = await apiClient.put<ApiSuccessResponse<SchoolClass>>(
+      `/classes/${id}`,
+      toClassPayload(values),
+    );
     return data.data;
   },
 };

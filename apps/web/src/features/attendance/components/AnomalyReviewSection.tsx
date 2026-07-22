@@ -11,7 +11,7 @@ import { Input } from '@/shared/components/ui/input';
 const RESULT_LABEL: Record<string, string> = {
   unknown_barcode: 'Unknown barcode',
   card_inactive: 'Card inactive',
-  owner_inactive: 'Student inactive',
+  owner_inactive: 'Record inactive',
   matched_in: 'Entry (flagged)',
   matched_out: 'Exit (flagged)',
 };
@@ -41,7 +41,9 @@ export function AnomalyReviewSection() {
                     <span className="text-sm text-muted-foreground">{event.barcode_value}</span>
                   </div>
                   <p className="text-sm">
-                    {event.student ? `${event.student.first_name} ${event.student.last_name}` : 'Unresolved'}
+                    {event.student
+                      ? `${event.student.first_name} ${event.student.last_name}`
+                      : (event.staff?.name ?? 'Unresolved')}
                     {' · '}
                     {new Date(event.scanned_at).toLocaleString()}
                     {event.gate_device ? ` · ${event.gate_device.name}` : ''}

@@ -21,7 +21,11 @@ const STATUS_VARIANT: Record<IdCard['status'], 'default' | 'secondary' | 'outlin
  * `print:hidden` on AppShell itself, not anything in here.
  */
 export function IdCardView({ card, schoolName }: IdCardViewProps) {
-  const { student } = card;
+  // This view is only ever fed a card from useStudentIdCard (the
+  // per-student endpoint), which structurally only returns owner_type
+  // 'student' cards — `student` is never null in practice here, even
+  // though the shared IdCard type also covers staff cards.
+  const student = card.student!;
 
   return (
     <div className="mx-auto w-full max-w-sm rounded-xl border-2 bg-card p-5 shadow-sm print:border print:shadow-none">

@@ -9,6 +9,7 @@ export interface AttendanceRecordListParams {
   search?: string;
   page?: number;
   per_page?: number;
+  owner_type?: 'student' | 'staff';
 }
 
 export interface AnomalyListParams {

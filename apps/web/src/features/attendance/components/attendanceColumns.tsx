@@ -14,32 +14,54 @@ const STATUS_VARIANT: Record<AttendanceRecord['status'], 'default' | 'secondary'
 interface BuildAttendanceColumnsOptions {
   canManage: boolean;
   onEdit: (record: AttendanceRecord) => void;
+  ownerType: 'student' | 'staff';
 }
 
 export function buildAttendanceColumns({
   canManage,
   onEdit,
+  ownerType,
 }: BuildAttendanceColumnsOptions): ColumnDef<AttendanceRecord>[] {
+  const identityColumns: ColumnDef<AttendanceRecord>[] =
+    ownerType === 'staff'
+      ? [
+          {
+            id: 'name',
+            header: 'Name',
+            accessorFn: (row) => row.staff?.name ?? '—',
+          },
+          {
+            id: 'designation',
+            header: 'Designation',
+            enableSorting: false,
+            accessorFn: (row) => row.staff?.designation ?? '—',
+          },
+        ]
+      : [
+          {
+            id: 'name',
+            header: 'Name',
+            accessorFn: (row) =>
+              row.student ? `${row.student.first_name} ${row.student.last_name}` : '—',
+          },
+          {
+            id: 'admission_no',
+            header: 'Admission No.',
+            accessorFn: (row) => row.student?.admission_no ?? '—',
+          },
+          {
+            id: 'class',
+            header: 'Class',
+            enableSorting: false,
+            accessorFn: (row) =>
+              row.student?.school_class
+                ? `${row.student.school_class.name}${row.student.school_class.section ? ` - ${row.student.school_class.section}` : ''}`
+                : '—',
+          },
+        ];
+
   const columns: ColumnDef<AttendanceRecord>[] = [
-    {
-      id: 'name',
-      header: 'Name',
-      accessorFn: (row) => (row.student ? `${row.student.first_name} ${row.student.last_name}` : '—'),
-    },
-    {
-      id: 'admission_no',
-      header: 'Admission No.',
-      accessorFn: (row) => row.student?.admission_no ?? '—',
-    },
-    {
-      id: 'class',
-      header: 'Class',
-      enableSorting: false,
-      accessorFn: (row) =>
-        row.student?.school_class
-          ? `${row.student.school_class.name}${row.student.school_class.section ? ` - ${row.student.school_class.section}` : ''}`
-          : '—',
-    },
+    ...identityColumns,
     {
       accessorKey: 'in_time',
       header: 'In',

@@ -21,6 +21,15 @@ class AuthService
             ]);
         }
 
+        // The one authorized touch to auth this phase: a resigned staff
+        // member's account is flipped inactive (see StaffService), not
+        // deleted — this is what actually enforces that at login.
+        if (! $user->is_active) {
+            throw ValidationException::withMessages([
+                'email' => ['This account has been deactivated. Contact your school administrator.'],
+            ]);
+        }
+
         $token = $user->createToken('api-token')->plainTextToken;
 
         return ['user' => $user, 'token' => $token];

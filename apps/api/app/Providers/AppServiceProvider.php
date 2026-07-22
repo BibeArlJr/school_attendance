@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\User;
 use App\Modules\Attendance\Services\MockSmsService;
+use App\Modules\Staff\Models\Staff;
 use App\Modules\Student\Models\Student;
 use App\Support\Contracts\SmsServiceInterface;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -76,12 +77,11 @@ class AppServiceProvider extends ServiceProvider
             fn (User $user): bool => in_array($user->role->value, ['super_admin', 'admin'], true),
         );
 
-        // IdCard.owner_type stores this short alias ('student'), not the
-        // fully-qualified class name — 'staff' is reserved for a future
-        // phase and deliberately left unmapped since no such model exists
-        // yet (plain morphMap, not enforceMorphMap, so that's fine).
+        // IdCard/AttendanceEvent/AttendanceRecord owner_type stores these
+        // short aliases, not fully-qualified class names.
         Relation::morphMap([
             'student' => Student::class,
+            'staff' => Staff::class,
         ]);
     }
 }

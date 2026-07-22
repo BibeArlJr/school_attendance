@@ -55,7 +55,7 @@ export const MODULES: ModuleDef[] = [
     label: 'Teachers',
     icon: Users,
     path: ROUTES.TEACHERS,
-    phase: 2,
+    // No `phase` — Teachers ships real content this phase, not a placeholder.
     allowedRoles: ['super_admin', 'admin'],
   },
   {

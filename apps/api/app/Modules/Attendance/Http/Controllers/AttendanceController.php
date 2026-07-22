@@ -9,6 +9,7 @@ use App\Modules\Attendance\Http\Requests\ReviewAttendanceEventRequest;
 use App\Modules\Attendance\Http\Requests\UpdateAttendanceRecordRequest;
 use App\Modules\Attendance\Models\AttendanceEvent;
 use App\Modules\Attendance\Models\AttendanceRecord;
+use App\Modules\Staff\Models\Staff;
 use App\Modules\Student\Models\Student;
 use App\Support\Enums\AttendanceEventResult;
 use App\Support\Responses\ApiResponse;
@@ -23,7 +24,8 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Today's (or a specified date's) attendance_records — a student who
+     * Today's (or a specified date's) attendance_records for either
+     * students or staff (owner_type, default student) — an owner who
      * never scanned has no row at all and simply won't appear here (see
      * the seed data's genuinely-absent students); this endpoint reflects
      * that literally rather than synthesizing an "absent" row.
@@ -32,29 +34,40 @@ class AttendanceController extends Controller
     {
         $schoolId = $this->schoolResolver->resolve($request->user());
         $date = $request->query('date', now()->toDateString());
+        $ownerType = $request->query('owner_type', 'student');
 
         $query = AttendanceRecord::query()
             ->where('school_id', $schoolId)
-            ->where('owner_type', 'student')
+            ->where('owner_type', $ownerType)
             ->where('date', $date)
-            ->with('owner.schoolClass');
+            ->with($ownerType === 'student' ? 'owner.schoolClass' : 'owner.user');
 
         if ($status = $request->query('status')) {
             $query->where('status', $status);
         }
 
-        if ($classId = $request->query('class_id')) {
+        // class_id only applies to students — Staff has no class concept.
+        if ($ownerType === 'student' && ($classId = $request->query('class_id'))) {
             $query->whereHasMorph('owner', [Student::class], function ($inner) use ($classId) {
                 $inner->where('class_id', $classId);
             });
         }
 
         if ($search = trim((string) $request->query('search', ''))) {
-            $query->whereHasMorph('owner', [Student::class], function ($inner) use ($search) {
-                $inner->where('first_name', 'ilike', "%{$search}%")
-                    ->orWhere('last_name', 'ilike', "%{$search}%")
-                    ->orWhere('admission_no', 'ilike', "%{$search}%");
-            });
+            if ($ownerType === 'student') {
+                $query->whereHasMorph('owner', [Student::class], function ($inner) use ($search) {
+                    $inner->where('first_name', 'ilike', "%{$search}%")
+                        ->orWhere('last_name', 'ilike', "%{$search}%")
+                        ->orWhere('admission_no', 'ilike', "%{$search}%");
+                });
+            } else {
+                $query->whereHasMorph('owner', [Staff::class], function ($inner) use ($search) {
+                    $inner->where('designation', 'ilike', "%{$search}%")
+                        ->orWhereHas('user', function ($userQuery) use ($search) {
+                            $userQuery->where('name', 'ilike', "%{$search}%");
+                        });
+                });
+            }
         }
 
         $records = $query
@@ -76,7 +89,18 @@ class AttendanceController extends Controller
         $events = AttendanceEvent::query()
             ->where('school_id', $schoolId)
             ->where('needs_review', true)
-            ->with(['resolvedOwner.schoolClass', 'gateDevice', 'guardUser'])
+            // Anomalies span both owner types, so the morphTo's nested
+            // eager load must be per-type (morphWith) — a blanket
+            // resolvedOwner.schoolClass would throw calling ::schoolClass()
+            // on a Staff instance, which has no such relation.
+            ->with([
+                'resolvedOwner' => fn ($morphTo) => $morphTo->morphWith([
+                    Student::class => ['schoolClass'],
+                    Staff::class => ['user'],
+                ]),
+                'gateDevice',
+                'guardUser',
+            ])
             ->orderByDesc('scanned_at')
             ->paginate((int) $request->query('per_page', 15))
             ->withQueryString();
@@ -117,7 +141,12 @@ class AttendanceController extends Controller
 
     /**
      * Last ~20 matched scans, most recent first — backs the dashboard's
-     * RealGateFeedService (polling, not push).
+     * RealGateFeedService (polling, not push). Deliberately scoped to
+     * students only: GateEvent's studentName/className fields are
+     * student-shaped, and mixing staff scans into "Gate Activity" here
+     * would misrepresent them under those labels rather than genuinely
+     * supporting staff — a Teachers-specific feed is a reasonable future
+     * addition, not built in this phase.
      */
     public function recentEvents(Request $request): JsonResponse
     {
@@ -125,6 +154,7 @@ class AttendanceController extends Controller
 
         $events = AttendanceEvent::query()
             ->where('school_id', $schoolId)
+            ->where('resolved_owner_type', 'student')
             ->whereIn('result', [AttendanceEventResult::MatchedIn, AttendanceEventResult::MatchedOut])
             ->with('resolvedOwner.schoolClass')
             ->orderByDesc('scanned_at')

@@ -22,6 +22,21 @@ class User extends Authenticatable
     use SoftDeletes;
 
     /**
+     * The attributes that are mass assignable.
+     *
+     * Previously unset entirely (leaving Eloquent's default
+     * $guarded = ['*']) — harmless while nothing but DemoSeeder ever
+     * called User::create()/updateOrCreate(), since Laravel's
+     * SeedCommand wraps seeding in Model::unguarded() and bypasses this
+     * check anyway. StaffService::create() (Prompt 8) is the first real
+     * code path to mass-assign a User outside that context, which is
+     * what actually surfaced this.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = ['name', 'email', 'password', 'school_id', 'role', 'is_active', 'email_verified_at'];
+
+    /**
      * The attributes that should be hidden for serialization.
      *
      * @var array<int, string>
@@ -39,6 +54,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
+            'is_active' => 'boolean',
         ];
     }
 

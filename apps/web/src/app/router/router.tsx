@@ -14,6 +14,8 @@ const StudentsLayout = lazy(() => import('@/features/students/pages/StudentsLayo
 const StudentsPage = lazy(() => import('@/features/students/pages/StudentsPage'));
 const ClassesPage = lazy(() => import('@/features/students/pages/ClassesPage'));
 const StudentDetailPage = lazy(() => import('@/features/students/pages/StudentDetailPage'));
+const TeachersPage = lazy(() => import('@/features/teachers/pages/TeachersPage'));
+const TeacherDetailPage = lazy(() => import('@/features/teachers/pages/TeacherDetailPage'));
 const ParentsPage = lazy(() => import('@/features/parents/pages/ParentsPage'));
 const ParentDetailPage = lazy(() => import('@/features/parents/pages/ParentDetailPage'));
 const BarcodePage = lazy(() => import('@/features/idcards/pages/BarcodePage'));
@@ -35,13 +37,14 @@ function withRoleGuard(module: (typeof MODULES)[number], element: React.ReactNod
 
 const dashboardModule = MODULES.find((module) => module.key === 'dashboard')!;
 const studentsModule = MODULES.find((module) => module.key === 'students')!;
+const teachersModule = MODULES.find((module) => module.key === 'teachers')!;
 const parentsModule = MODULES.find((module) => module.key === 'parents')!;
 const barcodeModule = MODULES.find((module) => module.key === 'barcode')!;
 const attendanceModule = MODULES.find((module) => module.key === 'attendance')!;
 const gateScannerModule = MODULES.find((module) => module.key === 'gate-scanner')!;
 
-// Students, Parents, Barcode, Attendance, and Gate Scanner now ship real
-// content, so all five are excluded from the generic placeholder
+// Students, Teachers, Parents, Barcode, Attendance, and Gate Scanner now
+// ship real content, so all six are excluded from the generic placeholder
 // generation below (no `phase` on their MODULES entries anymore).
 const placeholderRoutes = MODULES.filter((module) => module.phase !== undefined).map((module) => ({
   path: module.path,
@@ -80,6 +83,14 @@ export const router = createBrowserRouter([
             // Students/Classes tabs, so it doesn't show that tab bar.
             path: ROUTES.STUDENT_DETAIL,
             element: withSuspense(withRoleGuard(studentsModule, <StudentDetailPage />)),
+          },
+          {
+            path: ROUTES.TEACHERS,
+            element: withSuspense(withRoleGuard(teachersModule, <TeachersPage />)),
+          },
+          {
+            path: ROUTES.TEACHER_DETAIL,
+            element: withSuspense(withRoleGuard(teachersModule, <TeacherDetailPage />)),
           },
           {
             path: ROUTES.PARENTS,

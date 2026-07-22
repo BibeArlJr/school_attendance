@@ -92,7 +92,10 @@ export default function GateScannerPage() {
   }
 
   return (
-    <PageContainer title="Gate Scanner" description="Scan a student ID card to record entry or exit.">
+    <PageContainer
+      title="Gate Scanner"
+      description="Scan a student or staff ID card to record entry or exit."
+    >
       <div className="mx-auto flex max-w-lg flex-col items-center gap-6 py-6">
         <form onSubmit={handleSubmit} className="w-full">
           <div className="relative">

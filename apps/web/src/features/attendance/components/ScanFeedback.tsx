@@ -16,12 +16,34 @@ function formatTime(time: string): string {
 }
 
 const REJECTION_MESSAGES: Record<string, string> = {
-  unknown_barcode: "This barcode isn't registered to any student.",
+  unknown_barcode: "This barcode isn't registered to any student or staff member.",
   card_inactive: 'This ID card has been deactivated — issue a new card.',
-  owner_inactive: "This student's record is not active.",
+  owner_inactive: 'This record is not active.',
 };
 
+function ownerName(scan: ScanResult): string | null {
+  if (scan.owner_type === 'staff' && scan.staff) {
+    return scan.staff.name;
+  }
+  if (scan.student) {
+    return `${scan.student.first_name} ${scan.student.last_name}`;
+  }
+  return null;
+}
+
+function ownerSubtitle(scan: ScanResult): string {
+  if (scan.owner_type === 'staff' && scan.staff) {
+    return scan.staff.designation;
+  }
+  if (scan.student?.school_class) {
+    return `${scan.student.school_class.name}${scan.student.school_class.section ? ` - ${scan.student.school_class.section}` : ''}`;
+  }
+  return '';
+}
+
 export function ScanFeedback({ scan }: ScanFeedbackProps) {
+  const name = ownerName(scan);
+
   if (scan.result === 'duplicate_ignored') {
     return (
       <motion.div
@@ -31,11 +53,7 @@ export function ScanFeedback({ scan }: ScanFeedbackProps) {
       >
         <Clock className="size-16 text-amber-600" />
         <p className="text-2xl font-semibold text-amber-800 dark:text-amber-300">Already scanned</p>
-        {scan.student && (
-          <p className="text-lg text-amber-700 dark:text-amber-400">
-            {scan.student.first_name} {scan.student.last_name}
-          </p>
-        )}
+        {name && <p className="text-lg text-amber-700 dark:text-amber-400">{name}</p>}
       </motion.div>
     );
   }
@@ -43,6 +61,7 @@ export function ScanFeedback({ scan }: ScanFeedbackProps) {
   if (scan.result === 'matched_in' || scan.result === 'matched_out') {
     const isIn = scan.result === 'matched_in';
     const time = isIn ? scan.record?.in_time : scan.record?.out_time;
+    const isStaff = scan.owner_type === 'staff';
 
     return (
       <motion.div
@@ -58,16 +77,10 @@ export function ScanFeedback({ scan }: ScanFeedbackProps) {
         <p className="text-2xl font-semibold text-emerald-800 dark:text-emerald-300">
           {isIn ? 'Entered' : 'Left'}
         </p>
-        {scan.student && (
+        {name && (
           <>
-            <p className="text-xl font-medium text-emerald-900 dark:text-emerald-200">
-              {scan.student.first_name} {scan.student.last_name}
-            </p>
-            <p className="text-sm text-emerald-700 dark:text-emerald-400">
-              {scan.student.school_class
-                ? `${scan.student.school_class.name}${scan.student.school_class.section ? ` - ${scan.student.school_class.section}` : ''}`
-                : ''}
-            </p>
+            <p className="text-xl font-medium text-emerald-900 dark:text-emerald-200">{name}</p>
+            <p className="text-sm text-emerald-700 dark:text-emerald-400">{ownerSubtitle(scan)}</p>
           </>
         )}
         {time && (
@@ -80,10 +93,14 @@ export function ScanFeedback({ scan }: ScanFeedbackProps) {
           {scan.record?.early_departure && <Badge variant="secondary">Early departure</Badge>}
           {scan.needs_review && <Badge variant="outline">Flagged for review</Badge>}
         </div>
-        <Badge className="mt-1 gap-1">
-          <CheckCircle2 className="size-3" />
-          {scan.sms_sent ? 'SMS sent' : 'No guardian on file'}
-        </Badge>
+        {/* Staff scans have no parent to notify — the SMS tag only applies
+            to student scans. */}
+        {!isStaff && (
+          <Badge className="mt-1 gap-1">
+            <CheckCircle2 className="size-3" />
+            {scan.sms_sent ? 'SMS sent' : 'No guardian on file'}
+          </Badge>
+        )}
       </motion.div>
     );
   }
@@ -97,11 +114,7 @@ export function ScanFeedback({ scan }: ScanFeedbackProps) {
     >
       <XCircle className="size-16 text-destructive" />
       <p className="text-2xl font-semibold text-destructive">Scan rejected</p>
-      {scan.student && (
-        <p className="text-lg text-destructive">
-          {scan.student.first_name} {scan.student.last_name}
-        </p>
-      )}
+      {name && <p className="text-lg text-destructive">{name}</p>}
       <p className="max-w-sm text-sm text-destructive/80">
         {REJECTION_MESSAGES[scan.result] ?? 'This scan could not be processed.'}
       </p>

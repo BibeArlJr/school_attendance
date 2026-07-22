@@ -15,6 +15,7 @@ use App\Modules\ParentGuardian\Services\ParentGuardianLinkService;
 use App\Modules\School\Models\AcademicYear;
 use App\Modules\School\Models\School;
 use App\Modules\School\Models\SchoolClass;
+use App\Modules\Staff\Models\Staff;
 use App\Modules\Student\Models\Student;
 use App\Modules\Student\Services\StudentService;
 use App\Support\Enums\UserRole;
@@ -115,6 +116,7 @@ class DemoSeeder extends Seeder
         )->values();
 
         $this->seedStudents($school->id, $classes);
+        $this->seedStaff($school, $teacher);
 
         // Fetch in creation order (id ascending) so indices line up with
         // the $names array in seedStudents() below, regardless of whether
@@ -422,5 +424,54 @@ class DemoSeeder extends Seeder
             'Seeded today\'s demo attendance: %d students scanned, 2 genuinely absent, 1 unknown-barcode anomaly.',
             count($pattern),
         ));
+    }
+
+    /**
+     * Backfills a staff profile + ID card for the Demo Teacher (an
+     * existing User from Phase 1, seeded before the staff table existed),
+     * plus one additional on-leave demo teacher so the class
+     * teacher-picker has something real to filter out.
+     */
+    private function seedStaff(School $school, User $teacher): void
+    {
+        if (Staff::query()->where('user_id', $teacher->id)->exists()) {
+            $this->command->info('Demo staff already seeded, skipping.');
+
+            return;
+        }
+
+        $idCardService = app(IdCardService::class);
+
+        $staff = Staff::create([
+            'school_id' => $school->id,
+            'user_id' => $teacher->id,
+            'designation' => 'Class Teacher',
+            'qualification' => 'B.Ed.',
+            'joined_date' => now()->subYears(2)->toDateString(),
+            'employment_status' => 'active',
+        ]);
+        $idCardService->generateForStaff($staff);
+
+        $onLeaveUser = User::updateOrCreate(
+            ['email' => 'teacher2@demo-school.edu.np'],
+            [
+                'name' => 'Sunita Rana',
+                'password' => 'Demo@Passw0rd',
+                'school_id' => $school->id,
+                'role' => UserRole::Teacher,
+                'email_verified_at' => now(),
+            ],
+        );
+        $onLeaveStaff = Staff::create([
+            'school_id' => $school->id,
+            'user_id' => $onLeaveUser->id,
+            'designation' => 'Subject Teacher',
+            'qualification' => 'M.Ed.',
+            'joined_date' => now()->subYear()->toDateString(),
+            'employment_status' => 'on_leave',
+        ]);
+        $idCardService->generateForStaff($onLeaveStaff);
+
+        $this->command->info('Seeded 2 demo staff profiles (1 active, 1 on-leave) with ID cards.');
     }
 }

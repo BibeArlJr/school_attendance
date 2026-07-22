@@ -13,6 +13,9 @@ const STATUS_VARIANT: Record<IdCard['status'], 'default' | 'secondary' | 'outlin
   deactivated: 'secondary',
 };
 
+// GET /id-cards is hard-filtered to owner_type 'student' server-side, so
+// `student` is never null here even though the shared IdCard type also
+// covers staff cards — the `!` assertions below reflect that guarantee.
 export function buildIdCardColumns(): ColumnDef<IdCard>[] {
   return [
     {
@@ -30,10 +33,10 @@ export function buildIdCardColumns(): ColumnDef<IdCard>[] {
     {
       id: 'name',
       header: 'Name',
-      accessorFn: (row) => `${row.student.first_name} ${row.student.last_name}`,
+      accessorFn: (row) => `${row.student!.first_name} ${row.student!.last_name}`,
       cell: ({ row }) => (
-        <Link to={studentIdCardPath(row.original.student.id)} className="font-medium hover:underline">
-          {row.original.student.first_name} {row.original.student.last_name}
+        <Link to={studentIdCardPath(row.original.student!.id)} className="font-medium hover:underline">
+          {row.original.student!.first_name} {row.original.student!.last_name}
         </Link>
       ),
     },
@@ -42,14 +45,14 @@ export function buildIdCardColumns(): ColumnDef<IdCard>[] {
       header: 'Class',
       enableSorting: false,
       accessorFn: (row) =>
-        row.student.school_class
-          ? `${row.student.school_class.name}${row.student.school_class.section ? ` - ${row.student.school_class.section}` : ''}`
+        row.student!.school_class
+          ? `${row.student!.school_class.name}${row.student!.school_class.section ? ` - ${row.student!.school_class.section}` : ''}`
           : '—',
     },
     {
       id: 'admission_no',
       header: 'Admission No.',
-      accessorFn: (row) => row.student.admission_no,
+      accessorFn: (row) => row.student!.admission_no,
     },
     {
       accessorKey: 'barcode_value',

@@ -8,6 +8,7 @@ use App\Modules\Attendance\Models\GateDevice;
 use App\Modules\Attendance\Models\SchoolCalendar;
 use App\Modules\Attendance\Models\SchoolConfig;
 use App\Modules\IdCard\Models\IdCard;
+use App\Modules\Staff\Models\Staff;
 use App\Modules\Student\Models\Student;
 use App\Support\Contracts\SmsServiceInterface;
 use App\Support\Enums\AttendanceEventResult;
@@ -16,6 +17,7 @@ use App\Support\Enums\AttendanceSource;
 use App\Support\Enums\CalendarDayType;
 use App\Support\Enums\IdCardStatus;
 use App\Support\Enums\RecordDayType;
+use App\Support\Enums\StaffEmploymentStatus;
 use App\Support\Enums\StudentStatus;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +25,10 @@ use Illuminate\Support\Facades\DB;
 /**
  * The scan-processing state machine. All business logic for a barcode
  * scan lives here, not in the controller — see Prompt 7's architecture
- * constraint.
+ * constraint. Prompt 8 generalizes identity resolution and the
+ * notification step to also handle owner_type = 'staff' — the IN/OUT/
+ * duplicate/late/anomaly logic itself is not forked and knows nothing
+ * about which owner type it's processing.
  *
  * "Outside the scheduled window" (step 3's needs_review flag on an
  * otherwise-valid IN) isn't given an exact number in the spec, so this
@@ -60,16 +65,16 @@ class AttendanceService
         if ($idCard->status !== IdCardStatus::Active) {
             $event = $this->logEvent($schoolId, $barcodeValue, $idCard->owner_type, $idCard->owner_id, $gateDeviceId, $guardUserId, $now, AttendanceEventResult::CardInactive, true);
 
-            return new ScanOutcome($event, $idCard->owner_type === 'student' ? $idCard->owner : null);
+            return new ScanOutcome($event, $idCard->owner);
         }
 
-        /** @var Student $student */
-        $student = $idCard->owner;
+        $ownerType = $idCard->owner_type;
+        $owner = $idCard->owner;
 
-        if ($student->status !== StudentStatus::Active) {
-            $event = $this->logEvent($schoolId, $barcodeValue, $idCard->owner_type, $idCard->owner_id, $gateDeviceId, $guardUserId, $now, AttendanceEventResult::OwnerInactive, true);
+        if (! $this->isOwnerActive($owner, $ownerType)) {
+            $event = $this->logEvent($schoolId, $barcodeValue, $ownerType, $idCard->owner_id, $gateDeviceId, $guardUserId, $now, AttendanceEventResult::OwnerInactive, true);
 
-            return new ScanOutcome($event, $student);
+            return new ScanOutcome($event, $owner);
         }
 
         // --- Step 2: duplicate check ---
@@ -83,26 +88,26 @@ class AttendanceService
             ->first();
 
         if ($lastEvent && $lastEvent->scanned_at->diffInSeconds($now) < $config->duplicate_scan_window_seconds) {
-            $event = $this->logEvent($schoolId, $barcodeValue, 'student', $student->id, $gateDeviceId, $guardUserId, $now, AttendanceEventResult::DuplicateIgnored, false);
+            $event = $this->logEvent($schoolId, $barcodeValue, $ownerType, $owner->id, $gateDeviceId, $guardUserId, $now, AttendanceEventResult::DuplicateIgnored, false);
 
             $existingRecord = AttendanceRecord::query()
                 ->where('school_id', $schoolId)
-                ->where('owner_type', 'student')
-                ->where('owner_id', $student->id)
+                ->where('owner_type', $ownerType)
+                ->where('owner_id', $owner->id)
                 ->where('date', $now->toDateString())
                 ->first();
 
-            return new ScanOutcome($event, $student, $existingRecord);
+            return new ScanOutcome($event, $owner, $existingRecord);
         }
 
-        return DB::transaction(function () use ($schoolId, $barcodeValue, $gateDeviceId, $guardUserId, $now, $student, $config) {
+        return DB::transaction(function () use ($schoolId, $barcodeValue, $gateDeviceId, $guardUserId, $now, $owner, $ownerType, $config) {
             // --- Step 4: day_type resolution ---
             [$calendarDayType, $recordDayType] = $this->resolveDayType($schoolId, $now, $config);
 
             $record = AttendanceRecord::query()->firstOrNew([
                 'school_id' => $schoolId,
-                'owner_type' => 'student',
-                'owner_id' => $student->id,
+                'owner_type' => $ownerType,
+                'owner_id' => $owner->id,
                 'date' => $now->toDateString(),
             ]);
 
@@ -158,15 +163,30 @@ class AttendanceService
 
             $record->save();
 
-            $event = $this->logEvent($schoolId, $barcodeValue, 'student', $student->id, $gateDeviceId, $guardUserId, $now, $result, $eventNeedsReview);
+            $event = $this->logEvent($schoolId, $barcodeValue, $ownerType, $owner->id, $gateDeviceId, $guardUserId, $now, $result, $eventNeedsReview);
 
+            // Notification step: no parent-notification equivalent exists
+            // for staff — teacher scans are recorded silently, per Prompt 8.
             $smsSent = false;
-            if (in_array($result, [AttendanceEventResult::MatchedIn, AttendanceEventResult::MatchedOut], true)) {
-                $smsSent = $this->sendParentNotification($student, $result, $now);
+            if ($ownerType === 'student' && in_array($result, [AttendanceEventResult::MatchedIn, AttendanceEventResult::MatchedOut], true)) {
+                $smsSent = $this->sendParentNotification($owner, $result, $now);
             }
 
-            return new ScanOutcome($event, $student, $record, $smsSent);
+            return new ScanOutcome($event, $owner, $record, $smsSent);
         });
+    }
+
+    private function isOwnerActive(Student|Staff $owner, string $ownerType): bool
+    {
+        if ($ownerType === 'student') {
+            return $owner->status === StudentStatus::Active;
+        }
+
+        // staff: both the employment record and the linked login must be
+        // active — a resigned teacher's user is also flipped is_active
+        // false (StaffService), but checking both here doesn't rely on
+        // that invariant holding everywhere.
+        return $owner->employment_status === StaffEmploymentStatus::Active && $owner->user->is_active;
     }
 
     private function computeStatus(AttendanceRecord $record, CalendarDayType $calendarDayType): AttendanceRecordStatus

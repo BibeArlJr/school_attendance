@@ -1,4 +1,5 @@
 export type IdCardStatus = 'active' | 'lost' | 'deactivated';
+export type IdCardOwnerType = 'student' | 'staff';
 
 export interface IdCardStudentSummary {
   id: number;
@@ -8,11 +9,19 @@ export interface IdCardStudentSummary {
   school_class: { id: number; name: string; section: string | null } | null;
 }
 
+export interface IdCardStaffSummary {
+  id: number;
+  name: string;
+  designation: string;
+}
+
 export interface IdCard {
   id: number;
   barcode_value: string;
   status: IdCardStatus;
   issued_date: string;
   deactivated_date: string | null;
-  student: IdCardStudentSummary;
+  owner_type: IdCardOwnerType;
+  student: IdCardStudentSummary | null;
+  staff: IdCardStaffSummary | null;
 }

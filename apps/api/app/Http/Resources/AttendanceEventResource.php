@@ -12,7 +12,8 @@ class AttendanceEventResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $student = $this->resolvedOwner;
+        $owner = $this->resolvedOwner;
+        $ownerType = $this->resolved_owner_type;
 
         return [
             'id' => $this->id,
@@ -31,16 +32,22 @@ class AttendanceEventResource extends JsonResource
                 'id' => $this->guardUser->id,
                 'name' => $this->guardUser->name,
             ] : null),
-            'student' => $student ? [
-                'id' => $student->id,
-                'first_name' => $student->first_name,
-                'last_name' => $student->last_name,
-                'admission_no' => $student->admission_no,
-                'school_class' => $student->schoolClass ? [
-                    'id' => $student->schoolClass->id,
-                    'name' => $student->schoolClass->name,
-                    'section' => $student->schoolClass->section,
+            'owner_type' => $ownerType,
+            'student' => $ownerType === 'student' && $owner ? [
+                'id' => $owner->id,
+                'first_name' => $owner->first_name,
+                'last_name' => $owner->last_name,
+                'admission_no' => $owner->admission_no,
+                'school_class' => $owner->schoolClass ? [
+                    'id' => $owner->schoolClass->id,
+                    'name' => $owner->schoolClass->name,
+                    'section' => $owner->schoolClass->section,
                 ] : null,
+            ] : null,
+            'staff' => $ownerType === 'staff' && $owner ? [
+                'id' => $owner->id,
+                'name' => $owner->user->name,
+                'designation' => $owner->designation,
             ] : null,
         ];
     }

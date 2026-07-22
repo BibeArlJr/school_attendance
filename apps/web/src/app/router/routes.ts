@@ -6,6 +6,7 @@ export const ROUTES = {
   STUDENT_DETAIL: '/students/:id',
   STUDENT_ID_CARD: '/students/:id/id-card',
   TEACHERS: '/teachers',
+  TEACHER_DETAIL: '/teachers/:id',
   PARENTS: '/parents',
   PARENT_DETAIL: '/parents/:id',
   ATTENDANCE: '/attendance',
@@ -26,4 +27,8 @@ export function parentDetailPath(id: number | string): string {
 
 export function studentIdCardPath(id: number | string): string {
   return `/students/${id}/id-card`;
+}
+
+export function teacherDetailPath(id: number | string): string {
+  return `/teachers/${id}`;
 }

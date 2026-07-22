@@ -17,13 +17,13 @@ export const studentSchema = z.object({
 
 export type StudentFormValues = z.infer<typeof studentSchema>;
 
-// No class_teacher_id field: there's no teacher directory endpoint yet
-// (Teachers module is still a Phase 2 placeholder) to populate a picker
-// from, so this phase's Class form only edits name/section. The column
-// still exists and is set via DemoSeeder.
 export const classSchema = z.object({
   name: z.string().min(1, 'Class name is required').max(255, 'Too long'),
   section: z.string().max(50, 'Too long').optional(),
+  // 'none' is the Select sentinel for "no class teacher assigned" — Radix
+  // Select doesn't allow an empty-string item value — mapped to null at
+  // the API boundary (see api/studentsApi.ts).
+  class_teacher_id: z.string().optional(),
 });
 
 export type ClassFormValues = z.infer<typeof classSchema>;

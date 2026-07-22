@@ -12,25 +12,49 @@ class IdCardResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $student = $this->owner;
-
         return [
             'id' => $this->id,
             'barcode_value' => $this->barcode_value,
             'status' => $this->status->value,
             'issued_date' => $this->issued_date->toDateString(),
             'deactivated_date' => $this->deactivated_date?->toDateString(),
-            'student' => [
-                'id' => $student->id,
-                'first_name' => $student->first_name,
-                'last_name' => $student->last_name,
-                'admission_no' => $student->admission_no,
-                'school_class' => $student->schoolClass ? [
-                    'id' => $student->schoolClass->id,
-                    'name' => $student->schoolClass->name,
-                    'section' => $student->schoolClass->section,
-                ] : null,
-            ],
+            'owner_type' => $this->owner_type,
+            'student' => $this->owner_type === 'student' ? $this->studentSummary() : null,
+            'staff' => $this->owner_type === 'staff' ? $this->staffSummary() : null,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function studentSummary(): array
+    {
+        $student = $this->owner;
+
+        return [
+            'id' => $student->id,
+            'first_name' => $student->first_name,
+            'last_name' => $student->last_name,
+            'admission_no' => $student->admission_no,
+            'school_class' => $student->schoolClass ? [
+                'id' => $student->schoolClass->id,
+                'name' => $student->schoolClass->name,
+                'section' => $student->schoolClass->section,
+            ] : null,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function staffSummary(): array
+    {
+        $staff = $this->owner;
+
+        return [
+            'id' => $staff->id,
+            'name' => $staff->user->name,
+            'designation' => $staff->designation,
         ];
     }
 }

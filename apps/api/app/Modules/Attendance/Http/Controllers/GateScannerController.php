@@ -37,7 +37,8 @@ class GateScannerController extends Controller
      */
     private function present(ScanOutcome $outcome): array
     {
-        $student = $outcome->student;
+        $owner = $outcome->owner;
+        $ownerType = $outcome->event->resolved_owner_type;
         $record = $outcome->record;
 
         return [
@@ -45,16 +46,22 @@ class GateScannerController extends Controller
             'needs_review' => $outcome->event->needs_review,
             'sms_sent' => $outcome->smsSent,
             'scanned_at' => $outcome->event->scanned_at->toIso8601String(),
-            'student' => $student ? [
-                'id' => $student->id,
-                'first_name' => $student->first_name,
-                'last_name' => $student->last_name,
-                'admission_no' => $student->admission_no,
-                'school_class' => $student->schoolClass ? [
-                    'id' => $student->schoolClass->id,
-                    'name' => $student->schoolClass->name,
-                    'section' => $student->schoolClass->section,
+            'owner_type' => $ownerType,
+            'student' => $ownerType === 'student' && $owner ? [
+                'id' => $owner->id,
+                'first_name' => $owner->first_name,
+                'last_name' => $owner->last_name,
+                'admission_no' => $owner->admission_no,
+                'school_class' => $owner->schoolClass ? [
+                    'id' => $owner->schoolClass->id,
+                    'name' => $owner->schoolClass->name,
+                    'section' => $owner->schoolClass->section,
                 ] : null,
+            ] : null,
+            'staff' => $ownerType === 'staff' && $owner ? [
+                'id' => $owner->id,
+                'name' => $owner->user->name,
+                'designation' => $owner->designation,
             ] : null,
             'record' => $record ? [
                 'in_time' => $record->in_time,
