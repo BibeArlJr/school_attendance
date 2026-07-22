@@ -95,12 +95,21 @@ VITE_USE_MOCK_NOTIFICATIONS=true
 
 ## Demo login
 
-Seeded by `DemoSeeder` (`apps/api/database/seeders/DemoSeeder.php`):
+Seeded by `DemoSeeder` (`apps/api/database/seeders/DemoSeeder.php`). All
+four demo users share the same password; each has a different role, which
+determines which sidebar modules and API endpoints they can access (see
+`docs/adr/0003-static-role-capability-map.md`).
 
-| Field    | Value                       |
-| -------- | ---------------------------- |
-| Email    | `admin@demo-school.edu.np`   |
-| Password | `Demo@Passw0rd`               |
+| Role        | Email                          | Password       |
+| ----------- | ------------------------------- | -------------- |
+| super_admin | `superadmin@school-erp.dev`     | `Demo@Passw0rd` |
+| admin       | `admin@demo-school.edu.np`      | `Demo@Passw0rd` |
+| teacher     | `teacher@demo-school.edu.np`    | `Demo@Passw0rd` |
+| guard       | `guard@demo-school.edu.np`      | `Demo@Passw0rd` |
+
+There is no `parent` demo user — the parent role is out of scope until its
+own portal is built (a distinct route tree, not a restricted view of the
+staff dashboard).
 
 ## Useful commands
 

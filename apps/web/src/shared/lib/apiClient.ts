@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toast } from 'sonner';
 import { ROUTES } from '@/app/router/routes';
 import { useAuthStore } from '@/features/auth/store/authStore';
 
@@ -20,10 +21,18 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error: unknown) => {
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
-      useAuthStore.getState().logout();
-      if (window.location.pathname !== ROUTES.LOGIN) {
-        window.location.href = ROUTES.LOGIN;
+    if (axios.isAxiosError(error)) {
+      // 401 = not authenticated (token missing/invalid/expired) -> log out.
+      if (error.response?.status === 401) {
+        useAuthStore.getState().logout();
+        if (window.location.pathname !== ROUTES.LOGIN) {
+          window.location.href = ROUTES.LOGIN;
+        }
+      } else if (error.response?.status === 403) {
+        // 403 = authenticated but not permitted -> stay logged in, just
+        // surface it. Calling code can additionally render ForbiddenState
+        // inline where that's meaningful.
+        toast.error("You don't have permission to do that.");
       }
     }
     return Promise.reject(error);

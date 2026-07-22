@@ -19,23 +19,60 @@ export interface ModuleDef {
   label: string;
   icon: LucideIcon;
   path: string;
-  /** Roles allowed to see this module. Omitted = every authenticated role. */
-  minRole?: UserRole[];
+  /**
+   * Roles allowed to access this module — the single source of truth for
+   * both sidebar visibility and route-level enforcement (RoleGuard).
+   * Required, not a "minimum" role threshold: a plain hierarchy can't
+   * express e.g. "guard and admin but not teacher" (Gate Scanner), so this
+   * is an explicit allow-list. Kept in sync manually with
+   * apps/api/config/modules.php — see ADR 0003.
+   */
+  allowedRoles: UserRole[];
   /** Phase this module ships in. Omitted = already built (Dashboard). */
   phase?: number;
 }
 
+const ALL_STAFF_ROLES: UserRole[] = ['super_admin', 'admin', 'teacher', 'guard'];
+
 export const MODULES: ModuleDef[] = [
-  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: ROUTES.DASHBOARD },
-  { key: 'students', label: 'Students', icon: GraduationCap, path: ROUTES.STUDENTS, phase: 2 },
-  { key: 'teachers', label: 'Teachers', icon: Users, path: ROUTES.TEACHERS, phase: 2 },
-  { key: 'parents', label: 'Parents', icon: UserRound, path: ROUTES.PARENTS, phase: 3 },
+  {
+    key: 'dashboard',
+    label: 'Dashboard',
+    icon: LayoutDashboard,
+    path: ROUTES.DASHBOARD,
+    allowedRoles: ALL_STAFF_ROLES,
+  },
+  {
+    key: 'students',
+    label: 'Students',
+    icon: GraduationCap,
+    path: ROUTES.STUDENTS,
+    phase: 2,
+    allowedRoles: ['super_admin', 'admin', 'teacher'],
+  },
+  {
+    key: 'teachers',
+    label: 'Teachers',
+    icon: Users,
+    path: ROUTES.TEACHERS,
+    phase: 2,
+    allowedRoles: ['super_admin', 'admin'],
+  },
+  {
+    key: 'parents',
+    label: 'Parents',
+    icon: UserRound,
+    path: ROUTES.PARENTS,
+    phase: 3,
+    allowedRoles: ['super_admin', 'admin'],
+  },
   {
     key: 'attendance',
     label: 'Attendance',
     icon: ClipboardCheck,
     path: ROUTES.ATTENDANCE,
     phase: 4,
+    allowedRoles: ALL_STAFF_ROLES,
   },
   {
     key: 'gate-scanner',
@@ -43,22 +80,38 @@ export const MODULES: ModuleDef[] = [
     icon: ScanLine,
     path: ROUTES.GATE_SCANNER,
     phase: 5,
+    allowedRoles: ['super_admin', 'admin', 'guard'],
   },
-  { key: 'barcode', label: 'Barcode', icon: Barcode, path: ROUTES.BARCODE, phase: 6 },
+  {
+    key: 'barcode',
+    label: 'Barcode',
+    icon: Barcode,
+    path: ROUTES.BARCODE,
+    phase: 6,
+    allowedRoles: ['super_admin', 'admin'],
+  },
   {
     key: 'sms-log',
     label: 'SMS Log',
     icon: MessageSquareText,
     path: ROUTES.SMS_LOG,
     phase: 7,
+    allowedRoles: ['super_admin', 'admin'],
   },
-  { key: 'reports', label: 'Reports', icon: BarChart3, path: ROUTES.REPORTS, phase: 9 },
+  {
+    key: 'reports',
+    label: 'Reports',
+    icon: BarChart3,
+    path: ROUTES.REPORTS,
+    phase: 9,
+    allowedRoles: ['super_admin', 'admin', 'teacher'],
+  },
   {
     key: 'settings',
     label: 'Settings',
     icon: Settings,
     path: ROUTES.SETTINGS,
     phase: 10,
-    minRole: ['super_admin', 'admin'],
+    allowedRoles: ['super_admin', 'admin'],
   },
 ];
