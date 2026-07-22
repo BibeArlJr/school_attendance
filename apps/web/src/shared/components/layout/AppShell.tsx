@@ -22,18 +22,22 @@ export function AppShell() {
   }, [collapsed]);
 
   return (
-    <div className="flex h-svh overflow-hidden bg-muted/30">
-      <Sidebar
-        collapsed={collapsed}
-        onToggleCollapsed={() => setCollapsed((v) => !v)}
-        mobileOpen={mobileOpen}
-        onCloseMobile={() => setMobileOpen(false)}
-      />
+    <div className="flex h-svh overflow-hidden bg-muted/30 print:h-auto print:overflow-visible print:bg-white">
+      <div className="print:hidden">
+        <Sidebar
+          collapsed={collapsed}
+          onToggleCollapsed={() => setCollapsed((v) => !v)}
+          mobileOpen={mobileOpen}
+          onCloseMobile={() => setMobileOpen(false)}
+        />
+      </div>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar onOpenMobileMenu={() => setMobileOpen(true)} />
+      <div className="flex min-w-0 flex-1 flex-col print:overflow-visible">
+        <div className="print:hidden">
+          <Topbar onOpenMobileMenu={() => setMobileOpen(true)} />
+        </div>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto print:overflow-visible">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}

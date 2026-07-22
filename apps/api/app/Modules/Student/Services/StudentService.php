@@ -2,6 +2,7 @@
 
 namespace App\Modules\Student\Services;
 
+use App\Modules\IdCard\Services\IdCardService;
 use App\Modules\School\Models\AcademicYear;
 use App\Modules\Student\Models\Student;
 use App\Modules\Student\Models\StudentEnrollment;
@@ -10,8 +11,10 @@ use Illuminate\Support\Facades\DB;
 
 class StudentService
 {
-    public function __construct(private readonly SequenceGeneratorService $sequenceGenerator)
-    {
+    public function __construct(
+        private readonly SequenceGeneratorService $sequenceGenerator,
+        private readonly IdCardService $idCardService,
+    ) {
     }
 
     /**
@@ -29,6 +32,7 @@ class StudentService
             ]);
 
             $this->enrollForCurrentYear($student, $schoolId, $data['class_id']);
+            $this->idCardService->generateForStudent($student);
 
             return $student;
         });

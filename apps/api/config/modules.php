@@ -16,7 +16,11 @@ return [
     'parents' => ['super_admin', 'admin'],
     'attendance' => ['super_admin', 'admin', 'teacher', 'guard'],
     'gate-scanner' => ['super_admin', 'admin', 'guard'],
-    'barcode' => ['super_admin', 'admin'],
+    // Widened in Phase 6 to include teacher (read-only view of the
+    // Barcode/ID card list) — reissue itself stays admin/super_admin only
+    // via the separate manage-students Gate, same read/write split
+    // pattern Students got in Phase 4.
+    'barcode' => ['super_admin', 'admin', 'teacher'],
     'sms-log' => ['super_admin', 'admin'],
     'reports' => ['super_admin', 'admin', 'teacher'],
     'settings' => ['super_admin', 'admin'],
