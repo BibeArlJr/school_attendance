@@ -47,7 +47,7 @@ export const MODULES: ModuleDef[] = [
     label: 'Students',
     icon: GraduationCap,
     path: ROUTES.STUDENTS,
-    phase: 2,
+    // No `phase` — Students ships real content this phase, not a placeholder.
     allowedRoles: ['super_admin', 'admin', 'teacher'],
   },
   {
@@ -63,7 +63,7 @@ export const MODULES: ModuleDef[] = [
     label: 'Parents',
     icon: UserRound,
     path: ROUTES.PARENTS,
-    phase: 3,
+    // No `phase` — Parents ships real content this phase, not a placeholder.
     allowedRoles: ['super_admin', 'admin'],
   },
   {
@@ -71,7 +71,7 @@ export const MODULES: ModuleDef[] = [
     label: 'Attendance',
     icon: ClipboardCheck,
     path: ROUTES.ATTENDANCE,
-    phase: 4,
+    // No `phase` — Attendance ships real content this phase, not a placeholder.
     allowedRoles: ALL_STAFF_ROLES,
   },
   {
@@ -79,7 +79,7 @@ export const MODULES: ModuleDef[] = [
     label: 'Gate Scanner',
     icon: ScanLine,
     path: ROUTES.GATE_SCANNER,
-    phase: 5,
+    // No `phase` — Gate Scanner ships real content this phase, not a placeholder.
     allowedRoles: ['super_admin', 'admin', 'guard'],
   },
   {
@@ -87,8 +87,10 @@ export const MODULES: ModuleDef[] = [
     label: 'Barcode',
     icon: Barcode,
     path: ROUTES.BARCODE,
-    phase: 6,
-    allowedRoles: ['super_admin', 'admin'],
+    // No `phase` — Barcode ships real content this phase, not a placeholder.
+    // Widened to include teacher (read-only) — reissue is gated separately,
+    // same split Students got in Phase 4.
+    allowedRoles: ['super_admin', 'admin', 'teacher'],
   },
   {
     key: 'sms-log',

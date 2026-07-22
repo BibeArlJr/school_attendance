@@ -2,6 +2,7 @@ import { MockGateFeedService } from './MockGateFeedService';
 import { MockNotificationService } from './MockNotificationService';
 import type { GateFeedService } from '@/features/gate-feed/types';
 import type { INotificationService } from '@/features/notifications/types';
+import { RealGateFeedService } from '@/shared/services/real/RealGateFeedService';
 
 /**
  * Factory selecting the concrete service implementation. Consumers depend
@@ -22,12 +23,9 @@ export function getNotificationService(): INotificationService {
 export function getGateFeedService(): GateFeedService {
   const useMock = import.meta.env.VITE_USE_MOCK_GATE_FEED !== 'false';
 
-  if (!useMock) {
-    throw new Error(
-      'Real GateFeedService is not implemented — no physical gate scanner integration exists ' +
-        'yet (see the Gate Scanner module, Phase 5). Set VITE_USE_MOCK_GATE_FEED=true to use the mock.',
-    );
-  }
-
-  return new MockGateFeedService();
+  // Real scanning now exists (Phase 7) — this is the intended payoff of
+  // the mock/real seam built in Phase 2. RealGateFeedService polls
+  // GET /attendance/recent-events; flip VITE_USE_MOCK_GATE_FEED=false to
+  // use it.
+  return useMock ? new MockGateFeedService() : new RealGateFeedService();
 }

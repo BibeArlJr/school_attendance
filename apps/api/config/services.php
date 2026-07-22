@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    // Mock-service pattern (docs/architecture/service-pattern.md) — no
+    // real SMS gateway integration exists yet.
+    'sms' => [
+        'driver' => env('SMS_DRIVER', 'mock'),
+    ],
+
 ];

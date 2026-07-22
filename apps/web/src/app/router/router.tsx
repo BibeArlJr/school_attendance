@@ -10,6 +10,16 @@ import { MODULES } from '@/shared/constants/modules';
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
 const DashboardPage = lazy(() => import('@/features/dashboard/pages/DashboardPage'));
 const PlaceholderPage = lazy(() => import('@/shared/components/PlaceholderPage'));
+const StudentsLayout = lazy(() => import('@/features/students/pages/StudentsLayout'));
+const StudentsPage = lazy(() => import('@/features/students/pages/StudentsPage'));
+const ClassesPage = lazy(() => import('@/features/students/pages/ClassesPage'));
+const StudentDetailPage = lazy(() => import('@/features/students/pages/StudentDetailPage'));
+const ParentsPage = lazy(() => import('@/features/parents/pages/ParentsPage'));
+const ParentDetailPage = lazy(() => import('@/features/parents/pages/ParentDetailPage'));
+const BarcodePage = lazy(() => import('@/features/idcards/pages/BarcodePage'));
+const IdCardPage = lazy(() => import('@/features/idcards/pages/IdCardPage'));
+const GateScannerPage = lazy(() => import('@/features/attendance/pages/GateScannerPage'));
+const AttendancePage = lazy(() => import('@/features/attendance/pages/AttendancePage'));
 
 function withSuspense(element: React.ReactNode) {
   return <Suspense fallback={<LoadingSkeleton className="p-6" />}>{element}</Suspense>;
@@ -24,7 +34,15 @@ function withRoleGuard(module: (typeof MODULES)[number], element: React.ReactNod
 }
 
 const dashboardModule = MODULES.find((module) => module.key === 'dashboard')!;
+const studentsModule = MODULES.find((module) => module.key === 'students')!;
+const parentsModule = MODULES.find((module) => module.key === 'parents')!;
+const barcodeModule = MODULES.find((module) => module.key === 'barcode')!;
+const attendanceModule = MODULES.find((module) => module.key === 'attendance')!;
+const gateScannerModule = MODULES.find((module) => module.key === 'gate-scanner')!;
 
+// Students, Parents, Barcode, Attendance, and Gate Scanner now ship real
+// content, so all five are excluded from the generic placeholder
+// generation below (no `phase` on their MODULES entries anymore).
 const placeholderRoutes = MODULES.filter((module) => module.phase !== undefined).map((module) => ({
   path: module.path,
   element: withSuspense(
@@ -47,6 +65,45 @@ export const router = createBrowserRouter([
           {
             path: ROUTES.DASHBOARD,
             element: withSuspense(withRoleGuard(dashboardModule, <DashboardPage />)),
+          },
+          {
+            path: ROUTES.STUDENTS,
+            element: withSuspense(withRoleGuard(studentsModule, <StudentsLayout />)),
+            children: [
+              { index: true, element: withSuspense(<StudentsPage />) },
+              { path: 'classes', element: withSuspense(<ClassesPage />) },
+            ],
+          },
+          {
+            // Sibling to (not nested under) StudentsLayout — a single
+            // student's detail view is a drill-down, not a peer of the
+            // Students/Classes tabs, so it doesn't show that tab bar.
+            path: ROUTES.STUDENT_DETAIL,
+            element: withSuspense(withRoleGuard(studentsModule, <StudentDetailPage />)),
+          },
+          {
+            path: ROUTES.PARENTS,
+            element: withSuspense(withRoleGuard(parentsModule, <ParentsPage />)),
+          },
+          {
+            path: ROUTES.PARENT_DETAIL,
+            element: withSuspense(withRoleGuard(parentsModule, <ParentDetailPage />)),
+          },
+          {
+            path: ROUTES.BARCODE,
+            element: withSuspense(withRoleGuard(barcodeModule, <BarcodePage />)),
+          },
+          {
+            path: ROUTES.STUDENT_ID_CARD,
+            element: withSuspense(withRoleGuard(barcodeModule, <IdCardPage />)),
+          },
+          {
+            path: ROUTES.ATTENDANCE,
+            element: withSuspense(withRoleGuard(attendanceModule, <AttendancePage />)),
+          },
+          {
+            path: ROUTES.GATE_SCANNER,
+            element: withSuspense(withRoleGuard(gateScannerModule, <GateScannerPage />)),
           },
           ...placeholderRoutes,
         ],
