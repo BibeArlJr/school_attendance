@@ -1,0 +1,38 @@
+# --- Node / Web ---
+node_modules/
+apps/web/dist/
+apps/web/.vite/
+*.local
+
+# --- PHP / Laravel ---
+apps/api/vendor/
+apps/api/node_modules/
+apps/api/.phpunit.cache/
+apps/api/storage/*.key
+apps/api/storage/framework/cache/data/*
+apps/api/storage/framework/sessions/*
+apps/api/storage/framework/testing/*
+apps/api/storage/framework/views/*
+apps/api/storage/logs/*
+!apps/api/storage/framework/cache/data/.gitignore
+!apps/api/storage/framework/sessions/.gitignore
+!apps/api/storage/framework/testing/.gitignore
+!apps/api/storage/framework/views/.gitignore
+!apps/api/storage/logs/.gitignore
+apps/api/bootstrap/cache/*.php
+!apps/api/bootstrap/cache/.gitignore
+apps/api/.phpunit.result.cache
+
+# --- Env files ---
+.env
+.env.*
+!.env.example
+!*.env.example
+
+# --- Editors / OS ---
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log
+npm-debug.log*
