@@ -18,6 +18,7 @@ class SchoolClass extends Model
         'name',
         'section',
         'class_teacher_id',
+        'grade_level',
     ];
 
     public function school(): BelongsTo

@@ -32,6 +32,11 @@ class ClassController extends Controller
             // teacher relation resolves to a User, so it's never returned
             // unscoped.
             ->with('classTeacher:id,name,email')
+            // grade_level ASC puts NULLs last by Postgres's default sort
+            // behavior — classes without an inferable grade level fall
+            // back to alphabetical among themselves, after the graded
+            // ones, rather than being interleaved with them.
+            ->orderBy('grade_level')
             ->orderBy('name')
             ->orderBy('section')
             ->get();

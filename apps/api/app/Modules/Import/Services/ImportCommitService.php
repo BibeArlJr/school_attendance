@@ -5,10 +5,12 @@ namespace App\Modules\Import\Services;
 use App\Modules\Import\Models\ImportBatch;
 use App\Modules\Import\Models\ImportBatchRow;
 use App\Modules\ParentGuardian\Services\ParentGuardianLinkService;
+use App\Modules\School\Models\SchoolClass;
 use App\Modules\School\Services\SchoolClassService;
 use App\Modules\Student\Services\StudentService;
 use App\Support\Enums\ImportBatchStatus;
 use App\Support\Enums\ImportRowResolution;
+use App\Support\Services\GradeLevelInference;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
@@ -27,6 +29,7 @@ class ImportCommitService
         private readonly StudentService $studentService,
         private readonly ParentGuardianLinkService $guardianLinkService,
         private readonly SchoolClassService $classService,
+        private readonly GradeLevelInference $gradeLevelInference,
     ) {
     }
 
@@ -141,7 +144,16 @@ class ImportCommitService
      */
     private function resolveClassId(array $decision, array $proposed, int $schoolId, array &$createdClassesByName): int
     {
+        $rawClassName = (string) ($proposed['class_name_raw'] ?? '');
+
         if (! empty($decision['class_id'])) {
+            // Reviewer explicitly mapped this row to an existing class —
+            // e.g. resolving a typo like "Tow" to "Two". If that class
+            // predates grade_level (or was never inferable at creation
+            // time), this is the first chance to backfill it from a name
+            // we now know refers to the same class.
+            $this->backfillGradeLevelIfMissing((int) $decision['class_id'], $rawClassName);
+
             return (int) $decision['class_id'];
         }
 
@@ -160,9 +172,30 @@ class ImportCommitService
         }
 
         if (! empty($proposed['class_id'])) {
+            // Auto-resolved at parse time (exact name match, no flag) —
+            // same backfill reasoning as above.
+            $this->backfillGradeLevelIfMissing((int) $proposed['class_id'], $rawClassName);
+
             return (int) $proposed['class_id'];
         }
 
         throw new RuntimeException('No class resolved for this row — map it to an existing class or create a new one.');
+    }
+
+    private function backfillGradeLevelIfMissing(int $classId, string $rawClassName): void
+    {
+        if ($rawClassName === '') {
+            return;
+        }
+
+        $class = SchoolClass::find($classId);
+        if (! $class || $class->grade_level !== null) {
+            return;
+        }
+
+        $inferred = $this->gradeLevelInference->infer($rawClassName);
+        if ($inferred !== null) {
+            $class->update(['grade_level' => $inferred]);
+        }
     }
 }

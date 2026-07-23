@@ -13,6 +13,10 @@ export interface SchoolClass {
   academic_year_id: number;
   name: string;
   section: string | null;
+  // Display/sort order only — inferred server-side, never shown as the
+  // class's name. Classes are already returned sorted by this (nulls
+  // last, falling back to name/section) — no need to re-sort client-side.
+  grade_level: number | null;
   class_teacher_id: number | null;
   class_teacher?: ClassTeacherSummary | null;
 }
