@@ -2,6 +2,7 @@
 
 namespace App\Modules\Student\Models;
 
+use App\Modules\Import\Models\ImportBatch;
 use App\Modules\ParentGuardian\Models\StudentParentLink;
 use App\Modules\School\Models\School;
 use App\Modules\School\Models\SchoolClass;
@@ -22,6 +23,9 @@ class Student extends Model
         'gender',
         'status',
         'admission_date',
+        'address',
+        'dob_bs',
+        'import_batch_id',
     ];
 
     protected function casts(): array
@@ -51,5 +55,10 @@ class Student extends Model
     public function parentLinks(): HasMany
     {
         return $this->hasMany(StudentParentLink::class);
+    }
+
+    public function importBatch(): BelongsTo
+    {
+        return $this->belongsTo(ImportBatch::class);
     }
 }

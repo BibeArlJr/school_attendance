@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\TeacherResource;
 use App\Modules\School\Http\Requests\StoreClassRequest;
 use App\Modules\School\Http\Requests\UpdateClassRequest;
-use App\Modules\School\Models\AcademicYear;
 use App\Modules\School\Models\SchoolClass;
+use App\Modules\School\Services\SchoolClassService;
 use App\Support\Responses\ApiResponse;
 use App\Support\Services\CurrentSchoolResolver;
 use Illuminate\Http\JsonResponse;
@@ -15,8 +15,10 @@ use Illuminate\Http\Request;
 
 class ClassController extends Controller
 {
-    public function __construct(private readonly CurrentSchoolResolver $schoolResolver)
-    {
+    public function __construct(
+        private readonly CurrentSchoolResolver $schoolResolver,
+        private readonly SchoolClassService $classService,
+    ) {
     }
 
     public function index(Request $request): JsonResponse
@@ -45,17 +47,7 @@ class ClassController extends Controller
     public function store(StoreClassRequest $request): JsonResponse
     {
         $schoolId = $this->schoolResolver->resolve($request->user());
-
-        $academicYear = AcademicYear::query()
-            ->where('school_id', $schoolId)
-            ->where('is_current', true)
-            ->firstOrFail();
-
-        $class = SchoolClass::create([
-            ...$request->validated(),
-            'school_id' => $schoolId,
-            'academic_year_id' => $academicYear->id,
-        ]);
+        $class = $this->classService->create($request->validated(), $schoolId);
 
         return ApiResponse::success(self::withTeacher($class), 'Class created successfully.', 201);
     }

@@ -7,6 +7,7 @@ use App\Http\Resources\ParentGuardianResource;
 use App\Modules\ParentGuardian\Http\Requests\StoreParentGuardianRequest;
 use App\Modules\ParentGuardian\Http\Requests\UpdateParentGuardianRequest;
 use App\Modules\ParentGuardian\Models\ParentGuardian;
+use App\Modules\ParentGuardian\Services\ParentGuardianLinkService;
 use App\Support\Responses\ApiResponse;
 use App\Support\Services\CurrentSchoolResolver;
 use Illuminate\Http\JsonResponse;
@@ -14,8 +15,10 @@ use Illuminate\Http\Request;
 
 class ParentGuardianController extends Controller
 {
-    public function __construct(private readonly CurrentSchoolResolver $schoolResolver)
-    {
+    public function __construct(
+        private readonly CurrentSchoolResolver $schoolResolver,
+        private readonly ParentGuardianLinkService $linkService,
+    ) {
     }
 
     public function index(Request $request): JsonResponse
@@ -46,16 +49,7 @@ class ParentGuardianController extends Controller
     public function search(Request $request): JsonResponse
     {
         $schoolId = $this->schoolResolver->resolve($request->user());
-        $phone = trim((string) $request->query('phone', ''));
-
-        if ($phone === '') {
-            return ApiResponse::success(null);
-        }
-
-        $match = ParentGuardian::query()
-            ->where('school_id', $schoolId)
-            ->where('phone', 'ilike', "%{$phone}%")
-            ->first();
+        $match = $this->linkService->findByPhone((string) $request->query('phone', ''), $schoolId);
 
         return ApiResponse::success($match ? new ParentGuardianResource($match) : null);
     }

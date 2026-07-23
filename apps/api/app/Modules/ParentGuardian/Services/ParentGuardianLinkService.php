@@ -11,6 +11,26 @@ use Illuminate\Validation\ValidationException;
 class ParentGuardianLinkService
 {
     /**
+     * Extracted from ParentGuardianController::search() (Phase 5) so the
+     * bulk-import commit flow (Phase 9) can reuse the exact same
+     * phone-dedupe lookup instead of duplicating the query. Behavior is
+     * unchanged from the original inline controller code.
+     */
+    public function findByPhone(string $phone, int $schoolId): ?ParentGuardian
+    {
+        $phone = trim($phone);
+
+        if ($phone === '') {
+            return null;
+        }
+
+        return ParentGuardian::query()
+            ->where('school_id', $schoolId)
+            ->where('phone', 'ilike', "%{$phone}%")
+            ->first();
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      */
     public function link(Student $student, array $data, int $schoolId): StudentParentLink

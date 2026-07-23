@@ -18,12 +18,19 @@ class StudentService
     }
 
     /**
+     * `roll_no`, if present in $data, is not a students-table column — it's
+     * pulled out here and threaded through to the enrollment row instead
+     * (see enrollForCurrentYear). Only the bulk-import flow (Phase 9)
+     * passes it; the manual create form has no roll number field.
+     *
      * @param  array<string, mixed>  $data
      */
     public function create(array $data, int $schoolId): Student
     {
         return DB::transaction(function () use ($data, $schoolId) {
             $admissionNo = $this->sequenceGenerator->next($schoolId, 'STUDENT_ADMISSION', 'ADM');
+            $rollNo = $data['roll_no'] ?? null;
+            unset($data['roll_no']);
 
             $student = Student::create([
                 ...$data,
@@ -31,7 +38,7 @@ class StudentService
                 'admission_no' => $admissionNo,
             ]);
 
-            $this->enrollForCurrentYear($student, $schoolId, $data['class_id']);
+            $this->enrollForCurrentYear($student, $schoolId, $data['class_id'], $rollNo);
             $this->idCardService->generateForStudent($student);
 
             return $student;
@@ -69,7 +76,7 @@ class StudentService
      * year — the historical record across years, while students.class_id
      * stays the denormalized "current class" pointer.
      */
-    private function enrollForCurrentYear(Student $student, int $schoolId, int $classId): void
+    private function enrollForCurrentYear(Student $student, int $schoolId, int $classId, ?string $rollNo = null): void
     {
         $academicYear = AcademicYear::query()
             ->where('school_id', $schoolId)
@@ -80,9 +87,14 @@ class StudentService
             return;
         }
 
+        $attributes = ['class_id' => $classId, 'status' => 'active'];
+        if ($rollNo !== null) {
+            $attributes['roll_no'] = $rollNo;
+        }
+
         StudentEnrollment::updateOrCreate(
             ['student_id' => $student->id, 'academic_year_id' => $academicYear->id],
-            ['class_id' => $classId, 'status' => 'active'],
+            $attributes,
         );
     }
 }

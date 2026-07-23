@@ -14,6 +14,8 @@ const StudentsLayout = lazy(() => import('@/features/students/pages/StudentsLayo
 const StudentsPage = lazy(() => import('@/features/students/pages/StudentsPage'));
 const ClassesPage = lazy(() => import('@/features/students/pages/ClassesPage'));
 const StudentDetailPage = lazy(() => import('@/features/students/pages/StudentDetailPage'));
+const ImportPage = lazy(() => import('@/features/students/pages/ImportPage'));
+const ImportReviewPage = lazy(() => import('@/features/students/pages/ImportReviewPage'));
 const TeachersPage = lazy(() => import('@/features/teachers/pages/TeachersPage'));
 const TeacherDetailPage = lazy(() => import('@/features/teachers/pages/TeacherDetailPage'));
 const ParentsPage = lazy(() => import('@/features/parents/pages/ParentsPage'));
@@ -83,6 +85,14 @@ export const router = createBrowserRouter([
             // Students/Classes tabs, so it doesn't show that tab bar.
             path: ROUTES.STUDENT_DETAIL,
             element: withSuspense(withRoleGuard(studentsModule, <StudentDetailPage />)),
+          },
+          {
+            path: ROUTES.STUDENTS_IMPORT,
+            element: withSuspense(withRoleGuard(studentsModule, <ImportPage />)),
+          },
+          {
+            path: ROUTES.STUDENTS_IMPORT_BATCH,
+            element: withSuspense(withRoleGuard(studentsModule, <ImportReviewPage />)),
           },
           {
             path: ROUTES.TEACHERS,

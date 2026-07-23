@@ -3,6 +3,8 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   STUDENTS: '/students',
   STUDENTS_CLASSES: '/students/classes',
+  STUDENTS_IMPORT: '/students/import',
+  STUDENTS_IMPORT_BATCH: '/students/import/:batchId',
   STUDENT_DETAIL: '/students/:id',
   STUDENT_ID_CARD: '/students/:id/id-card',
   TEACHERS: '/teachers',
@@ -27,6 +29,10 @@ export function parentDetailPath(id: number | string): string {
 
 export function studentIdCardPath(id: number | string): string {
   return `/students/${id}/id-card`;
+}
+
+export function studentImportBatchPath(batchId: number | string): string {
+  return `/students/import/${batchId}`;
 }
 
 export function teacherDetailPath(id: number | string): string {

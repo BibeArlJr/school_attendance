@@ -1,11 +1,13 @@
-import { Plus } from 'lucide-react';
+import { Plus, Upload } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { buildStudentColumns } from '../components/studentColumns';
 import { StudentFormDialog } from '../components/StudentFormDialog';
 import { StudentStatusMenu } from '../components/StudentStatusMenu';
 import { useClasses } from '../hooks/useClasses';
 import { useStudents } from '../hooks/useStudents';
 import type { Student } from '../types';
+import { ROUTES } from '@/app/router/routes';
 import { DataTable } from '@/shared/components/data-table/DataTable';
 import { Button } from '@/shared/components/ui/button';
 import {
@@ -123,15 +125,23 @@ export default function StudentsPage() {
         }
         actions={
           canManage ? (
-            <Button
-              onClick={() => {
-                setEditingStudent(null);
-                setFormOpen(true);
-              }}
-            >
-              <Plus className="size-4" />
-              Add Student
-            </Button>
+            <>
+              <Button variant="outline" asChild>
+                <Link to={ROUTES.STUDENTS_IMPORT}>
+                  <Upload className="size-4" />
+                  Import Students
+                </Link>
+              </Button>
+              <Button
+                onClick={() => {
+                  setEditingStudent(null);
+                  setFormOpen(true);
+                }}
+              >
+                <Plus className="size-4" />
+                Add Student
+              </Button>
+            </>
           ) : undefined
         }
       />
