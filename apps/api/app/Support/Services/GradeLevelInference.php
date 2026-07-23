@@ -28,7 +28,11 @@ class GradeLevelInference
 
     public function infer(string $className): ?int
     {
-        $normalized = strtolower(trim(preg_replace('/\s+/', ' ', $className)));
+        // Strips periods before matching — real data spells this "E.C.D."
+        // as often as "ECD", same reasoning as the import parser's own
+        // header normalization (ImportParsingService::normalizeHeader()).
+        $stripped = str_replace('.', '', $className);
+        $normalized = strtolower(trim(preg_replace('/\s+/', ' ', $stripped)));
 
         return self::LOOKUP[$normalized] ?? null;
     }

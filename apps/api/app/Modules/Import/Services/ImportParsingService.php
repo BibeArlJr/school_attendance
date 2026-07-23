@@ -6,6 +6,7 @@ use App\Modules\Import\Models\ImportBatch;
 use App\Modules\School\Models\SchoolClass;
 use App\Modules\Student\Models\Student;
 use App\Support\Enums\ImportBatchStatus;
+use App\Support\Services\GradeLevelInference;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -20,6 +21,10 @@ use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
  */
 class ImportParsingService
 {
+    public function __construct(private readonly GradeLevelInference $gradeLevelInference)
+    {
+    }
+
     /**
      * Normalized header cell (lowercased, periods stripped, whitespace
      * collapsed) -> canonical field name. Built from the real fixture's
@@ -59,7 +64,14 @@ class ImportParsingService
             'status' => ImportBatchStatus::Processing,
         ]);
 
-        $existingClasses = SchoolClass::query()->where('school_id', $schoolId)->get(['id', 'name']);
+        // orderBy('id') makes the grade-level match's tie-break
+        // deterministic when a grade has multiple sections (e.g. "Grade
+        // 1/A" and "Grade 1/B" both share grade_level 1) — the import's
+        // source data has no section concept, so picking the
+        // first-created section for that grade is the reasonable default.
+        $existingClasses = SchoolClass::query()->where('school_id', $schoolId)
+            ->orderBy('id')
+            ->get(['id', 'name', 'grade_level']);
 
         /** @var array<string, list<array<string, mixed>>> $seenNames */
         $seenNames = [];
@@ -148,6 +160,7 @@ class ImportParsingService
                         'class_id' => $classMatch['class_id'],
                         'suggested_class_id' => $classMatch['suggested_class_id'],
                         'suggested_class_name' => $classMatch['suggested_class_name'],
+                        'inferred_grade_level' => $classMatch['inferred_grade_level'],
                         'dob_bs' => $dobBs,
                         'address' => $address,
                         'guardian_name' => $guardianName,
@@ -242,8 +255,23 @@ class ImportParsingService
     }
 
     /**
+     * Three passes, in order of confidence:
+     * 1. Exact string match (case/whitespace-insensitive).
+     * 2. Grade-level match — catches semantic equivalents the string
+     *    comparison can't (e.g. "One" vs "Grade 1", same grade, unrelated
+     *    spelling). A stronger signal than mere spelling similarity, so
+     *    it's tried before the fuzzy pass below, and — unlike the fuzzy
+     *    pass — resolves the row outright rather than just suggesting.
+     * 3. Fuzzy string match — catches typos (e.g. "Tow" -> "Two") that
+     *    neither of the above catch. Only ever a suggestion, never an
+     *    auto-resolve, since a near-miss string could just as easily be a
+     *    genuinely different class.
+     *
+     * Only if all three fail does the row get flagged unrecognized_class
+     * with no usable suggestion at all.
+     *
      * @param  Collection<int, SchoolClass>  $existingClasses
-     * @return array{class_id: ?int, suggested_class_id: ?int, suggested_class_name: ?string}
+     * @return array{class_id: ?int, suggested_class_id: ?int, suggested_class_name: ?string, inferred_grade_level: ?int}
      */
     private function resolveClass(string $rawClassName, Collection $existingClasses): array
     {
@@ -251,7 +279,30 @@ class ImportParsingService
 
         foreach ($existingClasses as $class) {
             if ($this->normalizeName($class->name) === $normalized) {
-                return ['class_id' => $class->id, 'suggested_class_id' => null, 'suggested_class_name' => null];
+                return [
+                    'class_id' => $class->id,
+                    'suggested_class_id' => null,
+                    'suggested_class_name' => null,
+                    'inferred_grade_level' => null,
+                ];
+            }
+        }
+
+        $inferredGradeLevel = $this->gradeLevelInference->infer($rawClassName);
+        if ($inferredGradeLevel !== null) {
+            // Collection::firstWhere() compares with `==`, and in PHP
+            // `null == 0` is true — since ECD's grade_level is literally
+            // 0, that loose comparison would wrongly match any class
+            // whose grade_level is still null. Strict comparison here
+            // avoids that collision.
+            $gradeMatch = $existingClasses->first(fn (SchoolClass $class) => $class->grade_level === $inferredGradeLevel);
+            if ($gradeMatch !== null) {
+                return [
+                    'class_id' => $gradeMatch->id,
+                    'suggested_class_id' => null,
+                    'suggested_class_name' => null,
+                    'inferred_grade_level' => $inferredGradeLevel,
+                ];
             }
         }
 
@@ -266,9 +317,19 @@ class ImportParsingService
         }
 
         if ($bestClass !== null && $bestDistance <= self::CLASS_FUZZY_THRESHOLD) {
-            return ['class_id' => null, 'suggested_class_id' => $bestClass->id, 'suggested_class_name' => $bestClass->name];
+            return [
+                'class_id' => null,
+                'suggested_class_id' => $bestClass->id,
+                'suggested_class_name' => $bestClass->name,
+                'inferred_grade_level' => $inferredGradeLevel,
+            ];
         }
 
-        return ['class_id' => null, 'suggested_class_id' => null, 'suggested_class_name' => null];
+        return [
+            'class_id' => null,
+            'suggested_class_id' => null,
+            'suggested_class_name' => null,
+            'inferred_grade_level' => $inferredGradeLevel,
+        ];
     }
 }

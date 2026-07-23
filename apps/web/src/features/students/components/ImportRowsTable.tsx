@@ -45,6 +45,21 @@ export function ImportRowsTable({ rows, classes, decisions, onDecisionChange }: 
       .join(', ');
   }
 
+  // Distinguishes two different reasons a class went unresolved: a grade
+  // was recognized but no class for it exists yet (a real, nameable gap —
+  // "Create it?") versus a name that couldn't be matched or parsed at all
+  // (genuinely ambiguous, no hint to offer beyond a fuzzy string guess).
+  function classHint(row: ImportBatchRow): string | null {
+    const { suggested_class_name, inferred_grade_level } = row.proposed_data;
+    if (suggested_class_name) {
+      return `Did you mean "${suggested_class_name}"?`;
+    }
+    if (inferred_grade_level !== null) {
+      return `This looks like Grade ${inferred_grade_level} — no matching class exists yet. Create it?`;
+    }
+    return null;
+  }
+
   return (
     <div className="space-y-3">
       <div className="rounded-md border">
@@ -87,14 +102,19 @@ export function ImportRowsTable({ rows, classes, decisions, onDecisionChange }: 
                   </TableCell>
                   <TableCell>
                     {isUnrecognizedClass ? (
-                      <ClassPickerCell
-                        classes={classes}
-                        classId={decision.classId ?? row.proposed_data.suggested_class_id ?? undefined}
-                        newClassName={decision.newClassName}
-                        onChange={(value) =>
-                          onDecisionChange(row.id, { classId: value.classId, newClassName: value.newClassName })
-                        }
-                      />
+                      <div className="space-y-1">
+                        <ClassPickerCell
+                          classes={classes}
+                          classId={decision.classId ?? row.proposed_data.suggested_class_id ?? undefined}
+                          newClassName={decision.newClassName}
+                          onChange={(value) =>
+                            onDecisionChange(row.id, { classId: value.classId, newClassName: value.newClassName })
+                          }
+                        />
+                        {classHint(row) && (
+                          <p className="text-xs text-muted-foreground">{classHint(row)}</p>
+                        )}
+                      </div>
                     ) : (
                       <span className="text-sm">{row.proposed_data.class_name_raw}</span>
                     )}

@@ -17,6 +17,12 @@ export interface ImportProposedData {
   class_id: number | null;
   suggested_class_id: number | null;
   suggested_class_name: string | null;
+  // Set whenever the raw class name maps to a known grade (ECD/One/
+  // Two/.../Twelve) via GradeLevelInference — even when no existing
+  // class has that grade yet, so the review UI can say "Grade N
+  // detected, no matching class" instead of a generic unrecognized-name
+  // message.
+  inferred_grade_level: number | null;
   dob_bs: string | null;
   address: string | null;
   guardian_name: string | null;
