@@ -12,5 +12,11 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Fail loudly if 5173 is taken instead of silently moving to 5174 —
+    // a second dev server on a different port still passes CORS preflight
+    // for scripts *served from* that port, but the backend's CORS config
+    // only allows 5173, so login fails with a confusing, unexplained
+    // network error. Better to refuse to start at all.
+    strictPort: true,
   },
 });

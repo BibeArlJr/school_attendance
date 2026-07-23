@@ -96,10 +96,10 @@ npm run dev
 
 This starts both the API (`php artisan serve`) and the frontend (`vite`)
 together, with output clearly prefixed `[api]` / `[web]` so it's obvious
-which process logged what. It also checks that PostgreSQL is actually
-running before starting anything — if it isn't, you get a clear message
-telling you how to start it instead of a confusing connection-refused
-error a few steps downstream:
+which process logged what. Before starting anything, it also checks that
+PostgreSQL is reachable and that ports 5173/8000 are actually free — if
+either check fails, you get a clear, actionable message instead of a
+confusing failure downstream:
 
 ```
 ✖ PostgreSQL is not running (or not reachable on the default port).
@@ -108,8 +108,20 @@ Start it, then re-run `npm run dev`. On macOS with Homebrew:
   brew services start postgresql@16
 ```
 
+```
+✖ Port 5173 (web (Vite)) is already in use.
+  Held by PID 41213 (node).
+
+A second `npm run dev` (or some other process) is probably already running.
+Stop it, or kill the process(es) above, then re-run `npm run dev`.
+Run the one root-level `npm run dev` — not a separate one inside apps/web.
+```
+
 Once both are up: the app is at `http://localhost:5173`, the API at
-`http://localhost:8000/api`.
+`http://localhost:8000/api`. The frontend's dev server also refuses to
+silently move to another port if 5173 is taken (`strictPort` in
+`apps/web/vite.config.ts`) — see Troubleshooting below for why that
+matters.
 
 ### Manual, two terminals (fallback / to see what's actually happening)
 
@@ -124,6 +136,21 @@ cd apps/web && npm run dev
 This is what `npm run dev` at the root does for you — reach for this only
 if you need to watch one app's output in isolation, or debug the startup
 of just one side.
+
+## Troubleshooting
+
+**Login works on the page but fails silently (or with a vague network
+error), and PostgreSQL/port checks above passed:** check you don't have a
+second `npm run dev` process running elsewhere — e.g. one started from
+the repo root *and* another started separately inside `apps/web`. Vite
+falls back to port 5174 (or higher) when 5173 is taken, but the backend's
+CORS config (`apps/api/config/cors.php`) only allows `http://localhost:5173`,
+so a request from the second dev server is silently blocked by the
+browser with no useful error surfaced to the app. Run the one root-level
+`npm run dev`, not a second one inside `apps/web` — and note that
+`apps/web/vite.config.ts` sets `strictPort: true` specifically so this
+now fails loudly (dev server refuses to start) instead of silently
+drifting to a different port.
 
 ## Demo login
 
