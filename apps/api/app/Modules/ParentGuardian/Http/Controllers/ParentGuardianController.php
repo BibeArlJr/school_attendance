@@ -79,4 +79,25 @@ class ParentGuardianController extends Controller
 
         return ApiResponse::success(new ParentGuardianResource($parent), 'Parent updated successfully.');
     }
+
+    /**
+     * Real delete — only permitted with zero student_parent_links. A
+     * parent linked to any student must be unlinked first (the existing
+     * StudentGuardianController::destroy action); this never auto-unlinks
+     * as a side effect.
+     */
+    public function destroy(ParentGuardian $parent): JsonResponse
+    {
+        if ($parent->links()->exists()) {
+            return ApiResponse::error(
+                'Cannot delete: this parent is linked to one or more students. Unlink them first.',
+                null,
+                422,
+            );
+        }
+
+        $parent->delete();
+
+        return ApiResponse::success(null, 'Parent deleted successfully.');
+    }
 }

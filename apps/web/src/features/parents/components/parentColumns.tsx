@@ -1,4 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table';
+import { Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { ParentGuardian } from '../types';
 import { parentDetailPath } from '@/app/router/routes';
@@ -6,9 +7,13 @@ import { Button } from '@/shared/components/ui/button';
 
 interface BuildParentColumnsOptions {
   onEdit: (parent: ParentGuardian) => void;
+  onDeleteRequest: (parent: ParentGuardian) => void;
 }
 
-export function buildParentColumns({ onEdit }: BuildParentColumnsOptions): ColumnDef<ParentGuardian>[] {
+export function buildParentColumns({
+  onEdit,
+  onDeleteRequest,
+}: BuildParentColumnsOptions): ColumnDef<ParentGuardian>[] {
   return [
     {
       accessorKey: 'name',
@@ -42,6 +47,15 @@ export function buildParentColumns({ onEdit }: BuildParentColumnsOptions): Colum
         <div className="flex justify-end gap-1">
           <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
             Edit
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-destructive hover:text-destructive"
+            aria-label={`Delete ${row.original.name}`}
+            onClick={() => onDeleteRequest(row.original)}
+          >
+            <Trash2 className="size-4" />
           </Button>
         </div>
       ),

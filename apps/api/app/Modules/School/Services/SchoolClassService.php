@@ -4,6 +4,9 @@ namespace App\Modules\School\Services;
 
 use App\Modules\School\Models\AcademicYear;
 use App\Modules\School\Models\SchoolClass;
+use App\Modules\Student\Models\Student;
+use App\Modules\Student\Models\StudentEnrollment;
+use App\Support\Exceptions\DeleteBlockedException;
 use App\Support\Services\GradeLevelInference;
 
 /**
@@ -35,5 +38,26 @@ class SchoolClassService
             'academic_year_id' => $academicYear->id,
             'grade_level' => $this->gradeLevelInference->infer($data['name'] ?? ''),
         ]);
+    }
+
+    /**
+     * A class that was ever actually used — currently holding a student,
+     * or referenced by any historical enrollment row — stays permanently,
+     * to protect historical reports. Only a truly never-used class
+     * (created by mistake, or a grade never actually populated) can be
+     * deleted.
+     */
+    public function destroy(SchoolClass $class): void
+    {
+        $hasCurrentStudents = Student::query()->where('class_id', $class->id)->exists();
+        $hasHistoricalEnrollments = StudentEnrollment::query()->where('class_id', $class->id)->exists();
+
+        if ($hasCurrentStudents || $hasHistoricalEnrollments) {
+            throw new DeleteBlockedException(
+                'Cannot delete: this class has students (current or historical) assigned to it.',
+            );
+        }
+
+        $class->delete();
     }
 }

@@ -8,6 +8,7 @@ use App\Modules\School\Http\Requests\StoreClassRequest;
 use App\Modules\School\Http\Requests\UpdateClassRequest;
 use App\Modules\School\Models\SchoolClass;
 use App\Modules\School\Services\SchoolClassService;
+use App\Support\Exceptions\DeleteBlockedException;
 use App\Support\Responses\ApiResponse;
 use App\Support\Services\CurrentSchoolResolver;
 use Illuminate\Http\JsonResponse;
@@ -62,6 +63,17 @@ class ClassController extends Controller
         $class->update($request->validated());
 
         return ApiResponse::success(self::withTeacher($class), 'Class updated successfully.');
+    }
+
+    public function destroy(SchoolClass $class): JsonResponse
+    {
+        try {
+            $this->classService->destroy($class);
+        } catch (DeleteBlockedException $e) {
+            return ApiResponse::error($e->getMessage(), null, 422);
+        }
+
+        return ApiResponse::success(null, 'Class deleted successfully.');
     }
 
     private static function withTeacher(SchoolClass $class): array

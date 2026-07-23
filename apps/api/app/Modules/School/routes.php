@@ -17,4 +17,5 @@ Route::middleware(['auth:sanctum', 'can:access-students'])->group(function () {
 Route::middleware(['auth:sanctum', 'can:manage-students'])->group(function () {
     Route::post('/classes', [ClassController::class, 'store']);
     Route::put('/classes/{class}', [ClassController::class, 'update']);
+    Route::delete('/classes/{class}', [ClassController::class, 'destroy']);
 });

@@ -3,10 +3,14 @@
 namespace App\Modules\Staff\Services;
 
 use App\Models\User;
+use App\Modules\Attendance\Models\AttendanceRecord;
+use App\Modules\IdCard\Models\IdCard;
 use App\Modules\IdCard\Services\IdCardService;
+use App\Modules\School\Models\SchoolClass;
 use App\Modules\Staff\Models\Staff;
 use App\Support\Enums\StaffEmploymentStatus;
 use App\Support\Enums\UserRole;
+use App\Support\Exceptions\DeleteBlockedException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -107,5 +111,46 @@ class StaffService
         $staff->user->update(['password' => $temporaryPassword]);
 
         return $temporaryPassword;
+    }
+
+    /**
+     * Real delete, not a status change — only allowed with zero
+     * attendance history and no current class_teacher assignment (that
+     * must be reassigned/cleared first — this never auto-nullifies it).
+     * classes.class_teacher_id references users.id, not staff.id, so the
+     * check goes through $staff->user_id.
+     */
+    public function destroy(Staff $staff): void
+    {
+        $hasAttendance = AttendanceRecord::query()
+            ->where('owner_type', 'staff')
+            ->where('owner_id', $staff->id)
+            ->exists();
+
+        if ($hasAttendance) {
+            throw new DeleteBlockedException(
+                'Cannot delete: this teacher has attendance history. Use the employment status menu instead.',
+            );
+        }
+
+        $isClassTeacher = SchoolClass::query()->where('class_teacher_id', $staff->user_id)->exists();
+
+        if ($isClassTeacher) {
+            throw new DeleteBlockedException(
+                'Cannot delete: this teacher is assigned as a class teacher. Reassign that class first.',
+            );
+        }
+
+        DB::transaction(function () use ($staff) {
+            IdCard::query()->where('owner_type', 'staff')->where('owner_id', $staff->id)->delete();
+            $userId = $staff->user_id;
+            $staff->delete();
+            // import_batches.uploaded_by, attendance_records.modified_by,
+            // and attendance_events.guard_user_id/reviewed_by are all
+            // nullOnDelete — deleting the user preserves those rows,
+            // just clearing who did it. No other FK references users.id
+            // in a way that would block or need explicit handling here.
+            User::query()->where('id', $userId)->delete();
+        });
     }
 }

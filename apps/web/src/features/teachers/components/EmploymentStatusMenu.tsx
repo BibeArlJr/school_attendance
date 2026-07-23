@@ -1,4 +1,4 @@
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Trash2 } from 'lucide-react';
 import { useUpdateEmploymentStatus } from '../hooks/useUpdateEmploymentStatus';
 import type { EmploymentStatus, Teacher } from '../types';
 import { Button } from '@/shared/components/ui/button';
@@ -6,6 +6,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu';
 
@@ -17,9 +18,10 @@ const TRANSITIONS: { status: EmploymentStatus; label: string }[] = [
 
 interface EmploymentStatusMenuProps {
   teacher: Teacher;
+  onDeleteRequest: (teacher: Teacher) => void;
 }
 
-export function EmploymentStatusMenu({ teacher }: EmploymentStatusMenuProps) {
+export function EmploymentStatusMenu({ teacher, onDeleteRequest }: EmploymentStatusMenuProps) {
   const updateStatus = useUpdateEmploymentStatus();
   const availableTransitions = TRANSITIONS.filter((t) => t.status !== teacher.employment_status);
 
@@ -41,6 +43,11 @@ export function EmploymentStatusMenu({ teacher }: EmploymentStatusMenuProps) {
             {transition.label}
           </DropdownMenuItem>
         ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive" onClick={() => onDeleteRequest(teacher)}>
+          <Trash2 className="size-4" />
+          Delete
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

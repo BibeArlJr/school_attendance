@@ -15,11 +15,13 @@ const STATUS_VARIANT: Record<Teacher['employment_status'], 'default' | 'secondar
 interface BuildTeacherColumnsOptions {
   onEdit: (teacher: Teacher) => void;
   onResetPassword: (teacher: Teacher) => void;
+  onDeleteRequest: (teacher: Teacher) => void;
 }
 
 export function buildTeacherColumns({
   onEdit,
   onResetPassword,
+  onDeleteRequest,
 }: BuildTeacherColumnsOptions): ColumnDef<Teacher>[] {
   return [
     {
@@ -60,7 +62,7 @@ export function buildTeacherColumns({
           <Button variant="ghost" size="sm" onClick={() => onResetPassword(row.original)}>
             Reset password
           </Button>
-          <EmploymentStatusMenu teacher={row.original} />
+          <EmploymentStatusMenu teacher={row.original} onDeleteRequest={onDeleteRequest} />
         </div>
       ),
     },

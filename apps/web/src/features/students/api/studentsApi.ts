@@ -49,6 +49,10 @@ export const studentsApi = {
     });
     return data.data;
   },
+
+  async delete(id: number): Promise<void> {
+    await apiClient.delete(`/students/${id}`);
+  },
 };
 
 function toClassPayload(values: ClassFormValues) {
@@ -81,5 +85,9 @@ export const classesApi = {
       toClassPayload(values),
     );
     return data.data;
+  },
+
+  async delete(id: number): Promise<void> {
+    await apiClient.delete(`/classes/${id}`);
   },
 };

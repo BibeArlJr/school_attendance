@@ -8,6 +8,7 @@ use App\Modules\Student\Http\Requests\UpdateStudentRequest;
 use App\Modules\Student\Http\Requests\UpdateStudentStatusRequest;
 use App\Modules\Student\Models\Student;
 use App\Modules\Student\Services\StudentService;
+use App\Support\Exceptions\DeleteBlockedException;
 use App\Support\Responses\ApiResponse;
 use App\Support\Services\CurrentSchoolResolver;
 use Illuminate\Http\JsonResponse;
@@ -76,5 +77,16 @@ class StudentController extends Controller
         $student = $this->studentService->updateStatus($student, $request->validated('status'));
 
         return ApiResponse::success($student, 'Student status updated successfully.');
+    }
+
+    public function destroy(Student $student): JsonResponse
+    {
+        try {
+            $this->studentService->destroy($student);
+        } catch (DeleteBlockedException $e) {
+            return ApiResponse::error($e->getMessage(), null, 422);
+        }
+
+        return ApiResponse::success(null, 'Student deleted successfully.');
     }
 }

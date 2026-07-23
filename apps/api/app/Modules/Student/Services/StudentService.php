@@ -2,10 +2,14 @@
 
 namespace App\Modules\Student\Services;
 
+use App\Modules\Attendance\Models\AttendanceRecord;
+use App\Modules\IdCard\Models\IdCard;
 use App\Modules\IdCard\Services\IdCardService;
+use App\Modules\ParentGuardian\Models\StudentParentLink;
 use App\Modules\School\Models\AcademicYear;
 use App\Modules\Student\Models\Student;
 use App\Modules\Student\Models\StudentEnrollment;
+use App\Support\Exceptions\DeleteBlockedException;
 use Illuminate\Support\Facades\DB;
 
 class StudentService
@@ -63,6 +67,33 @@ class StudentService
         $student->update(['status' => $status]);
 
         return $student->fresh();
+    }
+
+    /**
+     * Real delete, not a status change — only allowed when the student
+     * has zero attendance history. The linked parent_guardian is
+     * deliberately never touched here: it's an independent record that
+     * may still have other children linked to it.
+     */
+    public function destroy(Student $student): void
+    {
+        $hasAttendance = AttendanceRecord::query()
+            ->where('owner_type', 'student')
+            ->where('owner_id', $student->id)
+            ->exists();
+
+        if ($hasAttendance) {
+            throw new DeleteBlockedException(
+                'Cannot delete: this student has attendance history. Use the status menu instead.',
+            );
+        }
+
+        DB::transaction(function () use ($student) {
+            IdCard::query()->where('owner_type', 'student')->where('owner_id', $student->id)->delete();
+            StudentEnrollment::query()->where('student_id', $student->id)->delete();
+            StudentParentLink::query()->where('student_id', $student->id)->delete();
+            $student->delete();
+        });
     }
 
     /**

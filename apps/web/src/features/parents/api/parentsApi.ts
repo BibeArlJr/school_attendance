@@ -39,6 +39,10 @@ export const parentsApi = {
     });
     return data.data;
   },
+
+  async delete(id: number): Promise<void> {
+    await apiClient.delete(`/parents/${id}`);
+  },
 };
 
 export const studentGuardiansApi = {

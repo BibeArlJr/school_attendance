@@ -11,6 +11,7 @@ use App\Modules\Staff\Http\Requests\UpdateEmploymentStatusRequest;
 use App\Modules\Staff\Http\Requests\UpdateStaffRequest;
 use App\Modules\Staff\Models\Staff;
 use App\Modules\Staff\Services\StaffService;
+use App\Support\Exceptions\DeleteBlockedException;
 use App\Support\Responses\ApiResponse;
 use App\Support\Services\CurrentSchoolResolver;
 use Illuminate\Http\JsonResponse;
@@ -114,5 +115,16 @@ class StaffController extends Controller
             new IdCardResource($card->load('owner.user')),
             'ID card reissued successfully.',
         );
+    }
+
+    public function destroy(Staff $staff): JsonResponse
+    {
+        try {
+            $this->staffService->destroy($staff);
+        } catch (DeleteBlockedException $e) {
+            return ApiResponse::error($e->getMessage(), null, 422);
+        }
+
+        return ApiResponse::success(null, 'Teacher deleted successfully.');
     }
 }

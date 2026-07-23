@@ -5,10 +5,12 @@ import { buildStudentColumns } from '../components/studentColumns';
 import { StudentFormDialog } from '../components/StudentFormDialog';
 import { StudentStatusMenu } from '../components/StudentStatusMenu';
 import { useClasses } from '../hooks/useClasses';
+import { useDeleteStudent } from '../hooks/useDeleteStudent';
 import { useStudents } from '../hooks/useStudents';
 import type { Student } from '../types';
 import { ROUTES } from '@/app/router/routes';
 import { DataTable } from '@/shared/components/data-table/DataTable';
+import { DeleteConfirmDialog } from '@/shared/components/DeleteConfirmDialog';
 import { Button } from '@/shared/components/ui/button';
 import {
   Select,
@@ -18,6 +20,7 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select';
 import { useCan } from '@/shared/hooks/useCan';
+import { extractErrorMessage } from '@/shared/lib/errors';
 
 const PER_PAGE = 10;
 
@@ -31,6 +34,9 @@ export default function StudentsPage() {
   const [pageIndex, setPageIndex] = useState(0);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const deleteStudent = useDeleteStudent();
 
   useEffect(() => {
     const id = setTimeout(() => setDebouncedSearch(search), 300);
@@ -74,10 +80,25 @@ export default function StudentsPage() {
           setEditingStudent(student);
           setFormOpen(true);
         },
-        renderStatusMenu: (student) => <StudentStatusMenu student={student} />,
+        renderStatusMenu: (student) => (
+          <StudentStatusMenu
+            student={student}
+            onDeleteRequest={(target) => {
+              setDeletingStudent(target);
+              setDeleteDialogOpen(true);
+            }}
+          />
+        ),
       }),
     [canManage],
   );
+
+  function handleDeleteOpenChange(nextOpen: boolean) {
+    setDeleteDialogOpen(nextOpen);
+    if (!nextOpen) {
+      deleteStudent.reset();
+    }
+  }
 
   return (
     <div className="mt-4">
@@ -148,6 +169,23 @@ export default function StudentsPage() {
 
       {canManage && (
         <StudentFormDialog open={formOpen} onOpenChange={setFormOpen} student={editingStudent} />
+      )}
+
+      {canManage && (
+        <DeleteConfirmDialog
+          open={deleteDialogOpen}
+          onOpenChange={handleDeleteOpenChange}
+          entityLabel="student"
+          alternativeActionHint="If this student actually left the school, use the status menu instead — delete is only for records added by mistake."
+          isPending={deleteStudent.isPending}
+          errorMessage={deleteStudent.isError ? extractErrorMessage(deleteStudent.error) : null}
+          onConfirm={() => {
+            if (!deletingStudent) return;
+            deleteStudent.mutate(deletingStudent.id, {
+              onSuccess: () => setDeleteDialogOpen(false),
+            });
+          }}
+        />
       )}
     </div>
   );

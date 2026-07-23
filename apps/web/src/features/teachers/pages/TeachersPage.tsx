@@ -3,10 +3,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { PasswordRevealDialog } from '../components/PasswordRevealDialog';
 import { buildTeacherColumns } from '../components/teacherColumns';
 import { TeacherFormDialog } from '../components/TeacherFormDialog';
+import { useDeleteTeacher } from '../hooks/useDeleteTeacher';
 import { useResetPassword } from '../hooks/useResetPassword';
 import { useTeachers } from '../hooks/useTeachers';
 import type { Teacher } from '../types';
 import { DataTable } from '@/shared/components/data-table/DataTable';
+import { DeleteConfirmDialog } from '@/shared/components/DeleteConfirmDialog';
 import { Button } from '@/shared/components/ui/button';
 import {
   Select,
@@ -16,6 +18,7 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select';
 import { useCan } from '@/shared/hooks/useCan';
+import { extractErrorMessage } from '@/shared/lib/errors';
 
 const PER_PAGE = 10;
 
@@ -29,8 +32,11 @@ export default function TeachersPage() {
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [revealPassword, setRevealPassword] = useState<string | null>(null);
+  const [deletingTeacher, setDeletingTeacher] = useState<Teacher | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const resetPassword = useResetPassword();
+  const deleteTeacher = useDeleteTeacher();
 
   useEffect(() => {
     const id = setTimeout(() => setDebouncedSearch(search), 300);
@@ -65,9 +71,20 @@ export default function TeachersPage() {
           resetPassword.mutate(teacher.id, {
             onSuccess: (temporaryPassword) => setRevealPassword(temporaryPassword),
           }),
+        onDeleteRequest: (teacher) => {
+          setDeletingTeacher(teacher);
+          setDeleteDialogOpen(true);
+        },
       }),
     [resetPassword],
   );
+
+  function handleDeleteOpenChange(nextOpen: boolean) {
+    setDeleteDialogOpen(nextOpen);
+    if (!nextOpen) {
+      deleteTeacher.reset();
+    }
+  }
 
   return (
     <div className="mt-4">
@@ -121,6 +138,23 @@ export default function TeachersPage() {
         password={revealPassword}
         title="Password reset"
       />
+
+      {canManage && (
+        <DeleteConfirmDialog
+          open={deleteDialogOpen}
+          onOpenChange={handleDeleteOpenChange}
+          entityLabel="teacher"
+          alternativeActionHint="If this teacher actually left the school, use the employment status menu instead — delete is only for records added by mistake."
+          isPending={deleteTeacher.isPending}
+          errorMessage={deleteTeacher.isError ? extractErrorMessage(deleteTeacher.error) : null}
+          onConfirm={() => {
+            if (!deletingTeacher) return;
+            deleteTeacher.mutate(deletingTeacher.id, {
+              onSuccess: () => setDeleteDialogOpen(false),
+            });
+          }}
+        />
+      )}
     </div>
   );
 }

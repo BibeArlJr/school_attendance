@@ -49,4 +49,8 @@ export const teachersApi = {
     );
     return data.data.temporary_password;
   },
+
+  async delete(id: number): Promise<void> {
+    await apiClient.delete(`/teachers/${id}`);
+  },
 };

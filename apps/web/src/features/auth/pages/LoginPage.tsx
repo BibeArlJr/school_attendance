@@ -1,5 +1,4 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import axios from 'axios';
 import { GraduationCap } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useLogin } from '../hooks/useLogin';
@@ -15,14 +14,7 @@ import {
   FormMessage,
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
-
-function extractErrorMessage(error: unknown): string {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data as { message?: string } | undefined;
-    if (data?.message) return data.message;
-  }
-  return 'Something went wrong. Please try again.';
-}
+import { extractErrorMessage } from '@/shared/lib/errors';
 
 export default function LoginPage() {
   const login = useLogin();
