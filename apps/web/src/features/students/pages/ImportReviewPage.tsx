@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { GradeGroupCard } from '../components/GradeGroupCard';
 import { ImportRowsTable } from '../components/ImportRowsTable';
 import { ImportSummaryCards } from '../components/ImportSummaryCards';
 import { useClasses } from '../hooks/useClasses';
@@ -66,6 +67,48 @@ export default function ImportReviewPage() {
         if (row.flags.length === 0) {
           next[row.id] = { ...next[row.id], resolution: 'accept' };
         }
+      }
+      return next;
+    });
+  }
+
+  // Only rows with an inferred grade and no decision yet — nothing to
+  // group ungraded rows by confidently, so those always stay individual.
+  // Recomputed off `decisions` too: once a group is bulk-applied its rows
+  // are no longer 'pending', so the card for that grade disappears on
+  // its own without extra bookkeeping.
+  const gradeGroups = useMemo(() => {
+    if (!batch) {
+      return [];
+    }
+    const byGrade = new Map<number, typeof batch.rows>();
+    for (const row of batch.rows) {
+      const gradeLevel = row.proposed_data.inferred_grade_level;
+      if (!row.flags.includes('unrecognized_class') || gradeLevel === null) {
+        continue;
+      }
+      if ((decisions[row.id]?.resolution ?? 'pending') !== 'pending') {
+        continue;
+      }
+      const existing = byGrade.get(gradeLevel) ?? [];
+      existing.push(row);
+      byGrade.set(gradeLevel, existing);
+    }
+    return Array.from(byGrade.entries())
+      .map(([gradeLevel, rows]) => ({ gradeLevel, rows }))
+      .sort((a, b) => a.gradeLevel - b.gradeLevel);
+  }, [batch, decisions]);
+
+  function handleApplyGroup(rowIds: number[], patch: { classId?: number; newClassName?: string }) {
+    setDecisions((prev) => {
+      const next = { ...prev };
+      for (const rowId of rowIds) {
+        next[rowId] = {
+          ...next[rowId],
+          resolution: 'accept',
+          classId: patch.classId,
+          newClassName: patch.newClassName,
+        };
       }
       return next;
     });
@@ -183,6 +226,24 @@ export default function ImportReviewPage() {
               <p key={sheet.sheet_name}>
                 &ldquo;{sheet.sheet_name}&rdquo; skipped: {sheet.reason}
               </p>
+            ))}
+          </div>
+        )}
+
+        {gradeGroups.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Resolve by grade — {gradeGroups.reduce((sum, group) => sum + group.rows.length, 0)} rows across{' '}
+              {gradeGroups.length} grade{gradeGroups.length === 1 ? '' : 's'} can be resolved at once
+            </h3>
+            {gradeGroups.map((group) => (
+              <GradeGroupCard
+                key={group.gradeLevel}
+                gradeLevel={group.gradeLevel}
+                rows={group.rows}
+                classes={classesQuery.data ?? []}
+                onApply={handleApplyGroup}
+              />
             ))}
           </div>
         )}
