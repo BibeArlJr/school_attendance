@@ -97,7 +97,7 @@ export const MODULES: ModuleDef[] = [
     label: 'SMS Log',
     icon: MessageSquareText,
     path: ROUTES.SMS_LOG,
-    phase: 7,
+    // No `phase` — SMS Log ships real content this phase, not a placeholder.
     allowedRoles: ['super_admin', 'admin'],
   },
   {

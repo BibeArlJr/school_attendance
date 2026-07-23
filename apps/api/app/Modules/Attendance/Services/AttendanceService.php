@@ -21,6 +21,8 @@ use App\Support\Enums\StaffEmploymentStatus;
 use App\Support\Enums\StudentStatus;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * The scan-processing state machine. All business logic for a barcode
@@ -169,7 +171,7 @@ class AttendanceService
             // for staff — teacher scans are recorded silently, per Prompt 8.
             $smsSent = false;
             if ($ownerType === 'student' && in_array($result, [AttendanceEventResult::MatchedIn, AttendanceEventResult::MatchedOut], true)) {
-                $smsSent = $this->sendParentNotification($owner, $result, $now);
+                $smsSent = $this->sendParentNotification($owner, $result, $now, $schoolId, $record->id);
             }
 
             return new ScanOutcome($event, $owner, $record, $smsSent);
@@ -254,8 +256,13 @@ class AttendanceService
         return Carbon::parse($config->end_time)->subMinutes($config->early_departure_threshold_minutes);
     }
 
-    private function sendParentNotification(Student $student, AttendanceEventResult $result, Carbon $now): bool
-    {
+    private function sendParentNotification(
+        Student $student,
+        AttendanceEventResult $result,
+        Carbon $now,
+        int $schoolId,
+        ?int $recordId,
+    ): bool {
         $primaryLink = $student->parentLinks()
             ->where('is_primary_contact', true)
             ->with('parentGuardian')
@@ -273,7 +280,18 @@ class AttendanceService
         $message = "Dear Parent, your child {$student->first_name} {$student->last_name} "
             . "{$action} {$school->name} at {$time}.";
 
-        $this->smsService->send($primaryLink->parentGuardian->phone, $message);
+        // Defense in depth: SmsServiceInterface::send() is contractually
+        // never supposed to throw (each implementation catches its own
+        // delivery failures), but attendance recording must survive even
+        // if that contract is ever violated — a scan must never fail to
+        // record because a notification attempt blew up.
+        try {
+            $this->smsService->send($primaryLink->parentGuardian->phone, $message, $schoolId, $recordId);
+        } catch (Throwable $e) {
+            Log::error("SMS notification threw unexpectedly: {$e->getMessage()}");
+
+            return false;
+        }
 
         return true;
     }

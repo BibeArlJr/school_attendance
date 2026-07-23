@@ -35,10 +35,14 @@ return [
         ],
     ],
 
-    // Mock-service pattern (docs/architecture/service-pattern.md) — no
-    // real SMS gateway integration exists yet.
+    // Mock-service pattern (docs/architecture/service-pattern.md). Real
+    // driver requires SPARROW_SMS_TOKEN/SPARROW_SMS_SENDER_ID — see
+    // AppServiceProvider, which fails predictably (not silently) if
+    // SMS_DRIVER=real without them set.
     'sms' => [
         'driver' => env('SMS_DRIVER', 'mock'),
+        'sparrow_token' => env('SPARROW_SMS_TOKEN'),
+        'sparrow_sender_id' => env('SPARROW_SMS_SENDER_ID'),
     ],
 
 ];

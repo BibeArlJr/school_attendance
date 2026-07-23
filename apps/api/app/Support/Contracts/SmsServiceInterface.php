@@ -12,5 +12,16 @@ namespace App\Support\Contracts;
  */
 interface SmsServiceInterface
 {
-    public function send(string $to, string $message): void;
+    /**
+     * Never throws — a delivery failure (bad credentials, no credits,
+     * network error) is written as a failed sms_logs row and swallowed
+     * here, not propagated. Attendance recording must succeed regardless
+     * of SMS gateway health (Phase 10's core constraint).
+     */
+    public function send(string $to, string $message, int $schoolId, ?int $relatedAttendanceRecordId = null): void;
+
+    /**
+     * @return array{credits_available: int, credits_consumed: int}
+     */
+    public function getCredits(): array;
 }

@@ -3,13 +3,15 @@
 namespace App\Providers;
 
 use App\Models\User;
-use App\Modules\Attendance\Services\MockSmsService;
+use App\Modules\Sms\Services\MockSmsService;
+use App\Modules\Sms\Services\RealSparrowSmsService;
 use App\Modules\Staff\Models\Staff;
 use App\Modules\Student\Models\Student;
 use App\Support\Contracts\SmsServiceInterface;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use RuntimeException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,15 +26,20 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(SmsServiceInterface::class, function () {
-            if (config('services.sms.driver') !== 'mock') {
-                // Mirrors the frontend factory's behavior (see
-                // getGateFeedService()): fail predictably rather than
-                // silently doing nothing when a real driver is requested
-                // but doesn't exist yet.
-                throw new \RuntimeException(
-                    'Real SmsService is not implemented yet — no SMS gateway integration exists. '
-                    . 'Set SMS_DRIVER=mock.',
-                );
+            if (config('services.sms.driver') === 'real') {
+                $token = config('services.sms.sparrow_token');
+                $senderId = config('services.sms.sparrow_sender_id');
+
+                if (! $token || ! $senderId) {
+                    // Fail predictably rather than silently sending with
+                    // blank credentials — mirrors the frontend factory's
+                    // behavior (see getGateFeedService()).
+                    throw new RuntimeException(
+                        'SMS_DRIVER=real but SPARROW_SMS_TOKEN/SPARROW_SMS_SENDER_ID are not set.',
+                    );
+                }
+
+                return new RealSparrowSmsService($token, $senderId);
             }
 
             return new MockSmsService();
