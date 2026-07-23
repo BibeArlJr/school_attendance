@@ -45,11 +45,6 @@ export function buildAttendanceColumns({
               row.student ? `${row.student.first_name} ${row.student.last_name}` : '—',
           },
           {
-            id: 'admission_no',
-            header: 'Admission No.',
-            accessorFn: (row) => row.student?.admission_no ?? '—',
-          },
-          {
             id: 'class',
             header: 'Class',
             enableSorting: false,

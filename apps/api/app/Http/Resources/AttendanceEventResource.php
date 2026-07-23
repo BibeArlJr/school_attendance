@@ -37,7 +37,6 @@ class AttendanceEventResource extends JsonResource
                 'id' => $owner->id,
                 'first_name' => $owner->first_name,
                 'last_name' => $owner->last_name,
-                'admission_no' => $owner->admission_no,
                 'school_class' => $owner->schoolClass ? [
                     'id' => $owner->schoolClass->id,
                     'name' => $owner->schoolClass->name,

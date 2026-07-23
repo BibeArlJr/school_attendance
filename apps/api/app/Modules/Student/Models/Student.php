@@ -16,7 +16,6 @@ class Student extends Model
     protected $fillable = [
         'school_id',
         'class_id',
-        'admission_no',
         'first_name',
         'last_name',
         'dob',

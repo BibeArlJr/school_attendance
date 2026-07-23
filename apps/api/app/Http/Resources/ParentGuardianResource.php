@@ -35,7 +35,6 @@ class ParentGuardianResource extends JsonResource
                         'id' => $link->student->id,
                         'first_name' => $link->student->first_name,
                         'last_name' => $link->student->last_name,
-                        'admission_no' => $link->student->admission_no,
                         'school_class' => $link->student->schoolClass ? [
                             'id' => $link->student->schoolClass->id,
                             'name' => $link->student->schoolClass->name,

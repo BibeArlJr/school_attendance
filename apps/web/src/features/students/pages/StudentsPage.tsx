@@ -87,7 +87,7 @@ export default function StudentsPage() {
         isLoading={studentsQuery.isLoading}
         searchValue={search}
         onSearchChange={handleSearchChange}
-        searchPlaceholder="Search by name or admission no."
+        searchPlaceholder="Search by name"
         pageIndex={pageIndex}
         pageCount={studentsQuery.data?.last_page ?? 1}
         onPageChange={setPageIndex}

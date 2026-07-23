@@ -50,11 +50,6 @@ export function buildIdCardColumns(): ColumnDef<IdCard>[] {
           : '—',
     },
     {
-      id: 'admission_no',
-      header: 'Admission No.',
-      accessorFn: (row) => row.student!.admission_no,
-    },
-    {
       accessorKey: 'barcode_value',
       header: 'Barcode',
       cell: ({ row }) => (

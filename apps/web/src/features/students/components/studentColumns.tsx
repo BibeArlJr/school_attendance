@@ -26,10 +26,6 @@ export function buildStudentColumns({
 }: BuildStudentColumnsOptions): ColumnDef<Student>[] {
   const columns: ColumnDef<Student>[] = [
     {
-      accessorKey: 'admission_no',
-      header: 'Admission No.',
-    },
-    {
       id: 'name',
       header: 'Name',
       accessorFn: (row) => `${row.first_name} ${row.last_name}`,

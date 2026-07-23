@@ -43,8 +43,7 @@ class IdCardController extends Controller
                 $outer->where('barcode_value', 'ilike', "%{$search}%")
                     ->orWhereHasMorph('owner', [Student::class], function ($inner) use ($search) {
                         $inner->where('first_name', 'ilike', "%{$search}%")
-                            ->orWhere('last_name', 'ilike', "%{$search}%")
-                            ->orWhere('admission_no', 'ilike', "%{$search}%");
+                            ->orWhere('last_name', 'ilike', "%{$search}%");
                     });
             });
         }

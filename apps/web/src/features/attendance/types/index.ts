@@ -14,7 +14,6 @@ export interface AttendanceStudentSummary {
   id: number;
   first_name: string;
   last_name: string;
-  admission_no: string;
   school_class: { id: number; name: string; section: string | null } | null;
 }
 

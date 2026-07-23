@@ -46,7 +46,11 @@ export default function StudentDetailPage() {
   return (
     <PageContainer
       title={`${student.first_name} ${student.last_name}`}
-      description={`Admission No. ${student.admission_no}`}
+      description={
+        student.school_class
+          ? `${student.school_class.name}${student.school_class.section ? ` - ${student.school_class.section}` : ''}`
+          : undefined
+      }
     >
       <Card>
         <CardHeader>

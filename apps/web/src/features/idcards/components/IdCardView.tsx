@@ -46,7 +46,6 @@ export function IdCardView({ card, schoolName }: IdCardViewProps) {
           <p className="text-lg font-semibold">
             {student.first_name} {student.last_name}
           </p>
-          <p className="text-sm text-muted-foreground">Admission No. {student.admission_no}</p>
           <p className="text-sm text-muted-foreground">
             {student.school_class
               ? `${student.school_class.name}${student.school_class.section ? ` - ${student.school_class.section}` : ''}`

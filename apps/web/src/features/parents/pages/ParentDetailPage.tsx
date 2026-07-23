@@ -77,12 +77,12 @@ export default function ParentDetailPage() {
                     >
                       {link.student.first_name} {link.student.last_name}
                     </Link>
-                    <p className="text-sm text-muted-foreground">
-                      {link.student.admission_no}
-                      {link.student.school_class
-                        ? ` · ${link.student.school_class.name}${link.student.school_class.section ? ` - ${link.student.school_class.section}` : ''}`
-                        : ''}
-                    </p>
+                    {link.student.school_class && (
+                      <p className="text-sm text-muted-foreground">
+                        {link.student.school_class.name}
+                        {link.student.school_class.section ? ` - ${link.student.school_class.section}` : ''}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="capitalize">

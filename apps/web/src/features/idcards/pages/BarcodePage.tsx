@@ -37,7 +37,7 @@ export default function BarcodePage() {
         isLoading={cardsQuery.isLoading}
         searchValue={search}
         onSearchChange={handleSearchChange}
-        searchPlaceholder="Search by name, admission no., or barcode"
+        searchPlaceholder="Search by name or barcode"
         pageIndex={pageIndex}
         pageCount={cardsQuery.data?.last_page ?? 1}
         onPageChange={setPageIndex}

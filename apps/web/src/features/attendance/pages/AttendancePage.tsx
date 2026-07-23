@@ -103,9 +103,7 @@ export default function AttendancePage() {
           setSearch(value);
           setPageIndex(0);
         }}
-        searchPlaceholder={
-          ownerType === 'student' ? 'Search by name or admission no.' : 'Search by name or designation'
-        }
+        searchPlaceholder={ownerType === 'student' ? 'Search by name' : 'Search by name or designation'}
         pageIndex={pageIndex}
         pageCount={recordsQuery.data?.last_page ?? 1}
         onPageChange={setPageIndex}

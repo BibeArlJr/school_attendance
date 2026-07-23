@@ -25,7 +25,6 @@ export interface Student {
   id: number;
   school_id: number;
   class_id: number;
-  admission_no: string;
   first_name: string;
   last_name: string;
   dob: string;

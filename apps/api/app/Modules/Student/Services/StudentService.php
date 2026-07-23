@@ -6,15 +6,12 @@ use App\Modules\IdCard\Services\IdCardService;
 use App\Modules\School\Models\AcademicYear;
 use App\Modules\Student\Models\Student;
 use App\Modules\Student\Models\StudentEnrollment;
-use App\Support\Services\SequenceGeneratorService;
 use Illuminate\Support\Facades\DB;
 
 class StudentService
 {
-    public function __construct(
-        private readonly SequenceGeneratorService $sequenceGenerator,
-        private readonly IdCardService $idCardService,
-    ) {
+    public function __construct(private readonly IdCardService $idCardService)
+    {
     }
 
     /**
@@ -28,14 +25,12 @@ class StudentService
     public function create(array $data, int $schoolId): Student
     {
         return DB::transaction(function () use ($data, $schoolId) {
-            $admissionNo = $this->sequenceGenerator->next($schoolId, 'STUDENT_ADMISSION', 'ADM');
             $rollNo = $data['roll_no'] ?? null;
             unset($data['roll_no']);
 
             $student = Student::create([
                 ...$data,
                 'school_id' => $schoolId,
-                'admission_no' => $admissionNo,
             ]);
 
             $this->enrollForCurrentYear($student, $schoolId, $data['class_id'], $rollNo);

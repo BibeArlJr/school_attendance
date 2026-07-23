@@ -57,8 +57,7 @@ class AttendanceController extends Controller
             if ($ownerType === 'student') {
                 $query->whereHasMorph('owner', [Student::class], function ($inner) use ($search) {
                     $inner->where('first_name', 'ilike', "%{$search}%")
-                        ->orWhere('last_name', 'ilike', "%{$search}%")
-                        ->orWhere('admission_no', 'ilike', "%{$search}%");
+                        ->orWhere('last_name', 'ilike', "%{$search}%");
                 });
             } else {
                 $query->whereHasMorph('owner', [Staff::class], function ($inner) use ($search) {

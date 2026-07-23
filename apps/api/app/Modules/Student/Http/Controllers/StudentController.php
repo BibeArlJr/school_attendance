@@ -30,8 +30,7 @@ class StudentController extends Controller
         if ($search = trim((string) $request->query('search', ''))) {
             $query->where(function ($inner) use ($search) {
                 $inner->where('first_name', 'ilike', "%{$search}%")
-                    ->orWhere('last_name', 'ilike', "%{$search}%")
-                    ->orWhere('admission_no', 'ilike', "%{$search}%");
+                    ->orWhere('last_name', 'ilike', "%{$search}%");
             });
         }
 
@@ -44,7 +43,8 @@ class StudentController extends Controller
         }
 
         $students = $query
-            ->orderBy('admission_no')
+            ->orderBy('first_name')
+            ->orderBy('last_name')
             ->paginate((int) $request->query('per_page', 15))
             ->withQueryString();
 
