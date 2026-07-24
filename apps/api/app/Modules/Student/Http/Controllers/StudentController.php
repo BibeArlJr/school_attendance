@@ -26,7 +26,9 @@ class StudentController extends Controller
     {
         $schoolId = $this->schoolResolver->resolve($request->user());
 
-        $query = Student::query()->where('school_id', $schoolId)->with('schoolClass');
+        $query = Student::query()
+            ->where('school_id', $schoolId)
+            ->with(['schoolClass', 'currentEnrollment', 'primaryParentLink.parentGuardian']);
 
         if ($search = trim((string) $request->query('search', ''))) {
             $query->where(function ($inner) use ($search) {
@@ -54,7 +56,7 @@ class StudentController extends Controller
 
     public function show(Student $student): JsonResponse
     {
-        return ApiResponse::success($student->load('schoolClass'));
+        return ApiResponse::success($student->load(['schoolClass', 'currentEnrollment', 'primaryParentLink.parentGuardian']));
     }
 
     public function store(StoreStudentRequest $request): JsonResponse

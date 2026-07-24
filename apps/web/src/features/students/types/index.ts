@@ -21,15 +21,37 @@ export interface SchoolClass {
   class_teacher?: ClassTeacherSummary | null;
 }
 
+export interface StudentEnrollmentSummary {
+  id: number;
+  roll_no: string | null;
+}
+
+export interface ParentGuardianSummary {
+  id: number;
+  name: string;
+  phone: string;
+}
+
+export interface StudentParentLinkSummary {
+  id: number;
+  parent_guardian?: ParentGuardianSummary | null;
+}
+
 export interface Student {
   id: number;
   school_id: number;
   class_id: number;
   first_name: string;
   last_name: string;
-  dob: string;
-  gender: Gender;
+  // null for bulk-imported students, whose only known DOB is `dob_bs`
+  // (Bikram Sambat) — see formatDob in lib/formatDob.ts for the fallback.
+  dob: string | null;
+  gender: Gender | null;
   status: StudentStatus;
   admission_date: string;
+  address: string | null;
+  dob_bs: string | null;
   school_class?: SchoolClass;
+  current_enrollment?: StudentEnrollmentSummary | null;
+  primary_parent_link?: StudentParentLinkSummary | null;
 }

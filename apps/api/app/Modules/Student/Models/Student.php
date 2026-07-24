@@ -10,6 +10,7 @@ use App\Support\Enums\StudentStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Student extends Model
 {
@@ -59,5 +60,18 @@ class Student extends Model
     public function importBatch(): BelongsTo
     {
         return $this->belongsTo(ImportBatch::class);
+    }
+
+    /** The enrollment row for whichever academic year is currently active — for roll_no display. */
+    public function currentEnrollment(): HasOne
+    {
+        return $this->hasOne(StudentEnrollment::class)
+            ->whereHas('academicYear', fn ($query) => $query->where('is_current', true));
+    }
+
+    /** The one link (if any) flagged as the primary contact — for list/detail guardian display. */
+    public function primaryParentLink(): HasOne
+    {
+        return $this->hasOne(StudentParentLink::class)->where('is_primary_contact', true);
     }
 }

@@ -22,25 +22,37 @@ interface ClassPickerCellProps {
  * Resolves an unrecognized_class row: pick an existing class, or switch
  * to "Create new class" and type a name. Used only for flagged rows —
  * already-resolved rows just show the matched class name as plain text.
+ *
+ * `creatingNew` is derived from `newClassName` (not its own useState)
+ * so a row's display stays correct even when its decision is set from
+ * outside this component — e.g. the "create all + resolve all groups"
+ * bulk action, which sets `newClassName` on many rows at once without
+ * this cell ever being interacted with directly. A plain `useState`
+ * initializer only runs once at mount and would freeze this cell on
+ * "Map to class…" forever in that case, even though the row's actual
+ * decision was already resolved.
  */
 export function ClassPickerCell({ classes, classId, newClassName, onChange }: ClassPickerCellProps) {
-  const [creatingNew, setCreatingNew] = useState(newClassName !== undefined);
+  const creatingNew = newClassName !== undefined;
+  // Only autofocus when *this* cell's own dropdown triggered the switch —
+  // not when many rows enter "creatingNew" simultaneously via the bulk
+  // action, which would otherwise fight over focus across hundreds of rows.
+  const [userTriggeredCreate, setUserTriggeredCreate] = useState(false);
 
   function handleSelectChange(value: string) {
     if (value === CREATE_NEW_VALUE) {
-      setCreatingNew(true);
+      setUserTriggeredCreate(true);
       onChange({ newClassName: '' });
       return;
     }
-    setCreatingNew(false);
-    onChange({ classId: Number(value) });
+    onChange({ classId: Number(value), newClassName: undefined });
   }
 
   if (creatingNew) {
     return (
       <div className="flex items-center gap-1">
         <Input
-          autoFocus
+          autoFocus={userTriggeredCreate}
           value={newClassName ?? ''}
           onChange={(event) => onChange({ newClassName: event.target.value })}
           placeholder="New class name"
@@ -50,8 +62,8 @@ export function ClassPickerCell({ classes, classId, newClassName, onChange }: Cl
           type="button"
           className="text-xs text-muted-foreground hover:underline"
           onClick={() => {
-            setCreatingNew(false);
-            onChange({ classId: undefined });
+            setUserTriggeredCreate(false);
+            onChange({ classId: undefined, newClassName: undefined });
           }}
         >
           Cancel

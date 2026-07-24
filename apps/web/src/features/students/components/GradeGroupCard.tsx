@@ -18,7 +18,7 @@ import {
  * suggested new-class name matches what's already in the database,
  * rather than always hardcoding "Grade N".
  */
-function suggestClassName(classes: SchoolClass[], gradeLevel: number): string {
+export function suggestClassName(classes: SchoolClass[], gradeLevel: number): string {
   const graded = classes.find((c) => c.grade_level !== null);
   const match = graded?.name.match(/^(.*?)(\d+)\s*$/);
   if (match) {

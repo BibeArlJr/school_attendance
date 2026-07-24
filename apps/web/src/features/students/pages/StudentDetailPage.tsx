@@ -1,5 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { useStudent } from '../hooks/useStudent';
+import { formatDob } from '../lib/formatDob';
 import { IdCardSection } from '@/features/idcards/components/IdCardSection';
 import { GuardiansSection } from '@/features/parents/components/GuardiansSection';
 import { EmptyState } from '@/shared/components/feedback/EmptyState';
@@ -64,11 +65,11 @@ export default function StudentDetailPage() {
               : '—'}
           </p>
           <p>
-            <span className="text-muted-foreground">Date of birth:</span> {student.dob.slice(0, 10)}
+            <span className="text-muted-foreground">Date of birth:</span> {formatDob(student)}
           </p>
           <p>
             <span className="text-muted-foreground">Gender:</span>{' '}
-            <span className="capitalize">{student.gender}</span>
+            <span className="capitalize">{student.gender ?? '—'}</span>
           </p>
           <p>
             <span className="text-muted-foreground">Admission date:</span>{' '}

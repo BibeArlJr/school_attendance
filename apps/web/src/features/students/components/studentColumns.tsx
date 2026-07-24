@@ -1,6 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { formatDob } from '../lib/formatDob';
 import type { Student } from '../types';
 import { studentDetailPath } from '@/app/router/routes';
 import { Badge } from '@/shared/components/ui/badge';
@@ -36,6 +37,12 @@ export function buildStudentColumns({
       ),
     },
     {
+      id: 'roll_no',
+      header: 'Roll No.',
+      enableSorting: false,
+      accessorFn: (row) => row.current_enrollment?.roll_no ?? '—',
+    },
+    {
       id: 'class',
       header: 'Class',
       enableSorting: false,
@@ -43,6 +50,42 @@ export function buildStudentColumns({
         row.school_class
           ? `${row.school_class.name}${row.school_class.section ? ` - ${row.school_class.section}` : ''}`
           : '—',
+    },
+    {
+      id: 'dob',
+      header: 'DOB',
+      enableSorting: false,
+      accessorFn: (row) => formatDob(row),
+    },
+    {
+      id: 'address',
+      header: 'Address',
+      enableSorting: false,
+      cell: ({ row }) => (
+        <span
+          className="block max-w-40 truncate"
+          title={row.original.address ?? undefined}
+        >
+          {row.original.address ?? '—'}
+        </span>
+      ),
+    },
+    {
+      id: 'guardian',
+      header: 'Guardian',
+      enableSorting: false,
+      cell: ({ row }) => {
+        const guardian = row.original.primary_parent_link?.parent_guardian;
+        if (!guardian) {
+          return <span className="text-muted-foreground">—</span>;
+        }
+        return (
+          <div>
+            <div>{guardian.name}</div>
+            <div className="text-xs text-muted-foreground">{guardian.phone}</div>
+          </div>
+        );
+      },
     },
     {
       accessorKey: 'status',

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { GradeGroupCard } from '../components/GradeGroupCard';
+import { GradeGroupCard, suggestClassName } from '../components/GradeGroupCard';
 import { ImportRowsTable } from '../components/ImportRowsTable';
 import { ImportSummaryCards } from '../components/ImportSummaryCards';
 import { useClasses } from '../hooks/useClasses';
@@ -109,6 +109,29 @@ export default function ImportReviewPage() {
           classId: patch.classId,
           newClassName: patch.newClassName,
         };
+      }
+      return next;
+    });
+  }
+
+  // Fast path for the common case — same effect as clicking "Create and
+  // apply to all" on every GradeGroupCard individually, just batched into
+  // one state update. Per-group manual controls (map-to-existing, custom
+  // name) stay available alongside this for whichever grades the default
+  // "Grade {N}" name isn't right for.
+  function handleResolveAllGroups() {
+    setDecisions((prev) => {
+      const next = { ...prev };
+      for (const group of gradeGroups) {
+        const newClassName = suggestClassName(classesQuery.data ?? [], group.gradeLevel);
+        for (const row of group.rows) {
+          next[row.id] = {
+            ...next[row.id],
+            resolution: 'accept',
+            classId: undefined,
+            newClassName,
+          };
+        }
       }
       return next;
     });
@@ -249,10 +272,15 @@ export default function ImportReviewPage() {
 
         {gradeGroups.length > 0 && (
           <div className="space-y-2">
-            <h3 className="text-sm font-medium text-muted-foreground">
-              Resolve by grade — {gradeGroups.reduce((sum, group) => sum + group.rows.length, 0)} rows across{' '}
-              {gradeGroups.length} grade{gradeGroups.length === 1 ? '' : 's'} can be resolved at once
-            </h3>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-medium text-muted-foreground">
+                Resolve by grade — {gradeGroups.reduce((sum, group) => sum + group.rows.length, 0)} rows across{' '}
+                {gradeGroups.length} grade{gradeGroups.length === 1 ? '' : 's'} can be resolved at once
+              </h3>
+              <Button size="sm" onClick={handleResolveAllGroups}>
+                Create all missing classes and resolve all groups
+              </Button>
+            </div>
             {gradeGroups.map((group) => (
               <GradeGroupCard
                 key={group.gradeLevel}
