@@ -18,8 +18,8 @@ export const teachersApi = {
     return data.data;
   },
 
-  async get(id: number): Promise<Teacher> {
-    const { data } = await apiClient.get<ApiSuccessResponse<Teacher>>(`/teachers/${id}`);
+  async get(uuid: string): Promise<Teacher> {
+    const { data } = await apiClient.get<ApiSuccessResponse<Teacher>>(`/teachers/${uuid}`);
     return data.data;
   },
 
@@ -30,27 +30,27 @@ export const teachersApi = {
     return { teacher: data.data.staff, temporary_password: data.data.temporary_password };
   },
 
-  async update(id: number, values: TeacherFormValues): Promise<Teacher> {
-    const { data } = await apiClient.put<ApiSuccessResponse<Teacher>>(`/teachers/${id}`, values);
+  async update(uuid: string, values: TeacherFormValues): Promise<Teacher> {
+    const { data } = await apiClient.put<ApiSuccessResponse<Teacher>>(`/teachers/${uuid}`, values);
     return data.data;
   },
 
-  async updateEmploymentStatus(id: number, employmentStatus: EmploymentStatus): Promise<Teacher> {
+  async updateEmploymentStatus(uuid: string, employmentStatus: EmploymentStatus): Promise<Teacher> {
     const { data } = await apiClient.patch<ApiSuccessResponse<Teacher>>(
-      `/teachers/${id}/employment-status`,
+      `/teachers/${uuid}/employment-status`,
       { employment_status: employmentStatus },
     );
     return data.data;
   },
 
-  async resetPassword(id: number): Promise<string> {
+  async resetPassword(uuid: string): Promise<string> {
     const { data } = await apiClient.post<ApiSuccessResponse<{ temporary_password: string }>>(
-      `/teachers/${id}/reset-password`,
+      `/teachers/${uuid}/reset-password`,
     );
     return data.data.temporary_password;
   },
 
-  async delete(id: number): Promise<void> {
-    await apiClient.delete(`/teachers/${id}`);
+  async delete(uuid: string): Promise<void> {
+    await apiClient.delete(`/teachers/${uuid}`);
   },
 };

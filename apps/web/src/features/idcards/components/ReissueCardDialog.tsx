@@ -11,7 +11,7 @@ import {
 interface ReissueCardDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  studentId: number;
+  studentId: string;
 }
 
 export function ReissueCardDialog({ open, onOpenChange, studentId }: ReissueCardDialogProps) {

@@ -13,7 +13,7 @@ import { useCan } from '@/shared/hooks/useCan';
 
 export default function IdCardPage() {
   const { id } = useParams<{ id: string }>();
-  const studentId = Number(id);
+  const studentId = id ?? '';
   const cardQuery = useStudentIdCard(studentId);
   const schoolName = useAuthStore((state) => state.user?.school?.name) ?? 'Your School';
   const canReissue = useCan(['super_admin', 'admin']);

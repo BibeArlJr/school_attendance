@@ -9,7 +9,7 @@ import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 
 interface IdCardSectionProps {
-  studentId: number;
+  studentId: string;
 }
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {

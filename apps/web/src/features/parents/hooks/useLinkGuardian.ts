@@ -8,13 +8,13 @@ interface LinkGuardianInput extends AddGuardianFormValues {
   phone?: string;
 }
 
-export function useLinkGuardian(studentId: number) {
+export function useLinkGuardian(studentUuid: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (values: LinkGuardianInput) => studentGuardiansApi.link(studentId, values),
+    mutationFn: (values: LinkGuardianInput) => studentGuardiansApi.link(studentUuid, values),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['students', studentId, 'guardians'] });
+      void queryClient.invalidateQueries({ queryKey: ['students', studentUuid, 'guardians'] });
       void queryClient.invalidateQueries({ queryKey: ['parents'] });
       toast.success('Guardian linked successfully.');
     },

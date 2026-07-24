@@ -115,7 +115,7 @@ export default function StudentsPage() {
         isLoading={studentsQuery.isLoading}
         searchValue={search}
         onSearchChange={handleSearchChange}
-        searchPlaceholder="Search by name"
+        searchPlaceholder="Search by name or barcode"
         pageIndex={pageIndex}
         pageCount={studentsQuery.data?.last_page ?? 1}
         onPageChange={setPageIndex}
@@ -124,7 +124,7 @@ export default function StudentsPage() {
         selection={
           canManage
             ? {
-                onDeleteSelected: (rows) => bulkDelete(rows, (student) => student.id),
+                onDeleteSelected: (rows) => bulkDelete(rows, (student) => student.uuid),
                 entityLabelPlural: 'students',
                 fetchAllMatching: async () => {
                   const total = studentsQuery.data?.total ?? 0;
@@ -209,7 +209,7 @@ export default function StudentsPage() {
           errorMessage={deleteStudent.isError ? extractErrorMessage(deleteStudent.error) : null}
           onConfirm={() => {
             if (!deletingStudent) return;
-            deleteStudent.mutate(deletingStudent.id, {
+            deleteStudent.mutate(deletingStudent.uuid, {
               onSuccess: () => setDeleteDialogOpen(false),
             });
           }}

@@ -19,8 +19,7 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
 
 export default function StudentDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const studentId = Number(id);
-  const studentQuery = useStudent(studentId);
+  const studentQuery = useStudent(id ?? '');
   // Guardian contact info is Parents-module data (access-parents), not
   // Students data — Phase 3's matrix gives Parents no teacher read-tier,
   // unlike Students, so this section (and its underlying query) must never
@@ -85,12 +84,12 @@ export default function StudentDetailPage() {
       </Card>
 
       <div className="mt-4">
-        <IdCardSection studentId={student.id} />
+        <IdCardSection studentId={student.uuid} />
       </div>
 
       {canViewGuardians && (
         <div className="mt-4">
-          <GuardiansSection studentId={student.id} />
+          <GuardiansSection studentId={student.uuid} />
         </div>
       )}
     </PageContainer>

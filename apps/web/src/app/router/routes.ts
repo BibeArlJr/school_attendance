@@ -20,22 +20,26 @@ export const ROUTES = {
   SETTINGS: '/settings',
 } as const;
 
-export function studentDetailPath(id: number | string): string {
-  return `/students/${id}`;
+// Students/Teachers/Parents/Classes are all route-bound by uuid now
+// (Prompt 16) — these always take the uuid string, never the internal
+// numeric id. Import batches are unaffected (out of Prompt 16's scope)
+// and stay numeric.
+export function studentDetailPath(uuid: string): string {
+  return `/students/${uuid}`;
 }
 
-export function parentDetailPath(id: number | string): string {
-  return `/parents/${id}`;
+export function parentDetailPath(uuid: string): string {
+  return `/parents/${uuid}`;
 }
 
-export function studentIdCardPath(id: number | string): string {
-  return `/students/${id}/id-card`;
+export function studentIdCardPath(uuid: string): string {
+  return `/students/${uuid}/id-card`;
 }
 
 export function studentImportBatchPath(batchId: number | string): string {
   return `/students/import/${batchId}`;
 }
 
-export function teacherDetailPath(id: number | string): string {
-  return `/teachers/${id}`;
+export function teacherDetailPath(uuid: string): string {
+  return `/teachers/${uuid}`;
 }

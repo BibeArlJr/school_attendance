@@ -60,7 +60,7 @@ export function TeacherFormDialog({ open, onOpenChange, teacher }: TeacherFormDi
 
   function onSubmit(values: TeacherFormValues) {
     if (isEdit && teacher) {
-      void updateTeacher.mutateAsync({ id: teacher.id, values }).then(() => onOpenChange(false));
+      void updateTeacher.mutateAsync({ id: teacher.uuid, values }).then(() => onOpenChange(false));
       return;
     }
 

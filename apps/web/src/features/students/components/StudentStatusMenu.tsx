@@ -37,7 +37,7 @@ export function StudentStatusMenu({ student, onDeleteRequest }: StudentStatusMen
         {availableTransitions.map((transition) => (
           <DropdownMenuItem
             key={transition.status}
-            onClick={() => updateStatus.mutate({ id: student.id, status: transition.status })}
+            onClick={() => updateStatus.mutate({ id: student.uuid, status: transition.status })}
           >
             {transition.label}
           </DropdownMenuItem>

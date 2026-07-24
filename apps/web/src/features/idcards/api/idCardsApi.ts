@@ -16,14 +16,14 @@ export const idCardsApi = {
     return data.data;
   },
 
-  async getForStudent(studentId: number): Promise<IdCard> {
-    const { data } = await apiClient.get<ApiSuccessResponse<IdCard>>(`/students/${studentId}/id-card`);
+  async getForStudent(studentUuid: string): Promise<IdCard> {
+    const { data } = await apiClient.get<ApiSuccessResponse<IdCard>>(`/students/${studentUuid}/id-card`);
     return data.data;
   },
 
-  async reissue(studentId: number): Promise<IdCard> {
+  async reissue(studentUuid: string): Promise<IdCard> {
     const { data } = await apiClient.post<ApiSuccessResponse<IdCard>>(
-      `/students/${studentId}/id-card/reissue`,
+      `/students/${studentUuid}/id-card/reissue`,
     );
     return data.data;
   },

@@ -37,7 +37,7 @@ export function EmploymentStatusMenu({ teacher, onDeleteRequest }: EmploymentSta
           <DropdownMenuItem
             key={transition.status}
             onClick={() =>
-              updateStatus.mutate({ id: teacher.id, employmentStatus: transition.status })
+              updateStatus.mutate({ id: teacher.uuid, employmentStatus: transition.status })
             }
           >
             {transition.label}

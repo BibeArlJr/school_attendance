@@ -69,7 +69,7 @@ export function ClassFormDialog({ open, onOpenChange, schoolClass }: ClassFormDi
   function onSubmit(values: ClassFormValues) {
     const mutation =
       isEdit && schoolClass
-        ? updateClass.mutateAsync({ id: schoolClass.id, values })
+        ? updateClass.mutateAsync({ id: schoolClass.uuid, values })
         : createClass.mutateAsync(values);
 
     void mutation.then(() => onOpenChange(false));

@@ -25,7 +25,7 @@ const RELATION_LABEL: Record<StudentGuardianLink['relation'], string> = {
 };
 
 interface GuardiansSectionProps {
-  studentId: number;
+  studentId: string;
 }
 
 export function GuardiansSection({ studentId }: GuardiansSectionProps) {
@@ -42,7 +42,7 @@ export function GuardiansSection({ studentId }: GuardiansSectionProps) {
     if (!pendingUnlink) {
       return;
     }
-    void unlinkGuardian.mutateAsync(pendingUnlink.parent.id).then(() => setPendingUnlink(null));
+    void unlinkGuardian.mutateAsync(pendingUnlink.parent.uuid).then(() => setPendingUnlink(null));
   }
 
   return (

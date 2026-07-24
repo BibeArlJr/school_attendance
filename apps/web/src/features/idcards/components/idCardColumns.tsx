@@ -35,7 +35,7 @@ export function buildIdCardColumns(): ColumnDef<IdCard>[] {
       header: 'Name',
       accessorFn: (row) => `${row.student!.first_name} ${row.student!.last_name}`,
       cell: ({ row }) => (
-        <Link to={studentIdCardPath(row.original.student!.id)} className="font-medium hover:underline">
+        <Link to={studentIdCardPath(row.original.student!.uuid)} className="font-medium hover:underline">
           {row.original.student!.first_name} {row.original.student!.last_name}
         </Link>
       ),

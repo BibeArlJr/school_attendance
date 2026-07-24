@@ -16,8 +16,7 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
 
 export default function TeacherDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const teacherId = Number(id);
-  const teacherQuery = useTeacher(teacherId);
+  const teacherQuery = useTeacher(id ?? '');
   const canManage = useCan(['super_admin', 'admin']);
 
   if (teacherQuery.isLoading) {
@@ -68,7 +67,7 @@ export default function TeacherDetailPage() {
       </Card>
 
       <div className="mt-4">
-        <StaffIdCardSection teacherId={teacher.id} canReissue={canManage} />
+        <StaffIdCardSection teacherId={teacher.uuid} canReissue={canManage} />
       </div>
     </PageContainer>
   );

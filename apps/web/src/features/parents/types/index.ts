@@ -6,6 +6,7 @@ export interface LinkedStudentSummary {
   is_primary_contact: boolean;
   student: {
     id: number;
+    uuid: string;
     first_name: string;
     last_name: string;
     school_class: { id: number; name: string; section: string | null } | null;
@@ -14,6 +15,7 @@ export interface LinkedStudentSummary {
 
 export interface ParentGuardian {
   id: number;
+  uuid: string;
   school_id: number;
   name: string;
   phone: string;
@@ -29,6 +31,7 @@ export interface StudentGuardianLink {
   is_primary_contact: boolean;
   parent: {
     id: number;
+    uuid: string;
     name: string;
     phone: string;
     email: string | null;

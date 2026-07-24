@@ -34,7 +34,7 @@ import {
 interface AddGuardianDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  studentId: number;
+  studentId: string;
 }
 
 const DEFAULT_VALUES: AddGuardianFormValues = {

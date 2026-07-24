@@ -7,7 +7,7 @@ export function useUpdateEmploymentStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, employmentStatus }: { id: number; employmentStatus: EmploymentStatus }) =>
+    mutationFn: ({ id, employmentStatus }: { id: string; employmentStatus: EmploymentStatus }) =>
       teachersApi.updateEmploymentStatus(id, employmentStatus),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['teachers'] });

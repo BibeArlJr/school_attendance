@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { parentsApi } from '../api/parentsApi';
 
-export function useParent(id: number) {
+export function useParent(uuid: string) {
   return useQuery({
-    queryKey: ['parents', 'detail', id],
-    queryFn: () => parentsApi.get(id),
+    queryKey: ['parents', 'detail', uuid],
+    queryFn: () => parentsApi.get(uuid),
   });
 }

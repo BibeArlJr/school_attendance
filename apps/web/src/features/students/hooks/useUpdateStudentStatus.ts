@@ -7,7 +7,7 @@ export function useUpdateStudentStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, status }: { id: number; status: StudentStatus }) =>
+    mutationFn: ({ id, status }: { id: string; status: StudentStatus }) =>
       studentsApi.updateStatus(id, status),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['students'] });

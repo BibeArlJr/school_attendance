@@ -22,8 +22,8 @@ export const studentsApi = {
     return data.data;
   },
 
-  async get(id: number): Promise<Student> {
-    const { data } = await apiClient.get<ApiSuccessResponse<Student>>(`/students/${id}`);
+  async get(uuid: string): Promise<Student> {
+    const { data } = await apiClient.get<ApiSuccessResponse<Student>>(`/students/${uuid}`);
     return data.data;
   },
 
@@ -44,23 +44,23 @@ export const studentsApi = {
     return data.data;
   },
 
-  async update(id: number, values: StudentFormValues): Promise<Student> {
-    const { data } = await apiClient.put<ApiSuccessResponse<Student>>(`/students/${id}`, {
+  async update(uuid: string, values: StudentFormValues): Promise<Student> {
+    const { data } = await apiClient.put<ApiSuccessResponse<Student>>(`/students/${uuid}`, {
       ...values,
       class_id: Number(values.class_id),
     });
     return data.data;
   },
 
-  async updateStatus(id: number, status: string): Promise<Student> {
-    const { data } = await apiClient.patch<ApiSuccessResponse<Student>>(`/students/${id}/status`, {
+  async updateStatus(uuid: string, status: string): Promise<Student> {
+    const { data } = await apiClient.patch<ApiSuccessResponse<Student>>(`/students/${uuid}/status`, {
       status,
     });
     return data.data;
   },
 
-  async delete(id: number): Promise<void> {
-    await apiClient.delete(`/students/${id}`);
+  async delete(uuid: string): Promise<void> {
+    await apiClient.delete(`/students/${uuid}`);
   },
 };
 
@@ -88,15 +88,15 @@ export const classesApi = {
     return data.data;
   },
 
-  async update(id: number, values: ClassFormValues): Promise<SchoolClass> {
+  async update(uuid: string, values: ClassFormValues): Promise<SchoolClass> {
     const { data } = await apiClient.put<ApiSuccessResponse<SchoolClass>>(
-      `/classes/${id}`,
+      `/classes/${uuid}`,
       toClassPayload(values),
     );
     return data.data;
   },
 
-  async delete(id: number): Promise<void> {
-    await apiClient.delete(`/classes/${id}`);
+  async delete(uuid: string): Promise<void> {
+    await apiClient.delete(`/classes/${uuid}`);
   },
 };

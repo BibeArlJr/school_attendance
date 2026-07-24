@@ -2,6 +2,7 @@ export type EmploymentStatus = 'active' | 'on_leave' | 'resigned';
 
 export interface Teacher {
   id: number;
+  uuid: string;
   user_id: number;
   name: string;
   email: string;

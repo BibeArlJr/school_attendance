@@ -62,7 +62,12 @@ function SidebarContent({
 
 export function Sidebar({ collapsed, onToggleCollapsed, mobileOpen, onCloseMobile }: SidebarProps) {
   const role = useAuthStore((state) => state.user?.role);
-  const visibleModules = role ? MODULES.filter((module) => module.allowedRoles.includes(role)) : [];
+  // Teachers is unlinked from navigation only (Prompt 16) — the module
+  // itself, its Gate, and the /teachers route are all untouched, so it's
+  // still fully reachable by a direct URL for admin/super_admin.
+  const visibleModules = role
+    ? MODULES.filter((module) => module.allowedRoles.includes(role) && module.key !== 'teachers')
+    : [];
 
   return (
     <>

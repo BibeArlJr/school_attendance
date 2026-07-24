@@ -6,7 +6,7 @@ export function useDeleteClass() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => classesApi.delete(id),
+    mutationFn: (id: string) => classesApi.delete(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['classes'] });
       toast.success('Class deleted.');

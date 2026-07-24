@@ -3,6 +3,7 @@
 namespace App\Modules\Student\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\StudentResource;
 use App\Modules\Student\Http\Requests\StoreStudentRequest;
 use App\Modules\Student\Http\Requests\UpdateStudentRequest;
 use App\Modules\Student\Http\Requests\UpdateStudentStatusRequest;
@@ -28,12 +29,15 @@ class StudentController extends Controller
 
         $query = Student::query()
             ->where('school_id', $schoolId)
-            ->with(['schoolClass', 'currentEnrollment', 'primaryParentLink.parentGuardian']);
+            ->with(['schoolClass', 'currentEnrollment', 'primaryParentLink.parentGuardian', 'idCard']);
 
         if ($search = trim((string) $request->query('search', ''))) {
             $query->where(function ($inner) use ($search) {
                 $inner->where('first_name', 'ilike', "%{$search}%")
-                    ->orWhere('last_name', 'ilike', "%{$search}%");
+                    ->orWhere('last_name', 'ilike', "%{$search}%")
+                    ->orWhereHas('idCard', function ($card) use ($search) {
+                        $card->where('barcode_value', 'ilike', "%{$search}%");
+                    });
             });
         }
 
@@ -51,12 +55,18 @@ class StudentController extends Controller
             ->paginate((int) $request->query('per_page', 15))
             ->withQueryString();
 
-        return ApiResponse::success($students);
+        return ApiResponse::success(
+            $students->setCollection(
+                $students->getCollection()->map(fn (Student $student) => new StudentResource($student)),
+            ),
+        );
     }
 
     public function show(Student $student): JsonResponse
     {
-        return ApiResponse::success($student->load(['schoolClass', 'currentEnrollment', 'primaryParentLink.parentGuardian']));
+        return ApiResponse::success(new StudentResource(
+            $student->load(['schoolClass', 'currentEnrollment', 'primaryParentLink.parentGuardian', 'idCard']),
+        ));
     }
 
     public function store(StoreStudentRequest $request): JsonResponse
@@ -64,21 +74,28 @@ class StudentController extends Controller
         $schoolId = $this->schoolResolver->resolve($request->user());
         $student = $this->studentService->create($request->validated(), $schoolId);
 
-        return ApiResponse::success($student->load('schoolClass'), 'Student created successfully.', 201);
+        return ApiResponse::success(
+            new StudentResource($student->load(['schoolClass', 'idCard'])),
+            'Student created successfully.',
+            201,
+        );
     }
 
     public function update(UpdateStudentRequest $request, Student $student): JsonResponse
     {
         $student = $this->studentService->update($student, $request->validated());
 
-        return ApiResponse::success($student->load('schoolClass'), 'Student updated successfully.');
+        return ApiResponse::success(
+            new StudentResource($student->load(['schoolClass', 'idCard'])),
+            'Student updated successfully.',
+        );
     }
 
     public function updateStatus(UpdateStudentStatusRequest $request, Student $student): JsonResponse
     {
         $student = $this->studentService->updateStatus($student, $request->validated('status'));
 
-        return ApiResponse::success($student, 'Student status updated successfully.');
+        return ApiResponse::success(new StudentResource($student), 'Student status updated successfully.');
     }
 
     public function destroy(Student $student): JsonResponse

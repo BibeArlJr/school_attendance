@@ -14,6 +14,7 @@ class ParentGuardianResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'uuid' => $this->uuid,
             'school_id' => $this->school_id,
             'name' => $this->name,
             'phone' => $this->phone,
@@ -33,6 +34,7 @@ class ParentGuardianResource extends JsonResource
                     'is_primary_contact' => $link->is_primary_contact,
                     'student' => [
                         'id' => $link->student->id,
+                        'uuid' => $link->student->uuid,
                         'first_name' => $link->student->first_name,
                         'last_name' => $link->student->last_name,
                         'school_class' => $link->student->schoolClass ? [

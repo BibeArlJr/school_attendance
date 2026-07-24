@@ -28,7 +28,7 @@ export function buildTeacherColumns({
       accessorKey: 'name',
       header: 'Name',
       cell: ({ row }) => (
-        <Link to={teacherDetailPath(row.original.id)} className="font-medium hover:underline">
+        <Link to={teacherDetailPath(row.original.uuid)} className="font-medium hover:underline">
           {row.original.name}
         </Link>
       ),

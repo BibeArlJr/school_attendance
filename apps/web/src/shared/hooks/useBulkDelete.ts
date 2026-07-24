@@ -9,7 +9,7 @@ export interface BulkDeleteResult {
 
 interface UseBulkDeleteOptions<T> {
   queryKey: QueryKey;
-  deleteFn: (id: number) => Promise<void>;
+  deleteFn: (id: string) => Promise<void>;
   getLabel: (row: T) => string;
 }
 
@@ -27,7 +27,7 @@ export function useBulkDelete<T>({ queryKey, deleteFn, getLabel }: UseBulkDelete
   const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
 
-  async function bulkDelete(rows: T[], getId: (row: T) => number): Promise<BulkDeleteResult> {
+  async function bulkDelete(rows: T[], getId: (row: T) => string): Promise<BulkDeleteResult> {
     setIsPending(true);
     let deletedCount = 0;
     const blocked: BulkDeleteResult['blocked'] = [];

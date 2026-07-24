@@ -3,6 +3,7 @@ export type IdCardOwnerType = 'student' | 'staff';
 
 export interface IdCardStudentSummary {
   id: number;
+  uuid: string;
   first_name: string;
   last_name: string;
   school_class: { id: number; name: string; section: string | null } | null;
@@ -10,6 +11,7 @@ export interface IdCardStudentSummary {
 
 export interface IdCardStaffSummary {
   id: number;
+  uuid: string;
   name: string;
   designation: string;
 }

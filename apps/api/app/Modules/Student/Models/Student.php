@@ -2,18 +2,23 @@
 
 namespace App\Modules\Student\Models;
 
+use App\Modules\IdCard\Models\IdCard;
 use App\Modules\Import\Models\ImportBatch;
 use App\Modules\ParentGuardian\Models\StudentParentLink;
 use App\Modules\School\Models\School;
 use App\Modules\School\Models\SchoolClass;
+use App\Support\Concerns\HasUuidRouteKey;
 use App\Support\Enums\StudentStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 class Student extends Model
 {
+    use HasUuidRouteKey;
+
     protected $fillable = [
         'school_id',
         'class_id',
@@ -73,5 +78,11 @@ class Student extends Model
     public function primaryParentLink(): HasOne
     {
         return $this->hasOne(StudentParentLink::class)->where('is_primary_contact', true);
+    }
+
+    /** barcode_value is this student's sole human-facing identifier (Prompt 16) — admission_no never existed beyond an early draft column. */
+    public function idCard(): MorphOne
+    {
+        return $this->morphOne(IdCard::class, 'owner');
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Modules\School\Models;
 
 use App\Models\User;
+use App\Support\Concerns\HasUuidRouteKey;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 // plain `classes`.
 class SchoolClass extends Model
 {
+    use HasUuidRouteKey;
+
     protected $table = 'classes';
 
     protected $fillable = [

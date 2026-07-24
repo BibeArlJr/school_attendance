@@ -23,6 +23,7 @@ class StudentGuardianResource extends JsonResource
             'is_primary_contact' => $this->is_primary_contact,
             'parent' => [
                 'id' => $this->parentGuardian->id,
+                'uuid' => $this->parentGuardian->uuid,
                 'name' => $this->parentGuardian->name,
                 'phone' => $this->parentGuardian->phone,
                 'email' => $this->parentGuardian->email,

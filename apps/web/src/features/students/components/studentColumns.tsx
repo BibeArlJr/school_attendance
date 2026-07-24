@@ -31,10 +31,16 @@ export function buildStudentColumns({
       header: 'Name',
       accessorFn: (row) => `${row.first_name} ${row.last_name}`,
       cell: ({ row }) => (
-        <Link to={studentDetailPath(row.original.id)} className="font-medium hover:underline">
+        <Link to={studentDetailPath(row.original.uuid)} className="font-medium hover:underline">
           {row.original.first_name} {row.original.last_name}
         </Link>
       ),
+    },
+    {
+      id: 'barcode',
+      header: 'Barcode',
+      enableSorting: false,
+      accessorFn: (row) => row.barcode_value ?? '—',
     },
     {
       id: 'roll_no',

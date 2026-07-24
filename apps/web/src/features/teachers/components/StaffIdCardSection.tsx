@@ -16,7 +16,7 @@ import {
 } from '@/shared/components/ui/dialog';
 
 interface StaffIdCardSectionProps {
-  teacherId: number;
+  teacherId: string;
   canReissue: boolean;
 }
 

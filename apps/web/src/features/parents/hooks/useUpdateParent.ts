@@ -7,7 +7,7 @@ export function useUpdateParent() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, values }: { id: number; values: ParentFormValues }) => parentsApi.update(id, values),
+    mutationFn: ({ id, values }: { id: string; values: ParentFormValues }) => parentsApi.update(id, values),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['parents'] });
       toast.success('Parent updated successfully.');

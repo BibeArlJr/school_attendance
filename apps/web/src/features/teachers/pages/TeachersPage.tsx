@@ -75,7 +75,7 @@ export default function TeachersPage() {
           setFormOpen(true);
         },
         onResetPassword: (teacher) =>
-          resetPassword.mutate(teacher.id, {
+          resetPassword.mutate(teacher.uuid, {
             onSuccess: (temporaryPassword) => setRevealPassword(temporaryPassword),
           }),
         onDeleteRequest: (teacher) => {
@@ -110,7 +110,7 @@ export default function TeachersPage() {
         selection={
           canManage
             ? {
-                onDeleteSelected: (rows) => bulkDelete(rows, (teacher) => teacher.id),
+                onDeleteSelected: (rows) => bulkDelete(rows, (teacher) => teacher.uuid),
                 entityLabelPlural: 'teachers',
                 fetchAllMatching: async () => {
                   const total = teachersQuery.data?.total ?? 0;
@@ -176,7 +176,7 @@ export default function TeachersPage() {
           errorMessage={deleteTeacher.isError ? extractErrorMessage(deleteTeacher.error) : null}
           onConfirm={() => {
             if (!deletingTeacher) return;
-            deleteTeacher.mutate(deletingTeacher.id, {
+            deleteTeacher.mutate(deletingTeacher.uuid, {
               onSuccess: () => setDeleteDialogOpen(false),
             });
           }}

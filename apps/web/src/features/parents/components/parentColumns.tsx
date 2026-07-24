@@ -19,7 +19,7 @@ export function buildParentColumns({
       accessorKey: 'name',
       header: 'Name',
       cell: ({ row }) => (
-        <Link to={parentDetailPath(row.original.id)} className="font-medium hover:underline">
+        <Link to={parentDetailPath(row.original.uuid)} className="font-medium hover:underline">
           {row.original.name}
         </Link>
       ),

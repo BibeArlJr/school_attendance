@@ -4,12 +4,15 @@ namespace App\Modules\Staff\Models;
 
 use App\Models\User;
 use App\Modules\School\Models\School;
+use App\Support\Concerns\HasUuidRouteKey;
 use App\Support\Enums\StaffEmploymentStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Staff extends Model
 {
+    use HasUuidRouteKey;
+
     protected $table = 'staff';
 
     protected $fillable = [

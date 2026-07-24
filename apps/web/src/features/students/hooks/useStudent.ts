@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { studentsApi } from '../api/studentsApi';
 
-export function useStudent(id: number) {
+export function useStudent(uuid: string) {
   return useQuery({
-    queryKey: ['students', 'detail', id],
-    queryFn: () => studentsApi.get(id),
+    queryKey: ['students', 'detail', uuid],
+    queryFn: () => studentsApi.get(uuid),
   });
 }

@@ -7,7 +7,7 @@ export function useUpdateTeacher() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, values }: { id: number; values: TeacherFormValues }) => teachersApi.update(id, values),
+    mutationFn: ({ id, values }: { id: string; values: TeacherFormValues }) => teachersApi.update(id, values),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['teachers'] });
       toast.success('Teacher updated successfully.');

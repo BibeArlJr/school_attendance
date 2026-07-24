@@ -3,14 +3,14 @@ import { apiClient } from '@/shared/lib/apiClient';
 import type { ApiSuccessResponse } from '@/shared/types';
 
 export const teacherIdCardApi = {
-  async get(teacherId: number): Promise<IdCard> {
-    const { data } = await apiClient.get<ApiSuccessResponse<IdCard>>(`/teachers/${teacherId}/id-card`);
+  async get(teacherUuid: string): Promise<IdCard> {
+    const { data } = await apiClient.get<ApiSuccessResponse<IdCard>>(`/teachers/${teacherUuid}/id-card`);
     return data.data;
   },
 
-  async reissue(teacherId: number): Promise<IdCard> {
+  async reissue(teacherUuid: string): Promise<IdCard> {
     const { data } = await apiClient.post<ApiSuccessResponse<IdCard>>(
-      `/teachers/${teacherId}/id-card/reissue`,
+      `/teachers/${teacherUuid}/id-card/reissue`,
     );
     return data.data;
   },

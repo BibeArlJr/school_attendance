@@ -7,7 +7,7 @@ export function useUpdateClass() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, values }: { id: number; values: ClassFormValues }) =>
+    mutationFn: ({ id, values }: { id: string; values: ClassFormValues }) =>
       classesApi.update(id, values),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['classes'] });

@@ -1,15 +1,14 @@
 import type { IdCard } from '../types';
 
-const HEADERS = ['admission_no', 'student_name', 'class', 'barcode_value', 'card_status', 'issued_date'];
+// barcode_value is this app's sole human-facing student identifier —
+// there is no admission_no column (removed, Prompt 16), so it isn't a
+// column here either.
+const HEADERS = ['barcode_value', 'student_name', 'class', 'card_status', 'issued_date'];
 
 function csvEscape(value: string): string {
   return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
 }
 
-// This app has no dedicated admission-number field anywhere (confirmed
-// against the students table and every existing form/export) — the
-// student's own id is the closest stable identifier it actually has, so
-// that's what populates this column rather than a fabricated value.
 function toRow(card: IdCard): string {
   const student = card.student;
   const className = student?.school_class
@@ -17,10 +16,9 @@ function toRow(card: IdCard): string {
     : '';
 
   return [
-    student ? String(student.id) : '',
+    card.barcode_value,
     student ? `${student.first_name} ${student.last_name}` : '',
     className,
-    card.barcode_value,
     card.status,
     card.issued_date.slice(0, 10),
   ]

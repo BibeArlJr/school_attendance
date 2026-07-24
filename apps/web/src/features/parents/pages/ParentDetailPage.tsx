@@ -19,8 +19,7 @@ const RELATION_LABEL: Record<string, string> = {
 
 export default function ParentDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const parentId = Number(id);
-  const parentQuery = useParent(parentId);
+  const parentQuery = useParent(id ?? '');
   const [editOpen, setEditOpen] = useState(false);
 
   if (parentQuery.isLoading) {
@@ -72,7 +71,7 @@ export default function ParentDetailPage() {
                 <li key={link.link_id} className="flex items-center justify-between py-3">
                   <div>
                     <Link
-                      to={studentDetailPath(link.student.id)}
+                      to={studentDetailPath(link.student.uuid)}
                       className="font-medium hover:underline"
                     >
                       {link.student.first_name} {link.student.last_name}

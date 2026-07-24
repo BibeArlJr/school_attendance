@@ -79,7 +79,7 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
 
   async function onSubmit(values: StudentFormValues) {
     if (isEdit && student) {
-      await updateStudent.mutateAsync({ id: student.id, values });
+      await updateStudent.mutateAsync({ id: student.uuid, values });
       onOpenChange(false);
       return;
     }
@@ -95,7 +95,7 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
       setIsLinkingGuardian(true);
       try {
         const match = await parentsApi.searchByPhone(guardianPhone);
-        await studentGuardiansApi.link(newStudent.id, {
+        await studentGuardiansApi.link(newStudent.uuid, {
           hasExistingMatch: Boolean(match),
           parent_id: match?.id,
           name: match ? undefined : guardianName,
@@ -122,7 +122,9 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit Student' : 'Add Student'}</DialogTitle>
+          <DialogTitle>
+            {isEdit && student?.barcode_value ? `Editing ${student.barcode_value}` : isEdit ? 'Edit Student' : 'Add Student'}
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

@@ -83,7 +83,7 @@ export default function ParentsPage() {
         totalCount={parentsQuery.data?.total}
         emptyTitle="No parents found"
         selection={{
-          onDeleteSelected: (rows) => bulkDelete(rows, (parent) => parent.id),
+          onDeleteSelected: (rows) => bulkDelete(rows, (parent) => parent.uuid),
           entityLabelPlural: 'parents',
           fetchAllMatching: async () => {
             const total = parentsQuery.data?.total ?? 0;
@@ -121,7 +121,7 @@ export default function ParentsPage() {
         errorMessage={deleteParent.isError ? extractErrorMessage(deleteParent.error) : null}
         onConfirm={() => {
           if (!deletingParent) return;
-          deleteParent.mutate(deletingParent.id, {
+          deleteParent.mutate(deletingParent.uuid, {
             onSuccess: () => setDeleteDialogOpen(false),
           });
         }}

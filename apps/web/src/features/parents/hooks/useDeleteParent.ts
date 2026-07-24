@@ -6,7 +6,7 @@ export function useDeleteParent() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => parentsApi.delete(id),
+    mutationFn: (id: string) => parentsApi.delete(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['parents'] });
       toast.success('Parent deleted.');

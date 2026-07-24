@@ -83,7 +83,7 @@ export default function ClassesPage() {
         selection={
           canManage
             ? {
-                onDeleteSelected: (rows) => bulkDelete(rows, (schoolClass) => schoolClass.id),
+                onDeleteSelected: (rows) => bulkDelete(rows, (schoolClass) => schoolClass.uuid),
                 entityLabelPlural: 'classes',
                 // No fetchAllMatching — Classes has no server pagination at
                 // all (useClasses() always fetches every row), so "select
@@ -120,7 +120,7 @@ export default function ClassesPage() {
           errorMessage={deleteClass.isError ? extractErrorMessage(deleteClass.error) : null}
           onConfirm={() => {
             if (!deletingClass) return;
-            deleteClass.mutate(deletingClass.id, {
+            deleteClass.mutate(deletingClass.uuid, {
               onSuccess: () => setDeleteDialogOpen(false),
             });
           }}

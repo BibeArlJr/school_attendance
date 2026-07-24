@@ -7,8 +7,8 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Generic, per-school, per-entity-type sequential number generator.
- * Reused by Student admission numbers now, and by Phase 7's barcode
- * numbers later — not specific to any one module.
+ * Backs the barcode numbers issued by IdCardService — not specific to
+ * any one module.
  */
 class SequenceGeneratorService
 {

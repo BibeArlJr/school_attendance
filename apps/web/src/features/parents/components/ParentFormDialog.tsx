@@ -57,7 +57,7 @@ export function ParentFormDialog({ open, onOpenChange, parent }: ParentFormDialo
   function onSubmit(values: ParentFormValues) {
     const mutation =
       isEdit && parent
-        ? updateParent.mutateAsync({ id: parent.id, values })
+        ? updateParent.mutateAsync({ id: parent.uuid, values })
         : createParent.mutateAsync(values);
 
     void mutation.then(() => onOpenChange(false));

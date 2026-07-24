@@ -4,6 +4,7 @@ namespace App\Modules\ParentGuardian\Models;
 
 use App\Models\User;
 use App\Modules\School\Models\School;
+use App\Support\Concerns\HasUuidRouteKey;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 // see StudentParentLink for the association rows that DO get deleted).
 class ParentGuardian extends Model
 {
+    use HasUuidRouteKey;
+
     protected $fillable = [
         'school_id',
         'name',

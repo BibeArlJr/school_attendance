@@ -9,6 +9,7 @@ export interface ClassTeacherSummary {
 
 export interface SchoolClass {
   id: number;
+  uuid: string;
   school_id: number;
   academic_year_id: number;
   name: string;
@@ -39,6 +40,7 @@ export interface StudentParentLinkSummary {
 
 export interface Student {
   id: number;
+  uuid: string;
   school_id: number;
   class_id: number;
   first_name: string;
@@ -51,6 +53,10 @@ export interface Student {
   admission_date: string;
   address: string | null;
   dob_bs: string | null;
+  // Sole human-facing identifier (Prompt 16) — undefined when the
+  // id_card relation wasn't eager-loaded by the endpoint that returned
+  // this student, not when the student genuinely has no card.
+  barcode_value?: string;
   school_class?: SchoolClass;
   current_enrollment?: StudentEnrollmentSummary | null;
   primary_parent_link?: StudentParentLinkSummary | null;
