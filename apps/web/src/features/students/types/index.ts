@@ -20,6 +20,9 @@ export interface SchoolClass {
   grade_level: number | null;
   class_teacher_id: number | null;
   class_teacher?: ClassTeacherSummary | null;
+  // Live count (Prompt 17) — computed server-side via withCount on every
+  // list/create/update response, never cached/stale.
+  active_students_count?: number;
 }
 
 export interface StudentEnrollmentSummary {

@@ -31,6 +31,12 @@ export function buildClassColumns({
       enableSorting: false,
       accessorFn: (row) => row.class_teacher?.name ?? '—',
     },
+    {
+      id: 'active_students_count',
+      header: 'Students',
+      enableSorting: false,
+      accessorFn: (row) => row.active_students_count ?? 0,
+    },
   ];
 
   if (canManage) {

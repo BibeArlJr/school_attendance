@@ -37,6 +37,10 @@ class StudentController extends Controller
                     ->orWhere('last_name', 'ilike', "%{$search}%")
                     ->orWhereHas('idCard', function ($card) use ($search) {
                         $card->where('barcode_value', 'ilike', "%{$search}%");
+                    })
+                    ->orWhereHas('parentLinks.parentGuardian', function ($guardian) use ($search) {
+                        $guardian->where('name', 'ilike', "%{$search}%")
+                            ->orWhere('phone', 'ilike', "%{$search}%");
                     });
             });
         }

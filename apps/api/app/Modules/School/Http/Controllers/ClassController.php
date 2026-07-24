@@ -33,6 +33,7 @@ class ClassController extends Controller
             // teacher relation resolves to a User, so it's never returned
             // unscoped.
             ->with('classTeacher:id,name,email')
+            ->withCount(['students as active_students_count' => fn ($q) => $q->where('status', 'active')])
             // grade_level ASC puts NULLs last by Postgres's default sort
             // behavior — classes without an inferable grade level fall
             // back to alphabetical among themselves, after the graded
@@ -79,6 +80,7 @@ class ClassController extends Controller
     private static function withTeacher(SchoolClass $class): array
     {
         $class->load('classTeacher:id,name,email');
+        $class->loadCount(['students as active_students_count' => fn ($q) => $q->where('status', 'active')]);
 
         return [
             ...$class->toArray(),

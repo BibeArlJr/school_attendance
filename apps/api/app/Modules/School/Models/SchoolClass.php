@@ -3,9 +3,11 @@
 namespace App\Modules\School\Models;
 
 use App\Models\User;
+use App\Modules\Student\Models\Student;
 use App\Support\Concerns\HasUuidRouteKey;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 // `Class` is a reserved word, hence SchoolClass — the table itself is
 // plain `classes`.
@@ -37,5 +39,10 @@ class SchoolClass extends Model
     public function classTeacher(): BelongsTo
     {
         return $this->belongsTo(User::class, 'class_teacher_id');
+    }
+
+    public function students(): HasMany
+    {
+        return $this->hasMany(Student::class, 'class_id');
     }
 }
