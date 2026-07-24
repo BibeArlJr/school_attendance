@@ -14,6 +14,7 @@ export const ROUTES = {
   ATTENDANCE: '/attendance',
   GATE_SCANNER: '/gate-scanner',
   BARCODE: '/barcode',
+  BARCODE_PRINT: '/barcode/print',
   SMS_LOG: '/sms-log',
   REPORTS: '/reports',
   SETTINGS: '/settings',

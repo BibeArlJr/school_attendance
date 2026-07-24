@@ -21,6 +21,7 @@ const TeacherDetailPage = lazy(() => import('@/features/teachers/pages/TeacherDe
 const ParentsPage = lazy(() => import('@/features/parents/pages/ParentsPage'));
 const ParentDetailPage = lazy(() => import('@/features/parents/pages/ParentDetailPage'));
 const BarcodePage = lazy(() => import('@/features/idcards/pages/BarcodePage'));
+const BarcodePrintPage = lazy(() => import('@/features/idcards/pages/BarcodePrintPage'));
 const IdCardPage = lazy(() => import('@/features/idcards/pages/IdCardPage'));
 const GateScannerPage = lazy(() => import('@/features/attendance/pages/GateScannerPage'));
 const AttendancePage = lazy(() => import('@/features/attendance/pages/AttendancePage'));
@@ -116,6 +117,10 @@ export const router = createBrowserRouter([
           {
             path: ROUTES.BARCODE,
             element: withSuspense(withRoleGuard(barcodeModule, <BarcodePage />)),
+          },
+          {
+            path: ROUTES.BARCODE_PRINT,
+            element: withSuspense(withRoleGuard(barcodeModule, <BarcodePrintPage />)),
           },
           {
             path: ROUTES.STUDENT_ID_CARD,

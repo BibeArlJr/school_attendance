@@ -40,9 +40,11 @@ interface DataTableSelection<TData> {
    * Delete every selected row through its entity's existing single-delete
    * endpoint (one call per row) and report back what happened — see
    * shared/hooks/useBulkDelete. Never a dedicated bulk-delete endpoint,
-   * so the Phase 11 per-row safety checks always apply.
+   * so the Phase 11 per-row safety checks always apply. Optional — a
+   * page can offer selection purely for read-only bulk actions (see
+   * `renderActions`) with no delete at all, e.g. Barcode's export/print.
    */
-  onDeleteSelected: (rows: TData[]) => Promise<BulkDeleteResult>;
+  onDeleteSelected?: (rows: TData[]) => Promise<BulkDeleteResult>;
   /**
    * Fetches every row matching the current search/filter (not just the
    * current page) — reusing the entity's existing paginated list
@@ -53,6 +55,13 @@ interface DataTableSelection<TData> {
   fetchAllMatching?: () => Promise<TData[]>;
   /** e.g. "students" — used in the select-all-matching prompt and confirm dialog copy. */
   entityLabelPlural?: string;
+  /**
+   * Extra read-only bulk actions (export, print, etc), rendered in the
+   * selection bar next to "Delete Selected" (if that's present too).
+   * Receives the current effective selection — page-scoped or expanded
+   * to every matching row, whichever is active.
+   */
+  renderActions?: (rows: TData[]) => ReactNode;
 }
 
 interface DataTableProps<TData extends { id: number }, TValue> {
@@ -192,7 +201,7 @@ export function DataTable<TData extends { id: number }, TValue>({
   }
 
   async function handleConfirmBulkDelete() {
-    if (!selection) {
+    if (!selection?.onDeleteSelected) {
       return;
     }
     setIsBulkDeleting(true);
@@ -235,9 +244,12 @@ export function DataTable<TData extends { id: number }, TValue>({
                 Clear
               </Button>
             )}
-            <Button variant="destructive" size="sm" onClick={() => setConfirmOpen(true)}>
-              Delete Selected
-            </Button>
+            {selection.renderActions?.(effectiveSelectedRows)}
+            {selection.onDeleteSelected && (
+              <Button variant="destructive" size="sm" onClick={() => setConfirmOpen(true)}>
+                Delete Selected
+              </Button>
+            )}
           </div>
         </div>
       )}
@@ -333,7 +345,7 @@ export function DataTable<TData extends { id: number }, TValue>({
         </div>
       </div>
 
-      {selection && (
+      {selection?.onDeleteSelected && (
         <>
           <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
             <DialogContent>
