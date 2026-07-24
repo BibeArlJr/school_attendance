@@ -37,12 +37,6 @@ export function buildStudentColumns({
       ),
     },
     {
-      id: 'barcode',
-      header: 'Barcode',
-      enableSorting: false,
-      accessorFn: (row) => row.barcode_value ?? '—',
-    },
-    {
       id: 'roll_no',
       header: 'Roll No.',
       accessorFn: (row) => row.current_enrollment?.roll_no ?? null,
