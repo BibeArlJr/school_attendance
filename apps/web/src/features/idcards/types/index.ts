@@ -6,6 +6,7 @@ export interface IdCardStudentSummary {
   uuid: string;
   first_name: string;
   last_name: string;
+  roll_no: string | null;
   school_class: { id: number; name: string; section: string | null } | null;
 }
 

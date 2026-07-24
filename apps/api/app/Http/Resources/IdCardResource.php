@@ -36,6 +36,7 @@ class IdCardResource extends JsonResource
             'uuid' => $student->uuid,
             'first_name' => $student->first_name,
             'last_name' => $student->last_name,
+            'roll_no' => $student->currentEnrollment?->roll_no,
             'school_class' => $student->schoolClass ? [
                 'id' => $student->schoolClass->id,
                 'name' => $student->schoolClass->name,

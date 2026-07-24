@@ -36,7 +36,7 @@ class IdCardController extends Controller
 
         $query = IdCard::query()
             ->whereIn('id', $latestIdsPerOwner)
-            ->with('owner.schoolClass');
+            ->with(['owner.schoolClass', 'owner.currentEnrollment']);
 
         if ($search = trim((string) $request->query('search', ''))) {
             $query->where(function ($outer) use ($search) {
@@ -66,7 +66,7 @@ class IdCardController extends Controller
             return ApiResponse::error('No ID card found for this student.', null, 404);
         }
 
-        return ApiResponse::success(new IdCardResource($card->load('owner.schoolClass')));
+        return ApiResponse::success(new IdCardResource($card->load(['owner.schoolClass', 'owner.currentEnrollment'])));
     }
 
     public function reissue(Student $student): JsonResponse
@@ -74,7 +74,7 @@ class IdCardController extends Controller
         $card = $this->idCardService->reissue($student);
 
         return ApiResponse::success(
-            new IdCardResource($card->load('owner.schoolClass')),
+            new IdCardResource($card->load(['owner.schoolClass', 'owner.currentEnrollment'])),
             'ID card reissued successfully.',
         );
     }

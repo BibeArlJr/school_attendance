@@ -50,6 +50,12 @@ export function buildIdCardColumns(): ColumnDef<IdCard>[] {
           : '—',
     },
     {
+      id: 'roll_no',
+      header: 'Roll No',
+      enableSorting: false,
+      accessorFn: (row) => row.student!.roll_no ?? '—',
+    },
+    {
       accessorKey: 'barcode_value',
       header: 'Barcode',
       cell: ({ row }) => (
