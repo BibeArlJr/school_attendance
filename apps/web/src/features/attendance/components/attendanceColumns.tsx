@@ -79,7 +79,7 @@ export function buildAttendanceColumns({
     {
       accessorKey: 'source',
       header: 'Source',
-      cell: ({ row }) => <span className="capitalize">{row.original.source}</span>,
+      cell: ({ row }) => <span className="capitalize">{row.original.source ?? '—'}</span>,
     },
   ];
 
@@ -88,13 +88,16 @@ export function buildAttendanceColumns({
       id: 'actions',
       header: '',
       enableSorting: false,
-      cell: ({ row }) => (
-        <div className="flex justify-end">
-          <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
-            Edit
-          </Button>
-        </div>
-      ),
+      cell: ({ row }) =>
+        // A synthesized absent row (source === null) has no real record
+        // behind it — nothing to correct.
+        row.original.source === null ? null : (
+          <div className="flex justify-end">
+            <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
+              Edit
+            </Button>
+          </div>
+        ),
     });
   }
 

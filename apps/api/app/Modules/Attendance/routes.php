@@ -16,6 +16,8 @@ Route::middleware(['auth:sanctum', 'can:access-attendance'])->group(function () 
     Route::get('/attendance', [AttendanceController::class, 'index']);
     Route::get('/attendance/anomalies', [AttendanceController::class, 'anomalies']);
     Route::get('/attendance/recent-events', [AttendanceController::class, 'recentEvents']);
+    Route::get('/students/{student}/attendance-calendar', [AttendanceController::class, 'studentCalendar']);
+    Route::get('/students/{student}/attendance-summary', [AttendanceController::class, 'studentSummary']);
 });
 
 Route::middleware(['auth:sanctum', 'can:manage-attendance'])->group(function () {

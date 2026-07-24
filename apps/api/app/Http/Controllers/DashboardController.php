@@ -2,19 +2,46 @@
 
 namespace App\Http\Controllers;
 
+use App\Modules\Attendance\Services\AttendanceAnalyticsService;
+use App\Modules\Sms\Models\SmsLog;
+use App\Modules\Staff\Models\Staff;
+use App\Modules\Student\Models\Student;
+use App\Support\Enums\SmsLogStatus;
+use App\Support\Enums\StaffEmploymentStatus;
+use App\Support\Enums\StudentStatus;
 use App\Support\Responses\ApiResponse;
+use App\Support\Services\CurrentSchoolResolver;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function summary(): JsonResponse
+    public function __construct(
+        private readonly CurrentSchoolResolver $schoolResolver,
+        private readonly AttendanceAnalyticsService $analytics,
+    ) {
+    }
+
+    public function summary(Request $request): JsonResponse
     {
-        // TODO(Phase 12): replace with real aggregation query
+        $schoolId = $this->schoolResolver->resolve($request->user());
+        $today = Carbon::today();
+
+        $counts = $this->analytics->dailyCounts($schoolId, $today, 'student');
+
         return ApiResponse::success([
-            'total_students' => 0,
-            'total_teachers' => 0,
-            'present_today' => 0,
-            'sms_sent_today' => 0,
+            'total_students' => Student::query()->where('school_id', $schoolId)->where('status', StudentStatus::Active)->count(),
+            'total_teachers' => Staff::query()->where('school_id', $schoolId)->where('employment_status', StaffEmploymentStatus::Active)->count(),
+            'present_today' => $counts['present'],
+            'absent_today' => $counts['absent'],
+            'late_today' => $counts['late'],
+            'is_working_day' => $counts['is_working_day'],
+            'sms_sent_today' => SmsLog::query()
+                ->where('school_id', $schoolId)
+                ->where('status', SmsLogStatus::Sent)
+                ->whereDate('sent_at', $today)
+                ->count(),
         ]);
     }
 

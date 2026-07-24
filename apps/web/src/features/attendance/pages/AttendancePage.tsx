@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AnomalyReviewSection } from '../components/AnomalyReviewSection';
 import { buildAttendanceColumns } from '../components/attendanceColumns';
 import { ManualCorrectionDialog } from '../components/ManualCorrectionDialog';
@@ -26,10 +27,15 @@ function today(): string {
 
 export default function AttendancePage() {
   const canManage = useCan(['super_admin', 'admin']);
+  // Pre-filtered arrival from the dashboard's Present/Absent stat cards
+  // (Prompt 18) — read once on mount, not kept in sync with the URL
+  // afterward, since this page manages its own filter state locally like
+  // every other list page in the app.
+  const [searchParams] = useSearchParams();
   const [ownerType, setOwnerType] = useState<'student' | 'staff'>('student');
-  const [date, setDate] = useState(today());
+  const [date, setDate] = useState(searchParams.get('date') ?? today());
   const [classFilter, setClassFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') ?? 'all');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [pageIndex, setPageIndex] = useState(0);

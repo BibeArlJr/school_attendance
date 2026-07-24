@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { GraduationCap, Users, ClipboardCheck, MessageSquareText } from 'lucide-react';
+import { GraduationCap, Users, ClipboardCheck, UserX, MessageSquareText } from 'lucide-react';
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { dashboardApi } from '../api/dashboardApi';
 import { AttendanceTrendChart } from '../components/AttendanceTrendChart';
@@ -25,12 +26,25 @@ const cardItemVariants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' as const } },
 };
 
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['dashboard', 'summary'],
     queryFn: dashboardApi.getSummary,
   });
   const attendanceTrend = useAttendanceTrend();
+
+  function goToAttendance(status?: 'absent') {
+    const params = new URLSearchParams({ date: today() });
+    if (status) {
+      params.set('status', status);
+    }
+    navigate(`/attendance?${params.toString()}`);
+  }
 
   useEffect(() => {
     // example usage — see docs/architecture/service-pattern.md
@@ -82,7 +96,20 @@ export default function DashboardPage() {
               <SummaryCard label="Total Teachers" value={data.total_teachers} icon={Users} />
             </motion.div>
             <motion.div variants={cardItemVariants}>
-              <SummaryCard label="Present Today" value={data.present_today} icon={ClipboardCheck} />
+              <SummaryCard
+                label="Present Today"
+                value={data.present_today}
+                icon={ClipboardCheck}
+                onClick={() => goToAttendance()}
+              />
+            </motion.div>
+            <motion.div variants={cardItemVariants}>
+              <SummaryCard
+                label="Absent Today"
+                value={data.absent_today}
+                icon={UserX}
+                onClick={() => goToAttendance('absent')}
+              />
             </motion.div>
             <motion.div variants={cardItemVariants}>
               <SummaryCard

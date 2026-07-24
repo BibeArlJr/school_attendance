@@ -1,4 +1,10 @@
-import type { AttendanceAnomalyEvent, AttendanceRecord, ScanResult } from '../types';
+import type {
+  AttendanceAnomalyEvent,
+  AttendanceCalendarDay,
+  AttendanceRecord,
+  ScanResult,
+  StudentAttendanceSummary,
+} from '../types';
 import { apiClient } from '@/shared/lib/apiClient';
 import type { ApiSuccessResponse, PaginatedResponse } from '@/shared/types';
 
@@ -64,6 +70,25 @@ export const attendanceApi = {
     const { data } = await apiClient.patch<ApiSuccessResponse<AttendanceRecord>>(
       `/attendance-records/${recordId}`,
       values,
+    );
+    return data.data;
+  },
+
+  async studentCalendar(
+    studentUuid: string,
+    year: number,
+    month: number,
+  ): Promise<AttendanceCalendarDay[]> {
+    const { data } = await apiClient.get<ApiSuccessResponse<AttendanceCalendarDay[]>>(
+      `/students/${studentUuid}/attendance-calendar`,
+      { params: { year, month } },
+    );
+    return data.data;
+  },
+
+  async studentSummary(studentUuid: string): Promise<StudentAttendanceSummary> {
+    const { data } = await apiClient.get<ApiSuccessResponse<StudentAttendanceSummary>>(
+      `/students/${studentUuid}/attendance-summary`,
     );
     return data.data;
   },

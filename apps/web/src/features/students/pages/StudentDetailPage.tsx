@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { useStudent } from '../hooks/useStudent';
 import { formatDob } from '../lib/formatDob';
+import { AttendanceHistorySection } from '@/features/attendance/components/AttendanceHistorySection';
 import { IdCardSection } from '@/features/idcards/components/IdCardSection';
 import { GuardiansSection } from '@/features/parents/components/GuardiansSection';
 import { EmptyState } from '@/shared/components/feedback/EmptyState';
@@ -85,6 +86,10 @@ export default function StudentDetailPage() {
 
       <div className="mt-4">
         <IdCardSection studentId={student.uuid} />
+      </div>
+
+      <div className="mt-4">
+        <AttendanceHistorySection studentUuid={student.uuid} />
       </div>
 
       {canViewGuardians && (
