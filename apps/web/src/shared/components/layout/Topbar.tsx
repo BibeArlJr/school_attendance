@@ -2,6 +2,7 @@ import { Menu, Moon, Sun, LogOut, User as UserIcon } from 'lucide-react';
 import { useTheme } from '@/app/providers/ThemeProvider';
 import { useLogout } from '@/features/auth/hooks/useLogout';
 import { useAuthStore } from '@/features/auth/store/authStore';
+import { SchoolSwitcher } from '@/features/platform/components/SchoolSwitcher';
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
 import { Button } from '@/shared/components/ui/button';
 import {
@@ -39,6 +40,7 @@ export function Topbar({ onOpenMobileMenu }: TopbarProps) {
   const { theme, toggleTheme } = useTheme();
   const logout = useLogout();
 
+  const isSuperAdmin = user?.role === 'super_admin';
   const schoolName = user?.school?.name ?? 'Demo School';
 
   return (
@@ -53,7 +55,11 @@ export function Topbar({ onOpenMobileMenu }: TopbarProps) {
         <Menu className="size-5" />
       </Button>
 
-      <span className="truncate text-sm font-medium text-foreground">{schoolName}</span>
+      {isSuperAdmin ? (
+        <SchoolSwitcher />
+      ) : (
+        <span className="truncate text-sm font-medium text-foreground">{schoolName}</span>
+      )}
 
       <div className="ml-auto flex items-center gap-2">
         <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">

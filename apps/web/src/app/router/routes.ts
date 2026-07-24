@@ -18,6 +18,11 @@ export const ROUTES = {
   SMS_LOG: '/sms-log',
   REPORTS: '/reports',
   SETTINGS: '/settings',
+  // Platform Console (Prompt 24) — super_admin only, deliberately not a
+  // MODULES.ts entry: it sits above the per-school module system, not
+  // inside it, so it's reached via the Topbar's school switcher, not the
+  // main Sidebar.
+  PLATFORM_SCHOOLS: '/platform/schools',
 } as const;
 
 // Students/Teachers/Parents/Classes are all route-bound by uuid now

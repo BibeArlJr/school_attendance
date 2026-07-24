@@ -12,7 +12,11 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   school_id: number | null;
-  school?: SchoolSummary;
+  school?: SchoolSummary | null;
+  // Only meaningful for role='super_admin' — which school's data they're
+  // currently viewing (Prompt 24). Null until they select one via the
+  // Platform Console / Topbar switcher.
+  active_school?: SchoolSummary | null;
 }
 
 // LoginCredentials intentionally isn't declared here — it's inferred from

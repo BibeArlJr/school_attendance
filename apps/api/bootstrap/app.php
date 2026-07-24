@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\Exceptions\NoActiveSchoolSelectedException;
 use App\Support\Responses\ApiResponse;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -47,6 +48,22 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (AccessDeniedHttpException $e, Request $request) {
             if ($request->is('api/*')) {
                 return ApiResponse::error($e->getMessage() ?: 'This action is unauthorized.', null, 403);
+            }
+        });
+
+        // Global, not per-controller: CurrentSchoolResolver is called
+        // from dozens of controllers across every module, and this is
+        // the only way to cover all of them without touching every call
+        // site (Prompt 24). 'code' => 'no_active_school' is what the
+        // frontend actually checks to show the "select a school" prompt
+        // instead of a generic error toast.
+        $exceptions->render(function (NoActiveSchoolSelectedException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return ApiResponse::error(
+                    'Select a school to manage before continuing.',
+                    ['code' => 'no_active_school'],
+                    409,
+                );
             }
         });
     })->create();

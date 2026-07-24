@@ -18,11 +18,20 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'role' => $this->role->value,
             'school_id' => $this->school_id,
-            'school' => $this->whenLoaded('school', fn () => [
+            'school' => $this->whenLoaded('school', fn () => $this->school ? [
                 'id' => $this->school->id,
                 'name' => $this->school->name,
                 'slug' => $this->school->slug,
-            ]),
+            ] : null),
+            // Only meaningful for role=super_admin (Prompt 24) — which
+            // school's data they're currently viewing, distinct from
+            // `school` above (their own school_id, always null for
+            // super_admin since it's a platform-level role).
+            'active_school' => $this->whenLoaded('activeSchool', fn () => $this->activeSchool ? [
+                'id' => $this->activeSchool->id,
+                'name' => $this->activeSchool->name,
+                'slug' => $this->activeSchool->slug,
+            ] : null),
         ];
     }
 }

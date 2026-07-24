@@ -84,6 +84,16 @@ class AppServiceProvider extends ServiceProvider
             fn (User $user): bool => in_array($user->role->value, ['super_admin', 'admin'], true),
         );
 
+        // Platform Console (Prompt 24) — super_admin-only, checked
+        // directly against the role, deliberately NOT generated from
+        // config/modules.php: that config is the per-school module
+        // matrix (ADR 0003), and the platform console sits above school
+        // scoping entirely, not inside it.
+        Gate::define(
+            'platform-admin',
+            fn (User $user): bool => $user->role->value === 'super_admin',
+        );
+
         // IdCard/AttendanceEvent/AttendanceRecord owner_type stores these
         // short aliases, not fully-qualified class names.
         Relation::morphMap([

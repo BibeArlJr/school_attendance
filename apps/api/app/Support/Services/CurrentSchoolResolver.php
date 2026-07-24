@@ -4,11 +4,16 @@ namespace App\Support\Services;
 
 use App\Models\User;
 use App\Modules\School\Models\School;
+use App\Support\Exceptions\NoActiveSchoolSelectedException;
 
 /**
- * Resolves which school a request operates against. Phase 12
- * (multi-tenant hardening) hasn't happened yet and only one demo school
- * exists, so this is a deliberate simplification, not the final design.
+ * Resolves which school a request operates against. Regular users
+ * (admin/teacher/guard) always resolve to their own school_id — that
+ * path is untouched by Prompt 24. super_admin has no school_id of their
+ * own (platform-level), so they must explicitly select one first
+ * (POST /platform/active-school) — no silent "the only school" fallback
+ * anymore (that was a deliberate Phase 1-era simplification, now that a
+ * second real school exists to make it actively wrong).
  */
 class CurrentSchoolResolver
 {
@@ -18,8 +23,11 @@ class CurrentSchoolResolver
             return $user->school_id;
         }
 
-        // TODO(Phase 12): support super_admin operating across multiple
-        // schools via explicit school selection.
-        return School::query()->firstOrFail()->id;
+        if ($user->active_school_id !== null
+            && School::query()->whereKey($user->active_school_id)->exists()) {
+            return $user->active_school_id;
+        }
+
+        throw new NoActiveSchoolSelectedException();
     }
 }

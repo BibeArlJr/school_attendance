@@ -34,7 +34,7 @@ class User extends Authenticatable
      *
      * @var array<int, string>
      */
-    protected $fillable = ['name', 'email', 'password', 'school_id', 'role', 'is_active', 'email_verified_at'];
+    protected $fillable = ['name', 'email', 'password', 'school_id', 'active_school_id', 'role', 'is_active', 'email_verified_at'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -61,5 +61,15 @@ class User extends Authenticatable
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
+    }
+
+    /**
+     * Only meaningful for role=super_admin — which school's data they're
+     * currently viewing (Prompt 24). Null until they explicitly select
+     * one via POST /platform/active-school.
+     */
+    public function activeSchool(): BelongsTo
+    {
+        return $this->belongsTo(School::class, 'active_school_id');
     }
 }

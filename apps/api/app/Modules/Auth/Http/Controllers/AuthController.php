@@ -24,7 +24,7 @@ class AuthController extends Controller
         );
 
         return ApiResponse::success([
-            'user' => new UserResource($result['user']->load('school')),
+            'user' => new UserResource($result['user']->load(['school', 'activeSchool'])),
             'token' => $result['token'],
         ], 'Logged in successfully.');
     }
@@ -39,7 +39,7 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         return ApiResponse::success(
-            new UserResource($request->user()->load('school')),
+            new UserResource($request->user()->load(['school', 'activeSchool'])),
         );
     }
 }

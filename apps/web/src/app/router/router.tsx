@@ -28,6 +28,7 @@ const AttendancePage = lazy(() => import('@/features/attendance/pages/Attendance
 const SmsLogPage = lazy(() => import('@/features/sms/pages/SmsLogPage'));
 const ReportsPage = lazy(() => import('@/features/reports/pages/ReportsPage'));
 const SettingsPage = lazy(() => import('@/features/settings/pages/SettingsPage'));
+const PlatformSchoolsPage = lazy(() => import('@/features/platform/pages/PlatformSchoolsPage'));
 
 function withSuspense(element: React.ReactNode) {
   return <Suspense fallback={<LoadingSkeleton className="p-6" />}>{element}</Suspense>;
@@ -149,6 +150,18 @@ export const router = createBrowserRouter([
           {
             path: ROUTES.SETTINGS,
             element: withSuspense(withRoleGuard(settingsModule, <SettingsPage />)),
+          },
+          {
+            // Platform Console (Prompt 24) — deliberately NOT driven by
+            // MODULES.ts/config('modules.php'): it sits above the
+            // per-school module matrix, not inside it, so allowedRoles
+            // is passed directly rather than looked up from a module def.
+            path: ROUTES.PLATFORM_SCHOOLS,
+            element: withSuspense(
+              <RoleGuard allowedRoles={['super_admin']} pageTitle="Platform Console">
+                <PlatformSchoolsPage />
+              </RoleGuard>,
+            ),
           },
           ...placeholderRoutes,
         ],

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AuthUser } from '../types';
+import type { AuthUser, SchoolSummary } from '../types';
 
 interface AuthState {
   user: AuthUser | null;
@@ -7,6 +7,14 @@ interface AuthState {
   isAuthenticated: boolean;
   login: (user: AuthUser, token: string) => void;
   logout: () => void;
+  /**
+   * Updates the persisted user's active_school after a successful
+   * POST /platform/active-school — nothing else in the app currently
+   * refetches /auth/me, so this is the one place that keeps the Topbar
+   * and the AppShell's "no school selected" gate in sync with the
+   * backend immediately after switching (Prompt 24).
+   */
+  setActiveSchool: (school: SchoolSummary) => void;
 }
 
 // Phase 13 hardening TODO: the token currently lives in localStorage, which
@@ -42,5 +50,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     set({ user: null, token: null, isAuthenticated: false });
+  },
+  setActiveSchool: (school) => {
+    set((state) => {
+      if (!state.user) return state;
+      const user = { ...state.user, active_school: school };
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+      return { user };
+    });
   },
 }));
