@@ -223,3 +223,4 @@ Everything not built in this phase (Students, Teachers, Attendance, Gate
 Scanner, Barcode, SMS, Reports, real Settings persistence) is reachable from
 the sidebar as a placeholder page marked "Coming in Phase N" — the routes
 and navigation are stable so later phases only need to fill in the pages.
+# school_attendance
