@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 // actually scanned.
 Route::middleware(['auth:sanctum', 'can:access-gate-scanner'])->group(function () {
     Route::post('/gate-scanner/scan', [GateScannerController::class, 'scan']);
+    Route::get('/gate-scanner/calendar', [GateScannerController::class, 'calendar']);
 });
 
 Route::middleware(['auth:sanctum', 'can:access-attendance'])->group(function () {
@@ -20,7 +21,7 @@ Route::middleware(['auth:sanctum', 'can:access-attendance'])->group(function () 
     Route::get('/students/{student}/attendance-summary', [AttendanceController::class, 'studentSummary']);
 });
 
-Route::middleware(['auth:sanctum', 'can:manage-attendance'])->group(function () {
+Route::middleware(['auth:sanctum', 'can:manage-attendance', 'license-active'])->group(function () {
     Route::patch('/attendance-events/{attendanceEvent}/review', [AttendanceController::class, 'reviewEvent']);
     Route::patch('/attendance-records/{attendanceRecord}', [AttendanceController::class, 'updateRecord']);
 });

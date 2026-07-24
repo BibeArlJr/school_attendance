@@ -1,6 +1,7 @@
 import type {
   AcademicYear,
   AttendanceConfig,
+  License,
   SchoolCalendarEntry,
   SchoolProfile,
 } from '../types';
@@ -93,5 +94,10 @@ export const settingsApi = {
 
   async deleteCalendarEntry(id: number): Promise<void> {
     await apiClient.delete(`/settings/calendar/${id}`);
+  },
+
+  async getLicense(): Promise<License> {
+    const { data } = await apiClient.get<ApiSuccessResponse<License>>('/settings/license');
+    return data.data;
   },
 };

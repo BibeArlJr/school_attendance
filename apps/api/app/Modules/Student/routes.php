@@ -13,7 +13,7 @@ Route::middleware(['auth:sanctum', 'can:access-students'])->group(function () {
     Route::get('/students/{student}', [StudentController::class, 'show']);
 });
 
-Route::middleware(['auth:sanctum', 'can:manage-students'])->group(function () {
+Route::middleware(['auth:sanctum', 'can:manage-students', 'license-active'])->group(function () {
     Route::post('/students', [StudentController::class, 'store']);
     Route::put('/students/{student}', [StudentController::class, 'update']);
     Route::patch('/students/{student}/status', [StudentController::class, 'updateStatus']);

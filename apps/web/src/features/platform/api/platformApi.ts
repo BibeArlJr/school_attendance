@@ -33,4 +33,11 @@ export const platformApi = {
     );
     return data.data;
   },
+
+  async activateSubscription(schoolId: number): Promise<PlatformSchool> {
+    const { data } = await apiClient.post<ApiSuccessResponse<PlatformSchool>>(
+      `/platform/schools/${schoolId}/activate-subscription`,
+    );
+    return data.data;
+  },
 };

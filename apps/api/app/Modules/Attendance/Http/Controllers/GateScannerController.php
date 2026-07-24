@@ -4,11 +4,13 @@ namespace App\Modules\Attendance\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Attendance\Http\Requests\ScanRequest;
+use App\Modules\Attendance\Models\SchoolCalendar;
 use App\Modules\Attendance\Services\AttendanceService;
 use App\Modules\Attendance\Services\ScanOutcome;
 use App\Support\Responses\ApiResponse;
 use App\Support\Services\CurrentSchoolResolver;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class GateScannerController extends Controller
 {
@@ -30,6 +32,24 @@ class GateScannerController extends Controller
         );
 
         return ApiResponse::success($this->present($outcome));
+    }
+
+    /**
+     * Read-only school_calendars, reachable by guard (Prompt 25 Part D)
+     * without giving guard any access to the rest of Settings (Attendance
+     * Rules, School Profile, License) — deliberately its own narrow
+     * endpoint under access-gate-scanner, not a shared Settings route.
+     */
+    public function calendar(Request $request): JsonResponse
+    {
+        $schoolId = $this->schoolResolver->resolve($request->user());
+
+        $entries = SchoolCalendar::query()
+            ->where('school_id', $schoolId)
+            ->orderBy('date')
+            ->get(['id', 'date', 'day_type', 'label', 'half_day_end_time']);
+
+        return ApiResponse::success($entries);
     }
 
     /**

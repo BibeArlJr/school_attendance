@@ -17,6 +17,7 @@ Route::middleware(['auth:sanctum', 'can:access-settings'])->group(function () {
     Route::put('/settings/attendance-config', [SettingsController::class, 'updateAttendanceConfig']);
 
     Route::get('/settings/academic-year', [SettingsController::class, 'academicYear']);
+    Route::get('/settings/license', [SettingsController::class, 'license']);
 
     Route::get('/settings/calendar', [SettingsCalendarController::class, 'index']);
     Route::post('/settings/calendar', [SettingsCalendarController::class, 'store']);

@@ -32,7 +32,17 @@ apiClient.interceptors.response.use(
         // 403 = authenticated but not permitted -> stay logged in, just
         // surface it. Calling code can additionally render ForbiddenState
         // inline where that's meaningful.
-        toast.error("You don't have permission to do that.");
+        //
+        // license_expired (Prompt 25 Part C) is the one 403 that carries
+        // a specific, actionable message ("subscription expired, contact
+        // your administrator") rather than a generic permissions denial
+        // — shown verbatim instead of the generic fallback below.
+        const data = error.response.data as { message?: string; errors?: { code?: string } } | undefined;
+        if (data?.errors?.code === 'license_expired' && data.message) {
+          toast.error(data.message);
+        } else {
+          toast.error("You don't have permission to do that.");
+        }
       }
     }
     return Promise.reject(error);

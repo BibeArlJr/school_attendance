@@ -4,6 +4,7 @@ namespace App\Modules\Auth\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
+use App\Modules\Auth\Http\Requests\ChangePasswordRequest;
 use App\Modules\Auth\Http\Requests\LoginRequest;
 use App\Modules\Auth\Services\AuthService;
 use App\Support\Responses\ApiResponse;
@@ -41,5 +42,18 @@ class AuthController extends Controller
         return ApiResponse::success(
             new UserResource($request->user()->load(['school', 'activeSchool'])),
         );
+    }
+
+    /**
+     * Self-service, any role (Prompt 25 Part B). The current Sanctum
+     * token is deliberately left untouched — PATs aren't derived from or
+     * tied to the password hash in any way, so it stays valid after this;
+     * there's no auth-mechanism reason to force a re-login.
+     */
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
+    {
+        $request->user()->update(['password' => $request->validated('new_password')]);
+
+        return ApiResponse::success(message: 'Password changed successfully.');
     }
 }

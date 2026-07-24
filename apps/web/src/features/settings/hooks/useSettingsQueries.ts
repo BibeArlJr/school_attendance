@@ -19,3 +19,7 @@ export function useAcademicYear() {
 export function useCalendarEntries() {
   return useQuery({ queryKey: ['settings', 'calendar'], queryFn: settingsApi.listCalendar });
 }
+
+export function useLicense() {
+  return useQuery({ queryKey: ['settings', 'license'], queryFn: settingsApi.getLicense });
+}

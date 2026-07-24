@@ -13,6 +13,9 @@ export const ROUTES = {
   PARENT_DETAIL: '/parents/:id',
   ATTENDANCE: '/attendance',
   GATE_SCANNER: '/gate-scanner',
+  // Guard-reachable, read-only (Prompt 25 Part D) — deliberately NOT
+  // under /settings, which guard can't access at all.
+  GATE_CALENDAR: '/gate-scanner/calendar',
   BARCODE: '/barcode',
   BARCODE_PRINT: '/barcode/print',
   SMS_LOG: '/sms-log',

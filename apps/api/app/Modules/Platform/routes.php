@@ -10,5 +10,6 @@ Route::middleware(['auth:sanctum', 'can:platform-admin'])->prefix('platform')->g
     Route::get('/schools', [PlatformSchoolController::class, 'index']);
     Route::post('/schools', [PlatformSchoolController::class, 'store']);
     Route::get('/schools/{school}', [PlatformSchoolController::class, 'show']);
+    Route::post('/schools/{school}/activate-subscription', [PlatformSchoolController::class, 'activateSubscription']);
     Route::post('/active-school', [PlatformSchoolController::class, 'setActive']);
 });

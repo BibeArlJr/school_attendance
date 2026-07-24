@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Modules\Platform\Http\Requests\StorePlatformSchoolRequest;
 use App\Modules\Platform\Services\PlatformSchoolService;
 use App\Modules\School\Models\School;
+use App\Support\Enums\LicenseStatus;
 use App\Support\Responses\ApiResponse;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -32,7 +34,7 @@ class PlatformSchoolController extends Controller
             ->orderBy('name')
             ->get();
 
-        return ApiResponse::success($schools);
+        return ApiResponse::success($schools->map(fn (School $school) => $this->withLicense($school)));
     }
 
     public function show(School $school): JsonResponse
@@ -42,7 +44,7 @@ class PlatformSchoolController extends Controller
             'students as students_count' => fn ($query) => $query->where('status', 'active'),
         ]);
 
-        return ApiResponse::success($school);
+        return ApiResponse::success($this->withLicense($school));
     }
 
     public function store(StorePlatformSchoolRequest $request): JsonResponse
@@ -50,7 +52,7 @@ class PlatformSchoolController extends Controller
         $result = $this->schoolService->create($request->validated());
 
         return ApiResponse::success([
-            'school' => $result['school'],
+            'school' => $this->withLicense($result['school']),
             'admin_email' => $result['admin']->email,
             'temporary_password' => $result['temporary_password'],
         ], 'School created successfully.', 201);
@@ -76,5 +78,41 @@ class PlatformSchoolController extends Controller
             School::query()->findOrFail($validated['school_id']),
             'Active school updated.',
         );
+    }
+
+    /**
+     * Extends from the current expiry if the school isn't expired yet
+     * (an early renewal shouldn't waste the time already paid for);
+     * starts fresh from today otherwise (Prompt 25 Part C — this
+     * specific rule was a judgment call, reported rather than asked
+     * about). license_status is set to reflect the activation itself;
+     * it's never what enforcement/display actually reads (that's always
+     * School::licenseStatus(), computed live from amc_expiry_date).
+     */
+    public function activateSubscription(School $school): JsonResponse
+    {
+        $notYetExpired = $school->amc_expiry_date !== null
+            && $school->licenseStatus() !== LicenseStatus::Expired;
+
+        $base = $notYetExpired ? Carbon::parse($school->amc_expiry_date) : Carbon::today();
+
+        $school->update([
+            'amc_expiry_date' => $base->copy()->addYear()->toDateString(),
+            'license_status' => LicenseStatus::Active,
+        ]);
+
+        return ApiResponse::success($this->withLicense($school->fresh()), 'Subscription activated.');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function withLicense(School $school): array
+    {
+        return [
+            ...$school->toArray(),
+            'computed_license_status' => $school->licenseStatus()->value,
+            'days_until_expiry' => $school->daysUntilExpiry(),
+        ];
     }
 }

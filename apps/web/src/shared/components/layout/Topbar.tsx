@@ -1,5 +1,7 @@
-import { Menu, Moon, Sun, LogOut, User as UserIcon } from 'lucide-react';
+import { Menu, Moon, Sun, LogOut, KeyRound, User as UserIcon } from 'lucide-react';
+import { useState } from 'react';
 import { useTheme } from '@/app/providers/ThemeProvider';
+import { ChangePasswordDialog } from '@/features/auth/components/ChangePasswordDialog';
 import { useLogout } from '@/features/auth/hooks/useLogout';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { SchoolSwitcher } from '@/features/platform/components/SchoolSwitcher';
@@ -39,6 +41,7 @@ export function Topbar({ onOpenMobileMenu }: TopbarProps) {
   const user = useAuthStore((state) => state.user);
   const { theme, toggleTheme } = useTheme();
   const logout = useLogout();
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const isSuperAdmin = user?.role === 'super_admin';
   const schoolName = user?.school?.name ?? 'Demo School';
@@ -88,6 +91,11 @@ export function Topbar({ onOpenMobileMenu }: TopbarProps) {
               <span className="block text-xs font-normal text-muted-foreground">{user?.email}</span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setChangePasswordOpen(true)}>
+              <KeyRound className="size-4" />
+              Change Password
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => logout.mutate()} disabled={logout.isPending}>
               <LogOut className="size-4" />
               Log out
@@ -95,6 +103,8 @@ export function Topbar({ onOpenMobileMenu }: TopbarProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <ChangePasswordDialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen} />
     </header>
   );
 }

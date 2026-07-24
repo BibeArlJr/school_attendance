@@ -24,6 +24,7 @@ const BarcodePage = lazy(() => import('@/features/idcards/pages/BarcodePage'));
 const BarcodePrintPage = lazy(() => import('@/features/idcards/pages/BarcodePrintPage'));
 const IdCardPage = lazy(() => import('@/features/idcards/pages/IdCardPage'));
 const GateScannerPage = lazy(() => import('@/features/attendance/pages/GateScannerPage'));
+const GateCalendarPage = lazy(() => import('@/features/attendance/pages/GateCalendarPage'));
 const AttendancePage = lazy(() => import('@/features/attendance/pages/AttendancePage'));
 const SmsLogPage = lazy(() => import('@/features/sms/pages/SmsLogPage'));
 const ReportsPage = lazy(() => import('@/features/reports/pages/ReportsPage'));
@@ -138,6 +139,13 @@ export const router = createBrowserRouter([
           {
             path: ROUTES.GATE_SCANNER,
             element: withSuspense(withRoleGuard(gateScannerModule, <GateScannerPage />)),
+          },
+          {
+            // Same gate-scanner module/roles as above (super_admin/admin/
+            // guard) — read-only calendar, reachable by guard without
+            // giving guard any access to /settings (Prompt 25 Part D).
+            path: ROUTES.GATE_CALENDAR,
+            element: withSuspense(withRoleGuard(gateScannerModule, <GateCalendarPage />)),
           },
           {
             path: ROUTES.SMS_LOG,

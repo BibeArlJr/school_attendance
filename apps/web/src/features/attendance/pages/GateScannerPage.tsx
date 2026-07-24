@@ -1,11 +1,14 @@
 import { AnimatePresence } from 'framer-motion';
-import { ScanLine } from 'lucide-react';
+import { CalendarDays, ScanLine } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ScanFeedback } from '../components/ScanFeedback';
 import { useScan } from '../hooks/useScan';
 import type { ScanResult } from '../types';
+import { ROUTES } from '@/app/router/routes';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { PageContainer } from '@/shared/components/layout/PageContainer';
+import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { getNotificationService } from '@/shared/services/mock';
 
@@ -97,6 +100,13 @@ export default function GateScannerPage() {
       description="Scan a student or staff ID card to record entry or exit."
     >
       <div className="mx-auto flex max-w-lg flex-col items-center gap-6 py-6">
+        <Button variant="outline" size="sm" className="self-end" asChild>
+          <Link to={ROUTES.GATE_CALENDAR}>
+            <CalendarDays className="size-4" />
+            View School Calendar
+          </Link>
+        </Button>
+
         <form onSubmit={handleSubmit} className="w-full">
           <div className="relative">
             <ScanLine className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />

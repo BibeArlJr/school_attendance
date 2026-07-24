@@ -36,3 +36,12 @@ export interface AcademicYear {
   end_date: string;
   is_current: boolean;
 }
+
+export type LicenseStatusValue = 'active' | 'grace' | 'expired';
+
+export interface License {
+  status: LicenseStatusValue;
+  amc_expiry_date: string | null;
+  days_until_expiry: number | null;
+  grace_days: number;
+}

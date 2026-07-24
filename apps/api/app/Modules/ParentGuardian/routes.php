@@ -17,11 +17,17 @@ Route::middleware(['auth:sanctum', 'can:access-parents'])->group(function () {
     Route::get('/parents/search', [ParentGuardianController::class, 'search']);
     Route::get('/parents', [ParentGuardianController::class, 'index']);
     Route::get('/parents/{parent}', [ParentGuardianController::class, 'show']);
+    Route::get('/students/{student}/parents', [StudentGuardianController::class, 'index']);
+});
+
+// Same access-parents Gate as the reads above — split into its own
+// group only so license-active (Prompt 25) applies to writes without
+// touching the reads above.
+Route::middleware(['auth:sanctum', 'can:access-parents', 'license-active'])->group(function () {
     Route::post('/parents', [ParentGuardianController::class, 'store']);
     Route::put('/parents/{parent}', [ParentGuardianController::class, 'update']);
     Route::delete('/parents/{parent}', [ParentGuardianController::class, 'destroy']);
 
-    Route::get('/students/{student}/parents', [StudentGuardianController::class, 'index']);
     Route::post('/students/{student}/parents', [StudentGuardianController::class, 'store']);
     Route::delete('/students/{student}/parents/{parent}', [StudentGuardianController::class, 'destroy']);
 });

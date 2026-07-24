@@ -80,4 +80,24 @@ class SettingsController extends Controller
 
         return ApiResponse::success($academicYear);
     }
+
+    /**
+     * Read-only here too — activating/renewing a subscription is a
+     * platform-operator action (Platform Console), not something a
+     * school's own admin does from their Settings page (Prompt 25 Part
+     * C). Status is always computed live from amc_expiry_date, never
+     * the stored license_status column.
+     */
+    public function license(Request $request): JsonResponse
+    {
+        $schoolId = $this->schoolResolver->resolve($request->user());
+        $school = School::query()->findOrFail($schoolId);
+
+        return ApiResponse::success([
+            'status' => $school->licenseStatus()->value,
+            'amc_expiry_date' => $school->amc_expiry_date?->toDateString(),
+            'days_until_expiry' => $school->daysUntilExpiry(),
+            'grace_days' => School::GRACE_DAYS,
+        ]);
+    }
 }

@@ -11,12 +11,19 @@ use Illuminate\Support\Facades\Route;
 // teacher read-tier).
 Route::middleware(['auth:sanctum', 'can:access-teachers'])->group(function () {
     Route::get('/teachers', [StaffController::class, 'index']);
-    Route::post('/teachers', [StaffController::class, 'store']);
     Route::get('/teachers/{staff}', [StaffController::class, 'show']);
+    Route::get('/teachers/{staff}/id-card', [StaffController::class, 'idCard']);
+});
+
+// Same access-teachers Gate as the reads above (no read/write split,
+// Phase 3's matrix already makes this admin/super_admin-only) — split
+// into its own group only so license-active (Prompt 25) applies to
+// writes without touching the reads above.
+Route::middleware(['auth:sanctum', 'can:access-teachers', 'license-active'])->group(function () {
+    Route::post('/teachers', [StaffController::class, 'store']);
     Route::put('/teachers/{staff}', [StaffController::class, 'update']);
     Route::patch('/teachers/{staff}/employment-status', [StaffController::class, 'updateEmploymentStatus']);
     Route::post('/teachers/{staff}/reset-password', [StaffController::class, 'resetPassword']);
-    Route::get('/teachers/{staff}/id-card', [StaffController::class, 'idCard']);
     Route::post('/teachers/{staff}/id-card/reissue', [StaffController::class, 'reissueIdCard']);
     Route::delete('/teachers/{staff}', [StaffController::class, 'destroy']);
 });

@@ -5,6 +5,7 @@ import type {
   ScanResult,
   StudentAttendanceSummary,
 } from '../types';
+import type { SchoolCalendarEntry } from '@/features/settings/types';
 import { apiClient } from '@/shared/lib/apiClient';
 import type { ApiSuccessResponse, PaginatedResponse } from '@/shared/types';
 
@@ -89,6 +90,18 @@ export const attendanceApi = {
   async studentSummary(studentUuid: string): Promise<StudentAttendanceSummary> {
     const { data } = await apiClient.get<ApiSuccessResponse<StudentAttendanceSummary>>(
       `/students/${studentUuid}/attendance-summary`,
+    );
+    return data.data;
+  },
+
+  /**
+   * Read-only school_calendars, reachable by guard (Prompt 25 Part D) —
+   * a narrow endpoint under access-gate-scanner, deliberately separate
+   * from Settings' full calendar CRUD, which guard has no access to.
+   */
+  async gateCalendar(): Promise<SchoolCalendarEntry[]> {
+    const { data } = await apiClient.get<ApiSuccessResponse<SchoolCalendarEntry[]>>(
+      '/gate-scanner/calendar',
     );
     return data.data;
   },
