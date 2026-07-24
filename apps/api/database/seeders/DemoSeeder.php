@@ -87,6 +87,33 @@ class DemoSeeder extends Seeder
             ],
         );
 
+        // Permanent QA accounts (Prompt 22) — deliberately obvious names so
+        // nobody mistakes these for a real staff member in any list or
+        // report. Kept distinct from the "Demo Teacher"/"Demo Guard"
+        // accounts above: those are for demoing the product, these are for
+        // testing it.
+        $qaTeacher = User::updateOrCreate(
+            ['email' => 'qa.teacher@demo-school.edu.np'],
+            [
+                'name' => 'QA Test Teacher',
+                'password' => $password,
+                'school_id' => $school->id,
+                'role' => UserRole::Teacher,
+                'email_verified_at' => now(),
+            ],
+        );
+
+        User::updateOrCreate(
+            ['email' => 'qa.guard@demo-school.edu.np'],
+            [
+                'name' => 'QA Test Guard',
+                'password' => $password,
+                'school_id' => $school->id,
+                'role' => UserRole::Guard,
+                'email_verified_at' => now(),
+            ],
+        );
+
         $academicYear = AcademicYear::firstOrCreate(
             ['school_id' => $school->id, 'label' => '2026-2027'],
             [
@@ -116,7 +143,7 @@ class DemoSeeder extends Seeder
         )->values();
 
         $this->seedStudents($school->id, $classes);
-        $this->seedStaff($school, $teacher);
+        $this->seedStaff($school, $teacher, $qaTeacher);
 
         // Fetch in creation order (id ascending) so indices line up with
         // the $names array in seedStudents() below, regardless of whether
@@ -132,6 +159,8 @@ class DemoSeeder extends Seeder
         $this->command->info('  admin:       admin@demo-school.edu.np');
         $this->command->info('  teacher:     teacher@demo-school.edu.np');
         $this->command->info('  guard:       guard@demo-school.edu.np');
+        $this->command->info('  qa teacher (test-only): qa.teacher@demo-school.edu.np');
+        $this->command->info('  qa guard (test-only):   qa.guard@demo-school.edu.np');
     }
 
     /**
@@ -430,9 +459,11 @@ class DemoSeeder extends Seeder
      * Backfills a staff profile + ID card for the Demo Teacher (an
      * existing User from Phase 1, seeded before the staff table existed),
      * plus one additional on-leave demo teacher so the class
-     * teacher-picker has something real to filter out.
+     * teacher-picker has something real to filter out, plus the QA Test
+     * Teacher's profile (Prompt 22) — obviously-synthetic designation so
+     * it reads as a test account, not a real hire, in the Teachers list.
      */
-    private function seedStaff(School $school, User $teacher): void
+    private function seedStaff(School $school, User $teacher, User $qaTeacher): void
     {
         if (Staff::query()->where('user_id', $teacher->id)->exists()) {
             $this->command->info('Demo staff already seeded, skipping.');
@@ -472,6 +503,16 @@ class DemoSeeder extends Seeder
         ]);
         $idCardService->generateForStaff($onLeaveStaff);
 
-        $this->command->info('Seeded 2 demo staff profiles (1 active, 1 on-leave) with ID cards.');
+        $qaStaff = Staff::create([
+            'school_id' => $school->id,
+            'user_id' => $qaTeacher->id,
+            'designation' => 'QA Test Account — Not A Real Employee',
+            'qualification' => 'N/A',
+            'joined_date' => now()->toDateString(),
+            'employment_status' => 'active',
+        ]);
+        $idCardService->generateForStaff($qaStaff);
+
+        $this->command->info('Seeded 2 demo staff profiles (1 active, 1 on-leave) with ID cards, plus the QA Test Teacher profile.');
     }
 }

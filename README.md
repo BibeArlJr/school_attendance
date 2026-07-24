@@ -155,7 +155,7 @@ drifting to a different port.
 ## Demo login
 
 Seeded by `DemoSeeder` (`apps/api/database/seeders/DemoSeeder.php`). All
-four demo users share the same password; each has a different role, which
+demo users share the same password; each has a different role, which
 determines which sidebar modules and API endpoints they can access (see
 `docs/adr/0003-static-role-capability-map.md`).
 
@@ -169,6 +169,23 @@ determines which sidebar modules and API endpoints they can access (see
 There is no `parent` demo user — the parent role is out of scope until its
 own portal is built (a distinct route tree, not a restricted view of the
 staff dashboard).
+
+### QA accounts (test-only, Prompt 22)
+
+Two permanent seeded accounts exist purely for manual/automated QA
+against the role matrix — not demo/showcase accounts. Their names are
+deliberately synthetic so they're never mistaken for a real staff member
+in the Teachers list, a report, or an export.
+
+| Role    | Email                              | Password        | Notes                                    |
+| ------- | ----------------------------------- | --------------- | ----------------------------------------- |
+| teacher | `qa.teacher@demo-school.edu.np`     | `Demo@Passw0rd` | Name "QA Test Teacher" — appears in the Teachers list with designation "QA Test Account — Not A Real Employee" |
+| guard   | `qa.guard@demo-school.edu.np`       | `Demo@Passw0rd` | Name "QA Test Guard"                       |
+
+No special exclusion logic hides these anywhere in the app — they behave
+like any other account of their role. If you're auditing real staff data
+(e.g. the Reports data-quality numbers) and these two show up, that's
+expected — they're intentionally part of the same tables.
 
 ## Useful commands
 

@@ -274,9 +274,14 @@ export function DataTable<TData extends { id: number }, TValue>({
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id}>
                     {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                      // h-full w-full so the clickable area fills the
+                      // th's full h-10 (40px) cell — previously the button
+                      // sized to its text content alone (~20px tall),
+                      // leaving roughly half the visible header cell
+                      // unresponsive to clicks/taps (Prompt 22 audit).
                       <button
                         type="button"
-                        className="flex items-center gap-1 font-medium"
+                        className="flex h-full w-full items-center gap-1 font-medium"
                         onClick={header.column.getToggleSortingHandler()}
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
