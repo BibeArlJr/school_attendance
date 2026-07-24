@@ -2,7 +2,7 @@ import { Check, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useState } from 'react';
 import type { SchoolClass } from '../types';
 import type { ImportBatchRow } from '../types/import';
-import type { LocalDecisions } from '../types/importReview';
+import { effectiveResolution, type LocalDecisions } from '../types/importReview';
 import { ClassPickerCell } from './ClassPickerCell';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
@@ -78,6 +78,7 @@ export function ImportRowsTable({ rows, classes, decisions, onDecisionChange }: 
           <TableBody>
             {pageRows.map((row) => {
               const decision = decisions[row.id] ?? { resolution: 'pending' };
+              const resolution = effectiveResolution(row.flags, decisions[row.id]?.resolution);
               const isUnrecognizedClass = row.flags.includes('unrecognized_class');
               const isDuplicate = row.flags.includes('possible_duplicate');
 
@@ -141,7 +142,7 @@ export function ImportRowsTable({ rows, classes, decisions, onDecisionChange }: 
                       <Button
                         type="button"
                         size="icon-sm"
-                        variant={decision.resolution === 'accept' ? 'default' : 'outline'}
+                        variant={resolution === 'accept' ? 'default' : 'outline'}
                         aria-label="Accept row"
                         onClick={() => onDecisionChange(row.id, { resolution: 'accept' })}
                       >
@@ -150,7 +151,7 @@ export function ImportRowsTable({ rows, classes, decisions, onDecisionChange }: 
                       <Button
                         type="button"
                         size="icon-sm"
-                        variant={decision.resolution === 'skip' ? 'destructive' : 'outline'}
+                        variant={resolution === 'skip' ? 'destructive' : 'outline'}
                         aria-label="Skip row"
                         onClick={() => onDecisionChange(row.id, { resolution: 'skip' })}
                       >

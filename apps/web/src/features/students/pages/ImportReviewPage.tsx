@@ -7,7 +7,7 @@ import { useClasses } from '../hooks/useClasses';
 import { useCommitImport } from '../hooks/useCommitImport';
 import { useImportBatch } from '../hooks/useImportBatch';
 import type { ImportRowDecision } from '../types/import';
-import type { LocalDecisions } from '../types/importReview';
+import { effectiveResolution, type LocalDecisions } from '../types/importReview';
 import { ROUTES } from '@/app/router/routes';
 import { EmptyState } from '@/shared/components/feedback/EmptyState';
 import { ForbiddenState } from '@/shared/components/feedback/ForbiddenState';
@@ -130,18 +130,33 @@ export default function ImportReviewPage() {
     }
   }, [batch, activeFilter]);
 
-  const acceptCount = Object.values(decisions).filter((d) => d.resolution === 'accept').length;
+  const acceptCount = batch
+    ? batch.rows.filter((row) => effectiveResolution(row.flags, decisions[row.id]?.resolution) === 'accept')
+        .length
+    : 0;
 
+  // Iterates every row in the batch, not just Object.entries(decisions) —
+  // a clean row the reviewer never touched still needs to end up in this
+  // payload as an implicit 'accept' (see effectiveResolution), or it's
+  // silently skipped even though nothing was ever wrong with it.
   function buildPayload(): ImportRowDecision[] {
-    return Object.entries(decisions)
-      .filter(([, d]) => d.resolution === 'accept' || d.resolution === 'skip')
-      .map(([rowId, d]) => ({
-        id: Number(rowId),
-        resolution: d.resolution as 'accept' | 'skip',
-        class_id: d.classId,
-        new_class_name: d.newClassName,
-        first_name: d.firstName,
-        last_name: d.lastName,
+    if (!batch) {
+      return [];
+    }
+    return batch.rows
+      .map((row) => {
+        const decision = decisions[row.id];
+        const resolution = effectiveResolution(row.flags, decision?.resolution);
+        return { row, decision, resolution };
+      })
+      .filter(({ resolution }) => resolution === 'accept' || resolution === 'skip')
+      .map(({ row, decision, resolution }) => ({
+        id: row.id,
+        resolution: resolution as 'accept' | 'skip',
+        class_id: decision?.classId,
+        new_class_name: decision?.newClassName,
+        first_name: decision?.firstName,
+        last_name: decision?.lastName,
       }));
   }
 
@@ -186,8 +201,10 @@ export default function ImportReviewPage() {
           <CardContent className="space-y-3">
             <p>
               <span className="font-semibold text-emerald-600">{results.created}</span> student
-              {results.created === 1 ? '' : 's'} created,{' '}
-              <span className="font-semibold text-muted-foreground">{results.skipped}</span> skipped.
+              {results.created === 1 ? '' : 's'} created out of {batch.rows.length} row
+              {batch.rows.length === 1 ? '' : 's'} in the file,{' '}
+              <span className="font-semibold text-muted-foreground">{results.skipped}</span> skipped
+              (marked skip, or left unresolved while flagged for review).
             </p>
             {results.errors.length > 0 && (
               <div className="space-y-1 rounded-md border border-destructive/50 bg-destructive/5 p-3 text-sm">
@@ -273,7 +290,11 @@ export default function ImportReviewPage() {
           onDecisionChange={handleDecisionChange}
         />
 
-        <div className="flex items-center justify-end gap-3 border-t pt-4">
+        {/* Sticky, not just a trailing element after a potentially very
+            long page (10 grade-group cards + up to hundreds of table
+            rows) — resolving groups at the top must never make it easy
+            to forget there's a separate, final commit step below. */}
+        <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/95 py-3 backdrop-blur">
           <span className="text-sm text-muted-foreground">
             {acceptCount} row{acceptCount === 1 ? '' : 's'} will be created
           </span>
