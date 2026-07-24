@@ -113,7 +113,7 @@ export const MODULES: ModuleDef[] = [
     label: 'Settings',
     icon: Settings,
     path: ROUTES.SETTINGS,
-    phase: 10,
+    // No `phase` — Settings ships real content this phase, not a placeholder.
     allowedRoles: ['super_admin', 'admin'],
   },
 ];
