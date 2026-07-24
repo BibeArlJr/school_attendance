@@ -73,10 +73,13 @@ export default function DashboardPage() {
         variants={cardGridVariants}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+        // 5 cards — grid-cols-5 at desktop so all 5 land on one row with
+        // no orphaned last card stranded alone with a large empty gap
+        // (Prompt 22 addendum).
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
       >
         {isLoading || !data ? (
-          Array.from({ length: 4 }).map((_, index) => (
+          Array.from({ length: 5 }).map((_, index) => (
             <Card key={index}>
               <CardContent className="pt-6">
                 <LoadingSkeleton lines={2} />

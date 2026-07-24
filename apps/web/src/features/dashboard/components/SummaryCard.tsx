@@ -27,7 +27,7 @@ export function SummaryCard({ label, value, icon: Icon, onClick }: SummaryCardPr
       }
       className={cn(onClick && 'cursor-pointer transition-colors hover:bg-accent/50')}
     >
-      <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
         <Icon className="size-4 text-muted-foreground" />
       </CardHeader>
