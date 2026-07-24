@@ -123,7 +123,23 @@ export default function StudentsPage() {
         emptyTitle="No students found"
         selection={
           canManage
-            ? { onDeleteSelected: (rows) => bulkDelete(rows, (student) => student.id) }
+            ? {
+                onDeleteSelected: (rows) => bulkDelete(rows, (student) => student.id),
+                entityLabelPlural: 'students',
+                fetchAllMatching: async () => {
+                  const total = studentsQuery.data?.total ?? 0;
+                  if (total === 0) {
+                    return [];
+                  }
+                  const result = await studentsApi.list({
+                    per_page: total,
+                    search: debouncedSearch || undefined,
+                    class_id: classFilter !== 'all' ? Number(classFilter) : undefined,
+                    status: statusFilter !== 'all' ? statusFilter : undefined,
+                  });
+                  return result.data;
+                },
+              }
             : undefined
         }
         filters={

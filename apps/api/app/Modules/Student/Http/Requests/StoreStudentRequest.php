@@ -24,6 +24,8 @@ class StoreStudentRequest extends FormRequest
             'dob' => ['required', 'date', 'before:today'],
             'gender' => ['required', Rule::in(['male', 'female', 'other'])],
             'admission_date' => ['required', 'date'],
+            'roll_no' => ['nullable', 'string', 'max:50'],
+            'address' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

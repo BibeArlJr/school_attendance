@@ -43,6 +43,16 @@ interface DataTableSelection<TData> {
    * so the Phase 11 per-row safety checks always apply.
    */
   onDeleteSelected: (rows: TData[]) => Promise<BulkDeleteResult>;
+  /**
+   * Fetches every row matching the current search/filter (not just the
+   * current page) — reusing the entity's existing paginated list
+   * endpoint with a high `per_page`, not a new ids-only or bulk-delete
+   * endpoint. Omit to disable "select all matching" entirely (e.g.
+   * Classes, whose list is never paginated in the first place).
+   */
+  fetchAllMatching?: () => Promise<TData[]>;
+  /** e.g. "students" — used in the select-all-matching prompt and confirm dialog copy. */
+  entityLabelPlural?: string;
 }
 
 interface DataTableProps<TData extends { id: number }, TValue> {
@@ -101,12 +111,19 @@ export function DataTable<TData extends { id: number }, TValue>({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [result, setResult] = useState<BulkDeleteResult | null>(null);
+  // Set once the user confirms "select all N matching rows" — holds every
+  // matching row (fetched beyond just this page), not just what's
+  // rendered. Takes over from the page-scoped rowSelection state below
+  // while active; null means "use whatever's checked on this page".
+  const [expandedSelection, setExpandedSelection] = useState<TData[] | null>(null);
+  const [isFetchingAll, setIsFetchingAll] = useState(false);
 
   // Selection is tied to a specific page/filter's rows — any navigation
   // that changes what `data` holds (page change, search, filter) must
   // not leave stale, now-invisible rows "selected" underneath.
   useEffect(() => {
     setRowSelection({});
+    setExpandedSelection(null);
   }, [pageIndex, data]);
 
   const tableColumns: ColumnDef<TData, TValue>[] = selection
@@ -154,16 +171,36 @@ export function DataTable<TData extends { id: number }, TValue>({
   });
 
   const selectedRows = table.getSelectedRowModel().rows.map((row) => row.original);
+  const effectiveSelectedRows = expandedSelection ?? selectedRows;
+
+  const canOfferSelectAllMatching =
+    !!selection?.fetchAllMatching &&
+    expandedSelection === null &&
+    selectedRows.length > 0 &&
+    selectedRows.length === data.length &&
+    totalCount !== undefined &&
+    totalCount > data.length;
+
+  async function handleSelectAllMatching() {
+    if (!selection?.fetchAllMatching) {
+      return;
+    }
+    setIsFetchingAll(true);
+    const rows = await selection.fetchAllMatching();
+    setIsFetchingAll(false);
+    setExpandedSelection(rows);
+  }
 
   async function handleConfirmBulkDelete() {
     if (!selection) {
       return;
     }
     setIsBulkDeleting(true);
-    const outcome = await selection.onDeleteSelected(selectedRows);
+    const outcome = await selection.onDeleteSelected(effectiveSelectedRows);
     setIsBulkDeleting(false);
     setConfirmOpen(false);
     setRowSelection({});
+    setExpandedSelection(null);
     setResult(outcome);
   }
 
@@ -185,11 +222,34 @@ export function DataTable<TData extends { id: number }, TValue>({
         {actions}
       </div>
 
-      {selection && selectedRows.length > 0 && (
+      {selection && effectiveSelectedRows.length > 0 && (
         <div className="flex items-center justify-between rounded-md border bg-muted/50 px-4 py-2">
-          <span className="text-sm font-medium">{selectedRows.length} selected</span>
-          <Button variant="destructive" size="sm" onClick={() => setConfirmOpen(true)}>
-            Delete Selected
+          <span className="text-sm font-medium">
+            {expandedSelection
+              ? `All ${expandedSelection.length} matching rows selected`
+              : `${selectedRows.length} selected`}
+          </span>
+          <div className="flex items-center gap-2">
+            {expandedSelection && (
+              <Button variant="ghost" size="sm" onClick={() => setExpandedSelection(null)}>
+                Clear
+              </Button>
+            )}
+            <Button variant="destructive" size="sm" onClick={() => setConfirmOpen(true)}>
+              Delete Selected
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {canOfferSelectAllMatching && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-primary/30 bg-primary/5 px-4 py-2 text-sm">
+          <span>
+            All {data.length} on this page selected. Select all {totalCount} rows matching your
+            current search/filter?
+          </span>
+          <Button size="sm" variant="outline" onClick={handleSelectAllMatching} disabled={isFetchingAll}>
+            {isFetchingAll ? 'Loading…' : `Select all ${totalCount}`}
           </Button>
         </div>
       )}
@@ -278,11 +338,13 @@ export function DataTable<TData extends { id: number }, TValue>({
           <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Delete {selectedRows.length} selected?</DialogTitle>
+                <DialogTitle>Delete {effectiveSelectedRows.length} selected?</DialogTitle>
               </DialogHeader>
               <p className="text-sm text-muted-foreground">
-                Each row is deleted independently, exactly as a single delete would — any row with
-                existing history is blocked and left intact rather than failing the whole batch.
+                Attempting to delete {effectiveSelectedRows.length} matching{' '}
+                {selection.entityLabelPlural ?? 'rows'} — each is deleted independently, exactly as
+                a single delete would; records with attendance history or other dependencies will
+                be skipped and reported, not silently removed.
               </p>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setConfirmOpen(false)}>

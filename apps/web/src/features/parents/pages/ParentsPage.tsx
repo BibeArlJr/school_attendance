@@ -82,7 +82,21 @@ export default function ParentsPage() {
         onPageChange={setPageIndex}
         totalCount={parentsQuery.data?.total}
         emptyTitle="No parents found"
-        selection={{ onDeleteSelected: (rows) => bulkDelete(rows, (parent) => parent.id) }}
+        selection={{
+          onDeleteSelected: (rows) => bulkDelete(rows, (parent) => parent.id),
+          entityLabelPlural: 'parents',
+          fetchAllMatching: async () => {
+            const total = parentsQuery.data?.total ?? 0;
+            if (total === 0) {
+              return [];
+            }
+            const result = await parentsApi.list({
+              per_page: total,
+              search: debouncedSearch || undefined,
+            });
+            return result.data;
+          },
+        }}
         actions={
           <Button
             onClick={() => {

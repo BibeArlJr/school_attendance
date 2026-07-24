@@ -27,10 +27,19 @@ export const studentsApi = {
     return data.data;
   },
 
+  // Deliberately not `...values` — guardian_name/guardian_phone live on the
+  // same form schema (see schema.ts) but are handled entirely client-side
+  // via the separate guardian-link endpoint, never sent to this one.
   async create(values: StudentFormValues): Promise<Student> {
     const { data } = await apiClient.post<ApiSuccessResponse<Student>>('/students', {
-      ...values,
       class_id: Number(values.class_id),
+      first_name: values.first_name,
+      last_name: values.last_name,
+      dob: values.dob,
+      gender: values.gender,
+      admission_date: values.admission_date,
+      roll_no: values.roll_no?.trim() ? values.roll_no.trim() : null,
+      address: values.address?.trim() ? values.address.trim() : null,
     });
     return data.data;
   },

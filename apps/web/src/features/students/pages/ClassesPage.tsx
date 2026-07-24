@@ -82,7 +82,13 @@ export default function ClassesPage() {
         emptyTitle="No classes yet"
         selection={
           canManage
-            ? { onDeleteSelected: (rows) => bulkDelete(rows, (schoolClass) => schoolClass.id) }
+            ? {
+                onDeleteSelected: (rows) => bulkDelete(rows, (schoolClass) => schoolClass.id),
+                entityLabelPlural: 'classes',
+                // No fetchAllMatching — Classes has no server pagination at
+                // all (useClasses() always fetches every row), so "select
+                // all on page" already covers every matching row.
+              }
             : undefined
         }
         actions={

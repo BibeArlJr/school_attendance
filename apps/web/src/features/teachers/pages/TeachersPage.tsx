@@ -109,7 +109,22 @@ export default function TeachersPage() {
         emptyTitle="No teachers found"
         selection={
           canManage
-            ? { onDeleteSelected: (rows) => bulkDelete(rows, (teacher) => teacher.id) }
+            ? {
+                onDeleteSelected: (rows) => bulkDelete(rows, (teacher) => teacher.id),
+                entityLabelPlural: 'teachers',
+                fetchAllMatching: async () => {
+                  const total = teachersQuery.data?.total ?? 0;
+                  if (total === 0) {
+                    return [];
+                  }
+                  const result = await teachersApi.list({
+                    per_page: total,
+                    search: debouncedSearch || undefined,
+                    employment_status: statusFilter !== 'all' ? statusFilter : undefined,
+                  });
+                  return result.data;
+                },
+              }
             : undefined
         }
         filters={
