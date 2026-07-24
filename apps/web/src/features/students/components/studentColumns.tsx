@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDob } from '../lib/formatDob';
 import type { Student } from '../types';
-import { studentDetailPath } from '@/app/router/routes';
+import { parentDetailPath, studentDetailPath } from '@/app/router/routes';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 
@@ -94,7 +94,9 @@ export function buildStudentColumns({
         }
         return (
           <div>
-            <div>{guardian.name}</div>
+            <Link to={parentDetailPath(guardian.uuid)} className="font-medium hover:underline">
+              {guardian.name}
+            </Link>
             <div className="text-xs text-muted-foreground">{guardian.phone}</div>
           </div>
         );

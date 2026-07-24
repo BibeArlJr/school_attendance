@@ -71,10 +71,6 @@ export default function StudentDetailPage() {
             <span className="text-muted-foreground">Gender:</span>{' '}
             <span className="capitalize">{student.gender ?? '—'}</span>
           </p>
-          <p>
-            <span className="text-muted-foreground">Admission date:</span>{' '}
-            {student.admission_date.slice(0, 10)}
-          </p>
           <p className="flex items-center gap-2">
             <span className="text-muted-foreground">Status:</span>
             <Badge variant={STATUS_VARIANT[student.status]} className="capitalize">

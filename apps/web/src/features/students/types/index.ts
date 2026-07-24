@@ -32,6 +32,7 @@ export interface StudentEnrollmentSummary {
 
 export interface ParentGuardianSummary {
   id: number;
+  uuid: string;
   name: string;
   phone: string;
 }

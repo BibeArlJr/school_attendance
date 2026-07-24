@@ -7,6 +7,8 @@ export interface IdCardStudentSummary {
   first_name: string;
   last_name: string;
   roll_no: string | null;
+  dob_bs: string | null;
+  guardian: { name: string; phone: string } | null;
   school_class: { id: number; name: string; section: string | null } | null;
 }
 

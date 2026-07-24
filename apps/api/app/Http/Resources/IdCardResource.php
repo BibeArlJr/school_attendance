@@ -31,12 +31,19 @@ class IdCardResource extends JsonResource
     {
         $student = $this->owner;
 
+        $guardian = $student->primaryParentLink?->parentGuardian;
+
         return [
             'id' => $student->id,
             'uuid' => $student->uuid,
             'first_name' => $student->first_name,
             'last_name' => $student->last_name,
             'roll_no' => $student->currentEnrollment?->roll_no,
+            'dob_bs' => $student->dob_bs,
+            'guardian' => $guardian ? [
+                'name' => $guardian->name,
+                'phone' => $guardian->phone,
+            ] : null,
             'school_class' => $student->schoolClass ? [
                 'id' => $student->schoolClass->id,
                 'name' => $student->schoolClass->name,

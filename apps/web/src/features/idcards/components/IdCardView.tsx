@@ -62,6 +62,27 @@ export function IdCardView({ card, schoolName }: IdCardViewProps) {
         </div>
       )}
 
+      <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+        <span className="text-muted-foreground">Roll No.</span>
+        <span>{student.roll_no ?? '—'}</span>
+
+        <span className="text-muted-foreground">Class</span>
+        <span>
+          {student.school_class
+            ? `${student.school_class.name}${student.school_class.section ? ` - ${student.school_class.section}` : ''}`
+            : '—'}
+        </span>
+
+        <span className="text-muted-foreground">Date of Birth</span>
+        <span>{student.dob_bs ?? '—'}</span>
+
+        <span className="text-muted-foreground">Guardian</span>
+        <span>{student.guardian?.name ?? '—'}</span>
+
+        <span className="text-muted-foreground">Phone</span>
+        <span>{student.guardian?.phone ?? '—'}</span>
+      </div>
+
       {/* Fixed white, not theme-aware: a barcode needs light background +
           dark bars to stay scannable, both on paper and in dark mode. */}
       <div className="mt-4 flex justify-center rounded-md bg-white p-2">
