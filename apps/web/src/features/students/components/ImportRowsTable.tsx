@@ -35,12 +35,17 @@ export function ImportRowsTable({ rows, classes, decisions, onDecisionChange }: 
   const pageCount = Math.max(1, Math.ceil(rows.length / PER_PAGE));
   const pageRows = rows.slice(pageIndex * PER_PAGE, pageIndex * PER_PAGE + PER_PAGE);
 
+  // "Same name & DOB" is deliberate, not just "matches" — this flag is
+  // student-identity-only (name + dob_bs). It never considers guardian
+  // name/phone, so a shared guardian (e.g. two siblings) never triggers
+  // this on its own; the wording says so explicitly to head off exactly
+  // that confusion.
   function describeDuplicates(row: ImportBatchRow): string {
     return row.proposed_data.duplicate_matches
       .map((match) =>
         match.type === 'existing_student'
-          ? `existing student #${match.student_id}`
-          : `${match.sheet_name} row ${match.row_number}`,
+          ? `same name & DOB as existing student #${match.student_id}`
+          : `same name & DOB as ${match.sheet_name} row ${match.row_number}`,
       )
       .join(', ');
   }
@@ -125,7 +130,7 @@ export function ImportRowsTable({ rows, classes, decisions, onDecisionChange }: 
                     <div>{row.proposed_data.guardian_name ?? '—'}</div>
                     <div className="text-xs text-muted-foreground">{row.proposed_data.guardian_phone ?? ''}</div>
                     {isDuplicate && (
-                      <div className="mt-1 text-xs text-amber-600">Matches {describeDuplicates(row)}</div>
+                      <div className="mt-1 text-xs text-amber-600">{describeDuplicates(row)}</div>
                     )}
                   </TableCell>
                   <TableCell>

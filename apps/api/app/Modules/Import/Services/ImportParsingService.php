@@ -75,8 +75,8 @@ class ImportParsingService
 
         /** @var array<string, list<array<string, mixed>>> $seenNames */
         $seenNames = [];
-        foreach (Student::query()->where('school_id', $schoolId)->get(['id', 'first_name', 'last_name']) as $student) {
-            $key = $this->normalizeName("{$student->first_name} {$student->last_name}");
+        foreach (Student::query()->where('school_id', $schoolId)->get(['id', 'first_name', 'last_name', 'dob_bs']) as $student) {
+            $key = $this->duplicateKey($student->first_name, $student->last_name, $student->dob_bs);
             $seenNames[$key][] = ['type' => 'existing_student', 'student_id' => $student->id];
         }
 
@@ -141,7 +141,7 @@ class ImportParsingService
                     $flags[] = 'unrecognized_class';
                 }
 
-                $nameKey = $this->normalizeName("{$firstName} {$lastName}");
+                $nameKey = $this->duplicateKey($firstName, $lastName, $dobBs);
                 $duplicateMatches = $seenNames[$nameKey] ?? [];
                 if ($duplicateMatches !== []) {
                     $flags[] = 'possible_duplicate';
@@ -210,6 +210,25 @@ class ImportParsingService
     private function normalizeName(string $name): string
     {
         return strtolower(trim(preg_replace('/\s+/', ' ', $name)));
+    }
+
+    /**
+     * Student-identity key for possible_duplicate detection — name AND
+     * dob_bs, never guardian data (guardian dedupe is a wholly separate
+     * mechanism, ParentGuardianLinkService::findByPhone, applied later in
+     * ImportCommitService and never consulted here). Name-only used to be
+     * the whole key, which meant two different children who happen to
+     * share a common name (frequent in this real dataset — 16 such
+     * collisions found among just 400 already-imported students) got
+     * flagged as duplicates of each other with no way to tell them apart.
+     * Requiring dob_bs to also match narrows the flag back to genuine
+     * same-identity matches. A missing dob_bs on either side simply can't
+     * produce a match — under-flagging when there isn't enough
+     * information beats the previous over-flagging.
+     */
+    private function duplicateKey(string $firstName, string $lastName, ?string $dobBs): string
+    {
+        return $this->normalizeName("{$firstName} {$lastName}").'|'.($dobBs ?? '');
     }
 
     /**
