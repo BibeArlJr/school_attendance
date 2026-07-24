@@ -205,6 +205,22 @@ npm run build
   as a substitute for a Resource — that only narrows what's *fetched*, not
   what a controller is allowed to *return*.
 
+## Frontend conventions
+
+- **Type-check verification must always use `npx tsc -b` (or `npx tsc -b
+  --force` for a clean rebuild), never `npx tsc --noEmit`.** The root
+  `tsconfig.json` has `"files": []` with `references` to
+  `tsconfig.app.json` / `tsconfig.node.json` — a plain `tsc --noEmit`
+  invocation doesn't build project references at all, so it silently
+  reports "0 errors" regardless of real type errors present anywhere in
+  `src/`. `tsc -b` (build mode) is the only invocation that actually
+  checks the referenced projects, and it's what `npm run build` already
+  uses (`"build": "tsc -b && vite build"`) — match that, don't reinvent
+  it. This was discovered mid-project (Phase 16) after a real bug shipped
+  past a `tsc --noEmit` check that reported zero errors; a full-codebase
+  `tsc -b --force` audit (Phase 19) found no further issues, but the
+  vacuous form must never be used again for verification.
+
 ## Project layout
 
 ```
