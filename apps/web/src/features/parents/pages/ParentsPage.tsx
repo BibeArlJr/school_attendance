@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { parentsApi } from '../api/parentsApi';
 import { buildParentColumns } from '../components/parentColumns';
 import { ParentFormDialog } from '../components/ParentFormDialog';
 import { useDeleteParent } from '../hooks/useDeleteParent';
@@ -9,6 +10,7 @@ import { DataTable } from '@/shared/components/data-table/DataTable';
 import { DeleteConfirmDialog } from '@/shared/components/DeleteConfirmDialog';
 import { PageContainer } from '@/shared/components/layout/PageContainer';
 import { Button } from '@/shared/components/ui/button';
+import { useBulkDelete } from '@/shared/hooks/useBulkDelete';
 import { extractErrorMessage } from '@/shared/lib/errors';
 
 const PER_PAGE = 10;
@@ -22,6 +24,11 @@ export default function ParentsPage() {
   const [deletingParent, setDeletingParent] = useState<ParentGuardian | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const deleteParent = useDeleteParent();
+  const { bulkDelete } = useBulkDelete<ParentGuardian>({
+    queryKey: ['parents'],
+    deleteFn: parentsApi.delete,
+    getLabel: (parent) => parent.name,
+  });
 
   useEffect(() => {
     const id = setTimeout(() => setDebouncedSearch(search), 300);
@@ -75,6 +82,7 @@ export default function ParentsPage() {
         onPageChange={setPageIndex}
         totalCount={parentsQuery.data?.total}
         emptyTitle="No parents found"
+        selection={{ onDeleteSelected: (rows) => bulkDelete(rows, (parent) => parent.id) }}
         actions={
           <Button
             onClick={() => {

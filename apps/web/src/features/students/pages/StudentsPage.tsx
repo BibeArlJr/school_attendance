@@ -1,6 +1,7 @@
 import { Plus, Upload } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { studentsApi } from '../api/studentsApi';
 import { buildStudentColumns } from '../components/studentColumns';
 import { StudentFormDialog } from '../components/StudentFormDialog';
 import { StudentStatusMenu } from '../components/StudentStatusMenu';
@@ -19,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
+import { useBulkDelete } from '@/shared/hooks/useBulkDelete';
 import { useCan } from '@/shared/hooks/useCan';
 import { extractErrorMessage } from '@/shared/lib/errors';
 
@@ -37,6 +39,11 @@ export default function StudentsPage() {
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const deleteStudent = useDeleteStudent();
+  const { bulkDelete } = useBulkDelete<Student>({
+    queryKey: ['students'],
+    deleteFn: studentsApi.delete,
+    getLabel: (student) => `${student.first_name} ${student.last_name}`,
+  });
 
   useEffect(() => {
     const id = setTimeout(() => setDebouncedSearch(search), 300);
@@ -114,6 +121,11 @@ export default function StudentsPage() {
         onPageChange={setPageIndex}
         totalCount={studentsQuery.data?.total}
         emptyTitle="No students found"
+        selection={
+          canManage
+            ? { onDeleteSelected: (rows) => bulkDelete(rows, (student) => student.id) }
+            : undefined
+        }
         filters={
           <>
             <Select value={classFilter} onValueChange={handleClassFilterChange}>

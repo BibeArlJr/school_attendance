@@ -1,34 +1,32 @@
-import { Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { Plus } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { classesApi } from '../api/studentsApi';
+import { buildClassColumns } from '../components/classColumns';
 import { ClassFormDialog } from '../components/ClassFormDialog';
 import { useClasses } from '../hooks/useClasses';
 import { useDeleteClass } from '../hooks/useDeleteClass';
 import type { SchoolClass } from '../types';
+import { DataTable } from '@/shared/components/data-table/DataTable';
 import { DeleteConfirmDialog } from '@/shared/components/DeleteConfirmDialog';
-import { EmptyState } from '@/shared/components/feedback/EmptyState';
-import { ErrorState } from '@/shared/components/feedback/ErrorState';
-import { LoadingSkeleton } from '@/shared/components/feedback/LoadingSkeleton';
 import { Button } from '@/shared/components/ui/button';
-import { Card, CardContent } from '@/shared/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/shared/components/ui/table';
+import { useBulkDelete } from '@/shared/hooks/useBulkDelete';
 import { useCan } from '@/shared/hooks/useCan';
 import { extractErrorMessage } from '@/shared/lib/errors';
 
 export default function ClassesPage() {
   const canManage = useCan(['super_admin', 'admin']);
   const classesQuery = useClasses();
+  const [search, setSearch] = useState('');
   const [editingClass, setEditingClass] = useState<SchoolClass | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [deletingClass, setDeletingClass] = useState<SchoolClass | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const deleteClass = useDeleteClass();
+  const { bulkDelete } = useBulkDelete<SchoolClass>({
+    queryKey: ['classes'],
+    deleteFn: classesApi.delete,
+    getLabel: (schoolClass) => schoolClass.name,
+  });
 
   function handleDeleteOpenChange(nextOpen: boolean) {
     setDeleteDialogOpen(nextOpen);
@@ -37,79 +35,70 @@ export default function ClassesPage() {
     }
   }
 
+  const filteredClasses = useMemo(() => {
+    const all = classesQuery.data ?? [];
+    const query = search.trim().toLowerCase();
+    if (!query) {
+      return all;
+    }
+    return all.filter(
+      (schoolClass) =>
+        schoolClass.name.toLowerCase().includes(query) ||
+        (schoolClass.section?.toLowerCase().includes(query) ?? false),
+    );
+  }, [classesQuery.data, search]);
+
+  const columns = useMemo(
+    () =>
+      buildClassColumns({
+        canManage,
+        onEdit: (schoolClass) => {
+          setEditingClass(schoolClass);
+          setFormOpen(true);
+        },
+        onDeleteRequest: (schoolClass) => {
+          setDeletingClass(schoolClass);
+          setDeleteDialogOpen(true);
+        },
+      }),
+    [canManage],
+  );
+
   return (
     <div className="mt-4 space-y-4">
-      <div className="flex justify-end">
-        {canManage && (
-          <Button
-            onClick={() => {
-              setEditingClass(null);
-              setFormOpen(true);
-            }}
-          >
-            <Plus className="size-4" />
-            Add Class
-          </Button>
-        )}
-      </div>
-
-      <Card>
-        <CardContent className="pt-6">
-          {classesQuery.isLoading ? (
-            <LoadingSkeleton lines={4} />
-          ) : classesQuery.isError ? (
-            <ErrorState onRetry={() => classesQuery.refetch()} />
-          ) : classesQuery.data && classesQuery.data.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Section</TableHead>
-                  <TableHead>Class Teacher</TableHead>
-                  {canManage && <TableHead className="text-right">Actions</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {classesQuery.data.map((schoolClass) => (
-                  <TableRow key={schoolClass.id}>
-                    <TableCell>{schoolClass.name}</TableCell>
-                    <TableCell>{schoolClass.section ?? '—'}</TableCell>
-                    <TableCell>{schoolClass.class_teacher?.name ?? '—'}</TableCell>
-                    {canManage && (
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setEditingClass(schoolClass);
-                            setFormOpen(true);
-                          }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className="text-destructive hover:text-destructive"
-                          aria-label={`Delete ${schoolClass.name}`}
-                          onClick={() => {
-                            setDeletingClass(schoolClass);
-                            setDeleteDialogOpen(true);
-                          }}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <EmptyState title="No classes yet" />
-          )}
-        </CardContent>
-      </Card>
+      <DataTable
+        columns={columns}
+        data={filteredClasses}
+        isLoading={classesQuery.isLoading}
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search by name or section"
+        pageIndex={0}
+        pageCount={1}
+        onPageChange={() => {
+          /* no server-side pagination for classes — the whole list is small */
+        }}
+        totalCount={filteredClasses.length}
+        emptyTitle="No classes yet"
+        selection={
+          canManage
+            ? { onDeleteSelected: (rows) => bulkDelete(rows, (schoolClass) => schoolClass.id) }
+            : undefined
+        }
+        actions={
+          canManage ? (
+            <Button
+              onClick={() => {
+                setEditingClass(null);
+                setFormOpen(true);
+              }}
+            >
+              <Plus className="size-4" />
+              Add Class
+            </Button>
+          ) : undefined
+        }
+      />
 
       {canManage && (
         <ClassFormDialog open={formOpen} onOpenChange={setFormOpen} schoolClass={editingClass} />

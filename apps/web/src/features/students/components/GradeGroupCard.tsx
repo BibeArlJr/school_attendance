@@ -13,18 +13,56 @@ import {
 } from '@/shared/components/ui/select';
 
 /**
- * Guesses the school's existing "PREFIX N" naming convention from any
- * already-graded class (e.g. "Grade 1" -> prefix "Grade ") so the
- * suggested new-class name matches what's already in the database,
- * rather than always hardcoding "Grade N".
+ * grade_level is a sort key, never a display name — "ECD" and "Grade 1"
+ * can both be grade_level 0/1 in the source data, and templating
+ * "Grade {N}" would silently rename ECD to "Grade 0". Instead, use
+ * whatever the source spreadsheet actually called this grade: the most
+ * common raw class_name_raw value among the group's rows (normalized
+ * for case/whitespace only when tallying — the winning entry's original
+ * text, unaltered, is what's returned).
  */
-export function suggestClassName(classes: SchoolClass[], gradeLevel: number): string {
+function suggestClassNameFromRows(rows: ImportBatchRow[]): string | null {
+  const counts = new Map<string, { count: number; original: string }>();
+  for (const row of rows) {
+    const raw = row.proposed_data.class_name_raw.trim();
+    if (!raw) {
+      continue;
+    }
+    const key = raw.toLowerCase().replace(/\s+/g, ' ');
+    const existing = counts.get(key);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      counts.set(key, { count: 1, original: raw });
+    }
+  }
+
+  let best: { count: number; original: string } | null = null;
+  for (const entry of counts.values()) {
+    if (!best || entry.count > best.count) {
+      best = entry;
+    }
+  }
+  return best?.original ?? null;
+}
+
+/**
+ * Fallback only for the edge case where a group's rows have no usable
+ * raw class name text at all — guesses the school's existing "PREFIX N"
+ * naming convention from any already-graded class (e.g. "Grade 1" ->
+ * prefix "Grade ") rather than leaving the field blank.
+ */
+function suggestClassNameFallback(classes: SchoolClass[], gradeLevel: number): string {
   const graded = classes.find((c) => c.grade_level !== null);
   const match = graded?.name.match(/^(.*?)(\d+)\s*$/);
   if (match) {
     return `${match[1]}${gradeLevel}`;
   }
   return `Grade ${gradeLevel}`;
+}
+
+export function suggestClassName(rows: ImportBatchRow[], classes: SchoolClass[], gradeLevel: number): string {
+  return suggestClassNameFromRows(rows) ?? suggestClassNameFallback(classes, gradeLevel);
 }
 
 interface GradeGroupCardProps {
@@ -36,7 +74,7 @@ interface GradeGroupCardProps {
 
 export function GradeGroupCard({ gradeLevel, rows, classes, onApply }: GradeGroupCardProps) {
   const [existingClassId, setExistingClassId] = useState<string | undefined>(undefined);
-  const [newClassName, setNewClassName] = useState(() => suggestClassName(classes, gradeLevel));
+  const [newClassName, setNewClassName] = useState(() => suggestClassName(rows, classes, gradeLevel));
 
   const rowIds = rows.map((row) => row.id);
 

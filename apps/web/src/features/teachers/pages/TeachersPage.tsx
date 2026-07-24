@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { teachersApi } from '../api/teachersApi';
 import { PasswordRevealDialog } from '../components/PasswordRevealDialog';
 import { buildTeacherColumns } from '../components/teacherColumns';
 import { TeacherFormDialog } from '../components/TeacherFormDialog';
@@ -17,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
+import { useBulkDelete } from '@/shared/hooks/useBulkDelete';
 import { useCan } from '@/shared/hooks/useCan';
 import { extractErrorMessage } from '@/shared/lib/errors';
 
@@ -37,6 +39,11 @@ export default function TeachersPage() {
 
   const resetPassword = useResetPassword();
   const deleteTeacher = useDeleteTeacher();
+  const { bulkDelete } = useBulkDelete<Teacher>({
+    queryKey: ['teachers'],
+    deleteFn: teachersApi.delete,
+    getLabel: (teacher) => teacher.name,
+  });
 
   useEffect(() => {
     const id = setTimeout(() => setDebouncedSearch(search), 300);
@@ -100,6 +107,11 @@ export default function TeachersPage() {
         onPageChange={setPageIndex}
         totalCount={teachersQuery.data?.total}
         emptyTitle="No teachers found"
+        selection={
+          canManage
+            ? { onDeleteSelected: (rows) => bulkDelete(rows, (teacher) => teacher.id) }
+            : undefined
+        }
         filters={
           <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
             <SelectTrigger className="w-40">

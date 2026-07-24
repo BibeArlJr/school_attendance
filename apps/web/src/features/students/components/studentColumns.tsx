@@ -39,8 +39,21 @@ export function buildStudentColumns({
     {
       id: 'roll_no',
       header: 'Roll No.',
-      enableSorting: false,
-      accessorFn: (row) => row.current_enrollment?.roll_no ?? '—',
+      accessorFn: (row) => row.current_enrollment?.roll_no ?? null,
+      cell: ({ row }) => row.original.current_enrollment?.roll_no ?? '—',
+      // roll_no is stored as text, so default sorting would compare it as
+      // a string ("10" before "2") — parse both sides to numbers instead.
+      // Rows without a roll number sort to the end regardless of value.
+      sortingFn: (rowA, rowB) => {
+        const rawA = rowA.original.current_enrollment?.roll_no;
+        const rawB = rowB.original.current_enrollment?.roll_no;
+        const numA = rawA !== null && rawA !== undefined && rawA !== '' ? Number(rawA) : null;
+        const numB = rawB !== null && rawB !== undefined && rawB !== '' ? Number(rawB) : null;
+        if (numA === null && numB === null) return 0;
+        if (numA === null) return 1;
+        if (numB === null) return -1;
+        return numA - numB;
+      },
     },
     {
       id: 'class',

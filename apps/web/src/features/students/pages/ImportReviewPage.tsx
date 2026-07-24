@@ -118,12 +118,12 @@ export default function ImportReviewPage() {
   // apply to all" on every GradeGroupCard individually, just batched into
   // one state update. Per-group manual controls (map-to-existing, custom
   // name) stay available alongside this for whichever grades the default
-  // "Grade {N}" name isn't right for.
+  // name isn't right for.
   function handleResolveAllGroups() {
     setDecisions((prev) => {
       const next = { ...prev };
       for (const group of gradeGroups) {
-        const newClassName = suggestClassName(classesQuery.data ?? [], group.gradeLevel);
+        const newClassName = suggestClassName(group.rows, classesQuery.data ?? [], group.gradeLevel);
         for (const row of group.rows) {
           next[row.id] = {
             ...next[row.id],
