@@ -26,6 +26,7 @@ const IdCardPage = lazy(() => import('@/features/idcards/pages/IdCardPage'));
 const GateScannerPage = lazy(() => import('@/features/attendance/pages/GateScannerPage'));
 const AttendancePage = lazy(() => import('@/features/attendance/pages/AttendancePage'));
 const SmsLogPage = lazy(() => import('@/features/sms/pages/SmsLogPage'));
+const ReportsPage = lazy(() => import('@/features/reports/pages/ReportsPage'));
 
 function withSuspense(element: React.ReactNode) {
   return <Suspense fallback={<LoadingSkeleton className="p-6" />}>{element}</Suspense>;
@@ -47,11 +48,12 @@ const barcodeModule = MODULES.find((module) => module.key === 'barcode')!;
 const attendanceModule = MODULES.find((module) => module.key === 'attendance')!;
 const gateScannerModule = MODULES.find((module) => module.key === 'gate-scanner')!;
 const smsLogModule = MODULES.find((module) => module.key === 'sms-log')!;
+const reportsModule = MODULES.find((module) => module.key === 'reports')!;
 
-// Students, Teachers, Parents, Barcode, Attendance, Gate Scanner, and SMS
-// Log now ship real content, so all seven are excluded from the generic
-// placeholder generation below (no `phase` on their MODULES entries
-// anymore).
+// Students, Teachers, Parents, Barcode, Attendance, Gate Scanner, SMS Log,
+// and Reports now ship real content, so all eight are excluded from the
+// generic placeholder generation below (no `phase` on their MODULES
+// entries anymore).
 const placeholderRoutes = MODULES.filter((module) => module.phase !== undefined).map((module) => ({
   path: module.path,
   element: withSuspense(
@@ -137,6 +139,10 @@ export const router = createBrowserRouter([
           {
             path: ROUTES.SMS_LOG,
             element: withSuspense(withRoleGuard(smsLogModule, <SmsLogPage />)),
+          },
+          {
+            path: ROUTES.REPORTS,
+            element: withSuspense(withRoleGuard(reportsModule, <ReportsPage />)),
           },
           ...placeholderRoutes,
         ],

@@ -51,23 +51,27 @@ class AttendanceAnalyticsService
     }
 
     /**
-     * @return array{is_working_day: bool, present: int, late: int, absent: int}
+     * @return array{is_working_day: bool, present: int, late: int, absent: int, total: int}
      */
-    public function dailyCounts(int $schoolId, Carbon $date, string $ownerType = 'student'): array
+    public function dailyCounts(int $schoolId, Carbon $date, string $ownerType = 'student', ?int $classId = null): array
     {
         $isWorkingDay = $this->isWorkingDay($schoolId, $date);
+        $activeOwnerCount = $this->activeOwnerCount($schoolId, $ownerType, $classId);
 
         $baseQuery = fn () => AttendanceRecord::query()
             ->where('school_id', $schoolId)
             ->where('owner_type', $ownerType)
-            ->where('date', $date->toDateString());
+            ->where('date', $date->toDateString())
+            ->when(
+                $classId !== null && $ownerType === 'student',
+                fn ($query) => $query->whereHasMorph('owner', [Student::class], fn ($inner) => $inner->where('class_id', $classId)),
+            );
 
         $presentCount = $baseQuery()->whereNotNull('in_time')->count();
         $lateCount = $baseQuery()->where('status', AttendanceRecordStatus::Late)->count();
 
         $absentCount = 0;
         if ($isWorkingDay) {
-            $activeOwnerCount = $this->activeOwnerCount($schoolId, $ownerType);
             $recordedOwnerCount = $baseQuery()->distinct('owner_id')->count('owner_id');
             $absentCount = max(0, $activeOwnerCount - $recordedOwnerCount);
         }
@@ -77,6 +81,7 @@ class AttendanceAnalyticsService
             'present' => $presentCount,
             'late' => $lateCount,
             'absent' => $absentCount,
+            'total' => $activeOwnerCount,
         ];
     }
 
@@ -246,10 +251,16 @@ class AttendanceAnalyticsService
         return $days;
     }
 
-    private function activeOwnerCount(int $schoolId, string $ownerType): int
+    private function activeOwnerCount(int $schoolId, string $ownerType, ?int $classId = null): int
     {
-        return $ownerType === 'student'
-            ? Student::query()->where('school_id', $schoolId)->where('status', StudentStatus::Active)->count()
-            : Staff::query()->where('school_id', $schoolId)->where('employment_status', StaffEmploymentStatus::Active)->count();
+        if ($ownerType === 'student') {
+            return Student::query()
+                ->where('school_id', $schoolId)
+                ->where('status', StudentStatus::Active)
+                ->when($classId !== null, fn ($query) => $query->where('class_id', $classId))
+                ->count();
+        }
+
+        return Staff::query()->where('school_id', $schoolId)->where('employment_status', StaffEmploymentStatus::Active)->count();
     }
 }

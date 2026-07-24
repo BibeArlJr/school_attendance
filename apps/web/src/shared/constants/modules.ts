@@ -105,7 +105,7 @@ export const MODULES: ModuleDef[] = [
     label: 'Reports',
     icon: BarChart3,
     path: ROUTES.REPORTS,
-    phase: 9,
+    // No `phase` — Reports ships real content this phase, not a placeholder.
     allowedRoles: ['super_admin', 'admin', 'teacher'],
   },
   {
