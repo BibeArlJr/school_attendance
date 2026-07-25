@@ -28,8 +28,13 @@ export function SummaryCard({ label, value, icon: Icon, onClick }: SummaryCardPr
       className={cn(onClick && 'cursor-pointer transition-colors hover:bg-accent/50')}
     >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-        <Icon className="size-4 text-muted-foreground" />
+        <CardTitle
+          className="min-w-0 truncate text-sm font-medium text-muted-foreground"
+          title={label}
+        >
+          {label}
+        </CardTitle>
+        <Icon className="size-4 shrink-0 text-muted-foreground" />
       </CardHeader>
       <CardContent>
         <p className="text-2xl font-semibold tracking-tight">{value.toLocaleString()}</p>

@@ -117,13 +117,14 @@ export default function AttendancePage() {
         emptyTitle="No attendance records for this date"
         filters={
           <>
-            <div className="w-40">
+            <div className="w-44">
               <BsDatePicker
                 value={date}
                 onChange={(value) => {
                   setDate(value);
                   setPageIndex(0);
                 }}
+                hideAdHint
               />
             </div>
             {ownerType === 'student' && (

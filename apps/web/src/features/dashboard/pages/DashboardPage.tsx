@@ -73,10 +73,13 @@ export default function DashboardPage() {
         variants={cardGridVariants}
         initial="hidden"
         animate="show"
-        // 5 cards — grid-cols-5 at desktop so all 5 land on one row with
-        // no orphaned last card stranded alone with a large empty gap
-        // (Prompt 22 addendum).
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
+        // 5 cards — grid-cols-5 at desktop so all 5 land on one row. The
+        // md:grid-cols-3 tier this used to have strands 2 cards on their
+        // own half-empty row (5 isn't divisible by 3, or by 2 either) —
+        // dropped it in favor of jumping straight from 1 to 2 columns,
+        // with the 5th card explicitly spanning both columns at that
+        // tier so its row is full-width instead of stranded (Prompt 30).
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 sm:[&>*:nth-child(5)]:col-span-2 lg:[&>*:nth-child(5)]:col-span-1"
       >
         {isLoading || !data ? (
           Array.from({ length: 5 }).map((_, index) => (

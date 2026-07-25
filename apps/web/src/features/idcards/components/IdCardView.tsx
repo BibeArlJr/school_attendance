@@ -3,6 +3,18 @@ import type { IdCard } from '../types';
 import { BarcodeImage } from './BarcodeImage';
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
 import { Badge } from '@/shared/components/ui/badge';
+import { formatBsDate, parseBsDateString } from '@/shared/lib/bikramSambat';
+
+/** The ID card only ever has dob_bs (already a BS string, e.g. from
+ *  import) available, not the AD `dob` — this just pretty-prints it
+ *  ("Ashadh 15, 2070 BS") instead of showing the bare "2070-03-15",
+ *  which read as an ordinary (and confusingly futuristic-looking)
+ *  Gregorian date with no indication it's actually Bikram Sambat
+ *  (Prompt 30 UI/UX audit). */
+function formatCardDob(dobBs: string | null): string {
+  if (!dobBs) return '—';
+  return formatBsDate(parseBsDateString(dobBs));
+}
 
 interface IdCardViewProps {
   card: IdCard;
@@ -78,7 +90,7 @@ export function IdCardView({ card, schoolName, schoolLogoUrl }: IdCardViewProps)
         </span>
 
         <span className="text-muted-foreground">Date of Birth</span>
-        <span>{student.dob_bs ?? '—'}</span>
+        <span>{formatCardDob(student.dob_bs)}</span>
 
         <span className="text-muted-foreground">Guardian</span>
         <span>{student.guardian?.name ?? '—'}</span>

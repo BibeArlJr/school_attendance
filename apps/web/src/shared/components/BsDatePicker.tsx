@@ -18,6 +18,15 @@ interface BsDatePickerProps {
   onChange: (adDate: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  /** Suppresses the "{value} AD" hint line below the trigger button.
+   *  That line is genuinely useful inside a vertical form field, but it
+   *  makes this component's rendered block taller than a plain Input/
+   *  Select/Button (all a fixed single-line h-8) — which breaks
+   *  alignment when this is used inline in a horizontal filter row next
+   *  to those (e.g. the Attendance page's date filter). Default false
+   *  (hint shown) so every existing form usage is unaffected; filter-row
+   *  call sites opt in. */
+  hideAdHint?: boolean;
 }
 
 /**
@@ -27,7 +36,13 @@ interface BsDatePickerProps {
  * rationale) plus this app's own Popover/Button primitives, so it
  * matches the design system for free and has no peer-dep risk.
  */
-export function BsDatePicker({ value, onChange, placeholder, disabled }: BsDatePickerProps) {
+export function BsDatePicker({
+  value,
+  onChange,
+  placeholder,
+  disabled,
+  hideAdHint = false,
+}: BsDatePickerProps) {
   const [open, setOpen] = useState(false);
   const selectedBs = value ? toBs(value) : null;
   const [view, setView] = useState<{ year: number; month: number }>(() => selectedBs ?? todayBs());
@@ -51,7 +66,7 @@ export function BsDatePicker({ value, onChange, placeholder, disabled }: BsDateP
   const displayText = value ? formatBs(value) : (placeholder ?? 'Pick a date (BS)');
 
   return (
-    <div className="space-y-1">
+    <div className={hideAdHint ? undefined : 'space-y-1'}>
       <Popover open={open} onOpenChange={openChange}>
         <PopoverTrigger asChild>
           <Button
@@ -78,7 +93,7 @@ export function BsDatePicker({ value, onChange, placeholder, disabled }: BsDateP
           />
         </PopoverContent>
       </Popover>
-      {value && <p className="text-xs text-muted-foreground">{value} AD</p>}
+      {!hideAdHint && value && <p className="text-xs text-muted-foreground">{value} AD</p>}
     </div>
   );
 }
