@@ -6,6 +6,7 @@ import { ErrorState } from '@/shared/components/feedback/ErrorState';
 import { LoadingSkeleton } from '@/shared/components/feedback/LoadingSkeleton';
 import { Badge } from '@/shared/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { formatBs } from '@/shared/lib/bikramSambat';
 
 const STATUS_LABEL: Record<LicenseStatusValue, string> = {
   active: 'Active',
@@ -44,11 +45,11 @@ export function AcademicYearLicenseSection() {
               </p>
               <p>
                 <span className="text-muted-foreground">Start date:</span>{' '}
-                {academicYearQuery.data.start_date.slice(0, 10)}
+                {formatBs(academicYearQuery.data.start_date.slice(0, 10))}
               </p>
               <p>
                 <span className="text-muted-foreground">End date:</span>{' '}
-                {academicYearQuery.data.end_date.slice(0, 10)}
+                {formatBs(academicYearQuery.data.end_date.slice(0, 10))}
               </p>
               <p className="flex items-center gap-2 pt-1">
                 <Badge>Current</Badge>
@@ -81,7 +82,9 @@ export function AcademicYearLicenseSection() {
               </p>
               <p>
                 <span className="text-muted-foreground">AMC expiry date:</span>{' '}
-                {licenseQuery.data.amc_expiry_date ?? '— (never activated)'}
+                {licenseQuery.data.amc_expiry_date
+                  ? formatBs(licenseQuery.data.amc_expiry_date)
+                  : '— (never activated)'}
               </p>
               {licenseQuery.data.days_until_expiry !== null && (
                 <p>

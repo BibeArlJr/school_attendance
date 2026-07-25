@@ -6,10 +6,10 @@ import { ManualCorrectionDialog } from '../components/ManualCorrectionDialog';
 import { useAttendanceRecords } from '../hooks/useAttendanceRecords';
 import type { AttendanceRecord } from '../types';
 import { useClasses } from '@/features/students/hooks/useClasses';
+import { BsDatePicker } from '@/shared/components/BsDatePicker';
 import { DataTable } from '@/shared/components/data-table/DataTable';
 import { PageContainer } from '@/shared/components/layout/PageContainer';
 import { Button } from '@/shared/components/ui/button';
-import { Input } from '@/shared/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -117,15 +117,15 @@ export default function AttendancePage() {
         emptyTitle="No attendance records for this date"
         filters={
           <>
-            <Input
-              type="date"
-              value={date}
-              onChange={(event) => {
-                setDate(event.target.value);
-                setPageIndex(0);
-              }}
-              className="w-40"
-            />
+            <div className="w-40">
+              <BsDatePicker
+                value={date}
+                onChange={(value) => {
+                  setDate(value);
+                  setPageIndex(0);
+                }}
+              />
+            </div>
             {ownerType === 'student' && (
               <Select
                 value={classFilter}

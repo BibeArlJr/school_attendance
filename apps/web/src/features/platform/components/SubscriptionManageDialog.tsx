@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useCancelSubscription, useExtendSubscription, useSetSubscriptionExpiry } from '../hooks/useSubscriptionMutations';
 import type { LicenseStatusValue, PlatformSchool } from '../types';
+import { BsDatePicker } from '@/shared/components/BsDatePicker';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import {
@@ -10,9 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/components/ui/dialog';
-import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Separator } from '@/shared/components/ui/separator';
+import { formatBs } from '@/shared/lib/bikramSambat';
 
 interface SubscriptionManageDialogProps {
   school: PlatformSchool | null;
@@ -103,7 +104,7 @@ export function SubscriptionManageDialog({ school, open, onOpenChange }: Subscri
             </Badge>
             <span className="text-sm text-muted-foreground">
               {school.amc_expiry_date
-                ? `Expires ${school.amc_expiry_date}${
+                ? `Expires ${formatBs(school.amc_expiry_date)}${
                     school.days_until_expiry !== null
                       ? school.days_until_expiry >= 0
                         ? ` (${school.days_until_expiry}d left)`
@@ -133,14 +134,11 @@ export function SubscriptionManageDialog({ school, open, onOpenChange }: Subscri
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="manual-expiry">Set exact expiry date</Label>
+            <Label>Set exact expiry date</Label>
             <div className="flex gap-2">
-              <Input
-                id="manual-expiry"
-                type="date"
-                value={manualDate}
-                onChange={(e) => setManualDate(e.target.value)}
-              />
+              <div className="flex-1">
+                <BsDatePicker value={manualDate} onChange={setManualDate} />
+              </div>
               <Button
                 type="button"
                 variant="outline"

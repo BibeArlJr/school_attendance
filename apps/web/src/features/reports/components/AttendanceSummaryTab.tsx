@@ -5,12 +5,12 @@ import { useAttendanceSummary } from '../hooks/useAttendanceSummary';
 import { dayTypeLabel } from '../lib/dayTypeLabel';
 import { exportAttendanceSummaryCsv } from '../lib/exportAttendanceSummaryCsv';
 import { useClasses } from '@/features/students/hooks/useClasses';
+import { BsDateRangePicker } from '@/shared/components/BsDateRangePicker';
 import { EmptyState } from '@/shared/components/feedback/EmptyState';
 import { ErrorState } from '@/shared/components/feedback/ErrorState';
 import { LoadingSkeleton } from '@/shared/components/feedback/LoadingSkeleton';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
-import { Input } from '@/shared/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -53,9 +53,24 @@ export function AttendanceSummaryTab() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2 print:hidden">
-        <Input type="date" value={from} onChange={(event) => setFrom(event.target.value)} className="w-40" />
-        <span className="text-muted-foreground">to</span>
-        <Input type="date" value={to} onChange={(event) => setTo(event.target.value)} className="w-40" />
+        <div className="w-72">
+          <BsDateRangePicker
+            startValue={from}
+            endValue={to}
+            onChange={(start, end) => {
+              // Mirrors exactly what the picker reports — including a
+              // blank `end` mid-selection — since BsDateRangePicker is
+              // fully controlled and expects its startValue/endValue
+              // props to match its own last onChange call precisely (a
+              // stale non-empty `end` here would make it think a range
+              // was already complete and start a new one on the next
+              // click). useAttendanceSummary won't fire on an incomplete
+              // range (enabled: Boolean(from && to)).
+              setFrom(start);
+              setTo(end);
+            }}
+          />
+        </div>
         <Select value={classFilter} onValueChange={setClassFilter}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="All classes" />

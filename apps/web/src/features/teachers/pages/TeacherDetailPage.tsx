@@ -7,6 +7,7 @@ import { PageContainer } from '@/shared/components/layout/PageContainer';
 import { Badge } from '@/shared/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { useCan } from '@/shared/hooks/useCan';
+import { formatBs } from '@/shared/lib/bikramSambat';
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
   active: 'default',
@@ -65,7 +66,7 @@ export default function TeacherDetailPage() {
           </p>
           <p>
             <span className="text-muted-foreground">Joined date:</span>{' '}
-            {teacher.joined_date.slice(0, 10)}
+            {formatBs(teacher.joined_date.slice(0, 10))}
           </p>
           <p className="flex items-center gap-2">
             <span className="text-muted-foreground">Employment status:</span>

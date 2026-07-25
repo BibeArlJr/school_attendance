@@ -229,7 +229,7 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
                 <FormItem>
                   <FormLabel>Admission date</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <BsDatePicker value={field.value} onChange={field.onChange} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

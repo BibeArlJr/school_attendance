@@ -6,6 +6,7 @@ import { useUpdateTeacher } from '../hooks/useUpdateTeacher';
 import { teacherSchema, type TeacherFormValues } from '../schema';
 import type { Teacher } from '../types';
 import { PasswordRevealDialog } from './PasswordRevealDialog';
+import { BsDatePicker } from '@/shared/components/BsDatePicker';
 import { Button } from '@/shared/components/ui/button';
 import {
   Dialog,
@@ -172,7 +173,7 @@ export function TeacherFormDialog({ open, onOpenChange, teacher }: TeacherFormDi
                   <FormItem>
                     <FormLabel>Joined date</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <BsDatePicker value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

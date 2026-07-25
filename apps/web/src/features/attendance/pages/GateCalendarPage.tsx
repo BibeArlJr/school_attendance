@@ -9,6 +9,7 @@ import { PageContainer } from '@/shared/components/layout/PageContainer';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
+import { formatBs } from '@/shared/lib/bikramSambat';
 
 const DAY_TYPE_LABEL: Record<string, string> = {
   working: 'Working (override)',
@@ -66,7 +67,10 @@ export default function GateCalendarPage() {
           <TableBody>
             {calendarQuery.data.map((entry) => (
               <TableRow key={entry.id}>
-                <TableCell>{entry.date.slice(0, 10)}</TableCell>
+                <TableCell>
+                  <div>{formatBs(entry.date.slice(0, 10))}</div>
+                  <div className="text-xs text-muted-foreground">{entry.date.slice(0, 10)} AD</div>
+                </TableCell>
                 <TableCell>
                   <Badge variant={DAY_TYPE_VARIANT[entry.day_type]}>
                     {DAY_TYPE_LABEL[entry.day_type]}
