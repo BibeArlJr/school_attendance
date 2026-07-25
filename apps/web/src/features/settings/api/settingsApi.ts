@@ -10,7 +10,6 @@ import type { ApiSuccessResponse } from '@/shared/types';
 
 export interface SchoolProfileInput {
   name: string;
-  logo_url: string | null;
   primary_color: string | null;
 }
 
@@ -40,6 +39,16 @@ export const settingsApi = {
     const { data } = await apiClient.put<ApiSuccessResponse<SchoolProfile>>(
       '/settings/school',
       values,
+    );
+    return data.data;
+  },
+
+  async uploadLogo(file: File): Promise<SchoolProfile> {
+    const formData = new FormData();
+    formData.append('logo', file);
+    const { data } = await apiClient.post<ApiSuccessResponse<SchoolProfile>>(
+      '/settings/school/logo',
+      formData,
     );
     return data.data;
   },

@@ -40,11 +40,15 @@ export default function TeacherDetailPage() {
     <PageContainer title={teacher.name} description={teacher.designation}>
       <Card>
         <CardHeader>
-          <CardTitle>Teacher info</CardTitle>
+          <CardTitle>{teacher.role === 'guard' ? 'Guard info' : 'Teacher info'}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1 text-sm">
           <p>
             <span className="text-muted-foreground">Email:</span> {teacher.email}
+          </p>
+          <p>
+            <span className="text-muted-foreground">Role:</span>{' '}
+            <span className="capitalize">{teacher.role}</span>
           </p>
           <p>
             <span className="text-muted-foreground">Designation:</span> {teacher.designation}

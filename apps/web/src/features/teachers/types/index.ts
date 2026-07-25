@@ -1,4 +1,9 @@
 export type EmploymentStatus = 'active' | 'on_leave' | 'resigned';
+// Prompt 26: this list/type now covers both — "Teacher"/teachersApi/etc
+// are kept as the underlying names (existing functionality, URLs, and
+// permissions stay completely unaffected), the visible UI just presents
+// it as a unified Staff list with a role column/filter.
+export type StaffRole = 'teacher' | 'guard';
 
 export interface Teacher {
   id: number;
@@ -6,6 +11,7 @@ export interface Teacher {
   user_id: number;
   name: string;
   email: string;
+  role: StaffRole;
   is_active: boolean;
   designation: string;
   qualification: string | null;

@@ -10,6 +10,11 @@ use Illuminate\Foundation\Http\FormRequest;
  * of what a caller sends. The controller also only ever writes
  * $request->validated(), so an extra school_code key in the request body
  * is silently dropped, not just unvalidated.
+ *
+ * logo_url is deliberately not a rule here either (Prompt 26) — it's now
+ * exclusively written by the dedicated multipart upload endpoint
+ * (UploadSchoolLogoRequest / SettingsController::uploadLogo), so this
+ * text-only endpoint no longer accepts it.
  */
 class UpdateSchoolProfileRequest extends FormRequest
 {
@@ -25,7 +30,6 @@ class UpdateSchoolProfileRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'logo_url' => ['nullable', 'string', 'max:2048'],
             'primary_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ];
     }

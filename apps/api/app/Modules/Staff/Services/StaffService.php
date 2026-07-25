@@ -21,7 +21,8 @@ class StaffService
     }
 
     /**
-     * Creates the login (User, role=teacher) and the staff profile in one
+     * Creates the login (User, role=teacher or guard — Prompt 26
+     * generalizes this from teacher-only) and the staff profile in one
      * transaction, plus an ID card. The generated password is returned
      * once, in plain text, to the caller — it is never persisted anywhere
      * except as a hash (User::$casts hashes it on save) and never appears
@@ -40,7 +41,7 @@ class StaffService
                 'email' => $data['email'],
                 'password' => $temporaryPassword,
                 'school_id' => $schoolId,
-                'role' => UserRole::Teacher,
+                'role' => UserRole::from($data['role']),
                 'email_verified_at' => now(),
             ]);
 

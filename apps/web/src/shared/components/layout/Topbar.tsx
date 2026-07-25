@@ -39,6 +39,7 @@ interface TopbarProps {
 
 export function Topbar({ onOpenMobileMenu }: TopbarProps) {
   const user = useAuthStore((state) => state.user);
+  const logoUrl = useAuthStore((state) => state.branding?.logo_url);
   const { theme, toggleTheme } = useTheme();
   const logout = useLogout();
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -57,6 +58,10 @@ export function Topbar({ onOpenMobileMenu }: TopbarProps) {
       >
         <Menu className="size-5" />
       </Button>
+
+      {logoUrl && (
+        <img src={logoUrl} alt="" className="size-8 shrink-0 rounded object-contain" />
+      )}
 
       {isSuperAdmin ? (
         <SchoolSwitcher />

@@ -52,7 +52,9 @@ export function ClassFormDialog({ open, onOpenChange, schoolClass }: ClassFormDi
   // Only active teachers are offered as a class teacher — a resigned or
   // on-leave teacher shouldn't be assignable to a new class, matching the
   // spec's `employment_status=active` filter.
-  const activeTeachersQuery = useTeachers({ employment_status: 'active', per_page: 100 });
+  // role: 'teacher' — the staff list now also includes guards (Prompt
+  // 26), who aren't valid class-teacher assignments.
+  const activeTeachersQuery = useTeachers({ employment_status: 'active', role: 'teacher', per_page: 100 });
 
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classSchema),

@@ -8,10 +8,12 @@ use App\Modules\School\Models\AcademicYear;
 use App\Modules\School\Models\School;
 use App\Modules\Settings\Http\Requests\UpdateAttendanceConfigRequest;
 use App\Modules\Settings\Http\Requests\UpdateSchoolProfileRequest;
+use App\Modules\Settings\Http\Requests\UploadSchoolLogoRequest;
 use App\Support\Responses\ApiResponse;
 use App\Support\Services\CurrentSchoolResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class SettingsController extends Controller
 {
@@ -41,6 +43,39 @@ class SettingsController extends Controller
         $school->update($request->validated());
 
         return ApiResponse::success($school->fresh(), 'School profile updated successfully.');
+    }
+
+    /**
+     * Stores under logos/{school_id}/ on the public disk (web-accessible
+     * via the storage:link symlink) and deletes the previously-stored
+     * file, if any, so re-uploading doesn't leave orphaned files behind.
+     * Only ever touches logo_url — never school_id-scoped to any other
+     * school's file, since $schoolId is always resolved from the
+     * authenticated user's own current-school context.
+     */
+    public function uploadLogo(UploadSchoolLogoRequest $request): JsonResponse
+    {
+        $schoolId = $this->schoolResolver->resolve($request->user());
+        $school = School::query()->findOrFail($schoolId);
+
+        $previousPath = $school->logo_url ? $this->storagePathFromUrl($school->logo_url) : null;
+
+        $path = $request->file('logo')->store("logos/{$schoolId}", 'public');
+        $school->update(['logo_url' => Storage::disk('public')->url($path)]);
+
+        if ($previousPath && Storage::disk('public')->exists($previousPath)) {
+            Storage::disk('public')->delete($previousPath);
+        }
+
+        return ApiResponse::success($school->fresh(), 'Logo updated successfully.');
+    }
+
+    private function storagePathFromUrl(string $url): ?string
+    {
+        $marker = '/storage/';
+        $position = strpos($url, $marker);
+
+        return $position === false ? null : substr($url, $position + strlen($marker));
     }
 
     public function attendanceConfig(Request $request): JsonResponse

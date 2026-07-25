@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSchoolProfile } from '../hooks/useSettingsQueries';
 import { useUpdateSchoolProfile } from '../hooks/useUpdateSchoolProfile';
+import { useUploadSchoolLogo } from '../hooks/useUploadSchoolLogo';
 import { schoolProfileSchema, type SchoolProfileFormValues } from '../schema';
 import { ErrorState } from '@/shared/components/feedback/ErrorState';
 import { LoadingSkeleton } from '@/shared/components/feedback/LoadingSkeleton';
@@ -23,17 +24,18 @@ import { extractErrorMessage } from '@/shared/lib/errors';
 export function SchoolProfileSection() {
   const profileQuery = useSchoolProfile();
   const updateProfile = useUpdateSchoolProfile();
+  const uploadLogo = useUploadSchoolLogo();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<SchoolProfileFormValues>({
     resolver: zodResolver(schoolProfileSchema),
-    defaultValues: { name: '', logo_url: '', primary_color: '' },
+    defaultValues: { name: '', primary_color: '' },
   });
 
   useEffect(() => {
     if (profileQuery.data) {
       form.reset({
         name: profileQuery.data.name,
-        logo_url: profileQuery.data.logo_url ?? '',
         primary_color: profileQuery.data.primary_color ?? '',
       });
     }
@@ -42,9 +44,15 @@ export function SchoolProfileSection() {
   function onSubmit(values: SchoolProfileFormValues) {
     updateProfile.mutate({
       name: values.name,
-      logo_url: values.logo_url || null,
       primary_color: values.primary_color || null,
     });
+  }
+
+  function handleLogoFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    uploadLogo.mutate(file);
+    event.target.value = '';
   }
 
   if (profileQuery.isLoading) {
@@ -82,6 +90,46 @@ export function SchoolProfileSection() {
           </p>
         </div>
 
+        <div className="mb-4 space-y-1.5">
+          <Label>Logo</Label>
+          <div className="flex items-center gap-3">
+            {profileQuery.data.logo_url ? (
+              <img
+                src={profileQuery.data.logo_url}
+                alt=""
+                className="size-12 rounded-md border object-contain"
+              />
+            ) : (
+              <div className="flex size-12 items-center justify-center rounded-md border text-xs text-muted-foreground">
+                None
+              </div>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={uploadLogo.isPending}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {uploadLogo.isPending ? 'Uploading…' : 'Upload logo'}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={handleLogoFileChange}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            JPG, PNG, or WebP, up to 2MB. Applied immediately across the app — Topbar, login
+            screen, and ID cards.
+          </p>
+          {uploadLogo.isError && (
+            <p className="text-sm text-destructive">{extractErrorMessage(uploadLogo.error)}</p>
+          )}
+        </div>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -99,25 +147,20 @@ export function SchoolProfileSection() {
             />
             <FormField
               control={form.control}
-              name="logo_url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Logo URL</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="https://…" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
               name="primary_color"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Primary color</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="#2563EB" />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={field.value || '#2563eb'}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        className="h-10 w-16 cursor-pointer rounded-md border p-1"
+                      />
+                      <span className="text-sm text-muted-foreground">{field.value || '#2563eb'}</span>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

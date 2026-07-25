@@ -4,6 +4,8 @@ export interface SchoolSummary {
   id: number;
   name: string;
   slug: string;
+  logo_url: string | null;
+  primary_color: string | null;
 }
 
 export interface AuthUser {

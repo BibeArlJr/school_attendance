@@ -52,10 +52,16 @@ export const MODULES: ModuleDef[] = [
   },
   {
     key: 'teachers',
-    label: 'Teachers',
+    // Label only — Prompt 26 generalizes this page to manage both
+    // teacher and guard staff accounts (a unified list with a role
+    // column/filter, not a separate Guards page, to avoid duplicating
+    // the whole CRUD flow). key/path/allowedRoles/access-teachers Gate
+    // are all deliberately unchanged — zero risk to existing routing,
+    // permissions, or bookmarks.
+    label: 'Staff',
     icon: Users,
     path: ROUTES.TEACHERS,
-    // No `phase` — Teachers ships real content this phase, not a placeholder.
+    // No `phase` — this ships real content, not a placeholder.
     allowedRoles: ['super_admin', 'admin'],
   },
   {

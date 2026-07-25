@@ -23,6 +23,13 @@ import {
   FormMessage,
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select';
 
 interface TeacherFormDialogProps {
   open: boolean;
@@ -34,6 +41,7 @@ function defaultsFor(teacher?: Teacher | null): TeacherFormValues {
   return {
     name: teacher?.name ?? '',
     email: teacher?.email ?? '',
+    role: teacher?.role ?? 'teacher',
     designation: teacher?.designation ?? '',
     qualification: teacher?.qualification ?? '',
     joined_date: teacher?.joined_date.slice(0, 10) ?? '',
@@ -77,7 +85,7 @@ export function TeacherFormDialog({ open, onOpenChange, teacher }: TeacherFormDi
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{isEdit ? 'Edit Teacher' : 'Add Teacher'}</DialogTitle>
+            <DialogTitle>{isEdit ? 'Edit Staff Member' : 'Add Staff Member'}</DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -107,6 +115,29 @@ export function TeacherFormDialog({ open, onOpenChange, teacher }: TeacherFormDi
                   </FormItem>
                 )}
               />
+              {!isEdit && (
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Role</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="teacher">Teacher</SelectItem>
+                          <SelectItem value="guard">Guard</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <FormField
                 control={form.control}
                 name="designation"
@@ -148,7 +179,7 @@ export function TeacherFormDialog({ open, onOpenChange, teacher }: TeacherFormDi
               />
               <DialogFooter>
                 <Button type="submit" disabled={isPending}>
-                  {isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Add teacher'}
+                  {isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Add staff member'}
                 </Button>
               </DialogFooter>
             </form>
@@ -160,7 +191,7 @@ export function TeacherFormDialog({ open, onOpenChange, teacher }: TeacherFormDi
         open={revealPassword !== null}
         onOpenChange={(nextOpen) => !nextOpen && setRevealPassword(null)}
         password={revealPassword}
-        title="Teacher account created"
+        title="Staff account created"
       />
     </>
   );

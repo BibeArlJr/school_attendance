@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useReissueTeacherIdCard } from '../hooks/useReissueTeacherIdCard';
 import { useTeacherIdCard } from '../hooks/useTeacherIdCard';
+import { useAuthStore } from '@/features/auth/store/authStore';
 import { BarcodeImage } from '@/features/idcards/components/BarcodeImage';
 import { EmptyState } from '@/shared/components/feedback/EmptyState';
 import { LoadingSkeleton } from '@/shared/components/feedback/LoadingSkeleton';
@@ -30,6 +31,8 @@ export function StaffIdCardSection({ teacherId, canReissue }: StaffIdCardSection
   const cardQuery = useTeacherIdCard(teacherId);
   const reissueCard = useReissueTeacherIdCard(teacherId);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const schoolName = useAuthStore((state) => state.user?.school?.name);
+  const schoolLogoUrl = useAuthStore((state) => state.branding?.logo_url);
 
   function confirmReissue() {
     void reissueCard.mutateAsync().then(() => setConfirmOpen(false));
@@ -51,13 +54,25 @@ export function StaffIdCardSection({ teacherId, canReissue }: StaffIdCardSection
         ) : !cardQuery.data ? (
           <EmptyState title="No ID card found" />
         ) : (
-          <div className="flex items-center gap-4">
-            <div className="rounded-md bg-white p-1">
-              <BarcodeImage value={cardQuery.data.barcode_value} className="h-10" />
+          <div className="space-y-3">
+            {(schoolLogoUrl || schoolName) && (
+              <div className="flex items-center gap-2">
+                {schoolLogoUrl && (
+                  <img src={schoolLogoUrl} alt="" className="size-6 rounded object-contain" />
+                )}
+                {schoolName && (
+                  <span className="text-sm font-medium text-muted-foreground">{schoolName}</span>
+                )}
+              </div>
+            )}
+            <div className="flex items-center gap-4">
+              <div className="rounded-md bg-white p-1">
+                <BarcodeImage value={cardQuery.data.barcode_value} className="h-10" />
+              </div>
+              <Badge variant={STATUS_VARIANT[cardQuery.data.status]} className="capitalize">
+                {cardQuery.data.status}
+              </Badge>
             </div>
-            <Badge variant={STATUS_VARIANT[cardQuery.data.status]} className="capitalize">
-              {cardQuery.data.status}
-            </Badge>
           </div>
         )}
       </CardContent>

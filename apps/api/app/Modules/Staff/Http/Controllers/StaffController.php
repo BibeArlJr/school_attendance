@@ -45,6 +45,13 @@ class StaffController extends Controller
             $query->where('employment_status', $employmentStatus);
         }
 
+        // Prompt 26: this list now covers both teacher and guard staff —
+        // an optional role filter narrows it back down for callers that
+        // only want one (e.g. the class-teacher picker).
+        if ($role = $request->query('role')) {
+            $query->whereHas('user', fn ($inner) => $inner->where('role', $role));
+        }
+
         $staff = $query
             ->orderBy('id')
             ->paginate((int) $request->query('per_page', 15))

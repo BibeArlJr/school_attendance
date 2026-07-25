@@ -8,6 +8,7 @@ export interface TeacherListParams {
   per_page?: number;
   search?: string;
   employment_status?: string;
+  role?: string;
 }
 
 export const teachersApi = {

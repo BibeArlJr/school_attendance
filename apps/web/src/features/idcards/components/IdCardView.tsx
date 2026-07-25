@@ -7,6 +7,7 @@ import { Badge } from '@/shared/components/ui/badge';
 interface IdCardViewProps {
   card: IdCard;
   schoolName: string;
+  schoolLogoUrl?: string | null;
 }
 
 const STATUS_VARIANT: Record<IdCard['status'], 'default' | 'secondary' | 'outline'> = {
@@ -20,7 +21,7 @@ const STATUS_VARIANT: Record<IdCard['status'], 'default' | 'secondary' | 'outlin
  * self-contained block — app chrome (sidebar/topbar) is hidden via
  * `print:hidden` on AppShell itself, not anything in here.
  */
-export function IdCardView({ card, schoolName }: IdCardViewProps) {
+export function IdCardView({ card, schoolName, schoolLogoUrl }: IdCardViewProps) {
   // This view is only ever fed a card from useStudentIdCard (the
   // per-student endpoint), which structurally only returns owner_type
   // 'student' cards — `student` is never null in practice here, even
@@ -29,7 +30,10 @@ export function IdCardView({ card, schoolName }: IdCardViewProps) {
 
   return (
     <div className="mx-auto w-full max-w-sm rounded-xl border-2 bg-card p-5 shadow-sm print:border print:shadow-none">
-      <div className="text-center">
+      <div className="flex flex-col items-center text-center">
+        {schoolLogoUrl && (
+          <img src={schoolLogoUrl} alt="" className="mb-1 size-10 object-contain" />
+        )}
         <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           {schoolName}
         </p>

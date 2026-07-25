@@ -2,7 +2,6 @@ import { z } from 'zod';
 
 export const schoolProfileSchema = z.object({
   name: z.string().min(1, 'School name is required').max(255, 'Too long'),
-  logo_url: z.string().max(2048, 'Too long').optional(),
   primary_color: z
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/, 'Use a hex color like #2563EB')

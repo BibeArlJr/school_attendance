@@ -3,18 +3,18 @@ import { toast } from 'sonner';
 import { settingsApi } from '../api/settingsApi';
 import { useAuthStore } from '@/features/auth/store/authStore';
 
-export function useUpdateSchoolProfile() {
+export function useUploadSchoolLogo() {
   const queryClient = useQueryClient();
   const updateOwnSchoolBranding = useAuthStore((state) => state.updateOwnSchoolBranding);
 
   return useMutation({
-    mutationFn: settingsApi.updateSchool,
+    mutationFn: settingsApi.uploadLogo,
     onSuccess: (school) => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'school'] });
-      // Keeps the SchoolThemeProvider's accent color live immediately —
-      // it only reacts to authStore.branding, not this query's cache.
-      updateOwnSchoolBranding({ primary_color: school.primary_color });
-      toast.success('School profile updated successfully.');
+      // Keeps the Topbar/Login logo live immediately — it only reacts to
+      // authStore.branding, not this query's cache.
+      updateOwnSchoolBranding({ logo_url: school.logo_url });
+      toast.success('Logo updated successfully.');
     },
   });
 }

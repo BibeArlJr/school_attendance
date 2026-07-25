@@ -30,6 +30,7 @@ export default function TeachersPage() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [roleFilter, setRoleFilter] = useState('all');
   const [pageIndex, setPageIndex] = useState(0);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -60,11 +61,17 @@ export default function TeachersPage() {
     setPageIndex(0);
   }
 
+  function handleRoleFilterChange(value: string) {
+    setRoleFilter(value);
+    setPageIndex(0);
+  }
+
   const teachersQuery = useTeachers({
     page: pageIndex + 1,
     per_page: PER_PAGE,
     search: debouncedSearch || undefined,
     employment_status: statusFilter !== 'all' ? statusFilter : undefined,
+    role: roleFilter !== 'all' ? roleFilter : undefined,
   });
 
   const columns = useMemo(
@@ -106,12 +113,12 @@ export default function TeachersPage() {
         pageCount={teachersQuery.data?.last_page ?? 1}
         onPageChange={setPageIndex}
         totalCount={teachersQuery.data?.total}
-        emptyTitle="No teachers found"
+        emptyTitle="No staff found"
         selection={
           canManage
             ? {
                 onDeleteSelected: (rows) => bulkDelete(rows, (teacher) => teacher.uuid),
-                entityLabelPlural: 'teachers',
+                entityLabelPlural: 'staff',
                 fetchAllMatching: async () => {
                   const total = teachersQuery.data?.total ?? 0;
                   if (total === 0) {
@@ -121,6 +128,7 @@ export default function TeachersPage() {
                     per_page: total,
                     search: debouncedSearch || undefined,
                     employment_status: statusFilter !== 'all' ? statusFilter : undefined,
+                    role: roleFilter !== 'all' ? roleFilter : undefined,
                   });
                   return result.data;
                 },
@@ -128,17 +136,29 @@ export default function TeachersPage() {
             : undefined
         }
         filters={
-          <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="All statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="on_leave">On Leave</SelectItem>
-              <SelectItem value="resigned">Resigned</SelectItem>
-            </SelectContent>
-          </Select>
+          <>
+            <Select value={roleFilter} onValueChange={handleRoleFilterChange}>
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="All roles" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All roles</SelectItem>
+                <SelectItem value="teacher">Teacher</SelectItem>
+                <SelectItem value="guard">Guard</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="on_leave">On Leave</SelectItem>
+                <SelectItem value="resigned">Resigned</SelectItem>
+              </SelectContent>
+            </Select>
+          </>
         }
         actions={
           canManage ? (
@@ -149,7 +169,7 @@ export default function TeachersPage() {
               }}
             >
               <Plus className="size-4" />
-              Add Teacher
+              Add Staff Member
             </Button>
           ) : undefined
         }
@@ -170,8 +190,8 @@ export default function TeachersPage() {
         <DeleteConfirmDialog
           open={deleteDialogOpen}
           onOpenChange={handleDeleteOpenChange}
-          entityLabel="teacher"
-          alternativeActionHint="If this teacher actually left the school, use the employment status menu instead — delete is only for records added by mistake."
+          entityLabel={deletingTeacher?.role === 'guard' ? 'guard' : 'teacher'}
+          alternativeActionHint="If this staff member actually left the school, use the employment status menu instead — delete is only for records added by mistake."
           isPending={deleteTeacher.isPending}
           errorMessage={deleteTeacher.isError ? extractErrorMessage(deleteTeacher.error) : null}
           onConfirm={() => {

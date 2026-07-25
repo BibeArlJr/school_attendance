@@ -12,6 +12,11 @@ const STATUS_VARIANT: Record<Teacher['employment_status'], 'default' | 'secondar
   resigned: 'outline',
 };
 
+const ROLE_LABEL: Record<Teacher['role'], string> = {
+  teacher: 'Teacher',
+  guard: 'Guard',
+};
+
 interface BuildTeacherColumnsOptions {
   onEdit: (teacher: Teacher) => void;
   onResetPassword: (teacher: Teacher) => void;
@@ -32,6 +37,11 @@ export function buildTeacherColumns({
           {row.original.name}
         </Link>
       ),
+    },
+    {
+      accessorKey: 'role',
+      header: 'Role',
+      cell: ({ row }) => <Badge variant="outline">{ROLE_LABEL[row.original.role]}</Badge>,
     },
     {
       accessorKey: 'designation',

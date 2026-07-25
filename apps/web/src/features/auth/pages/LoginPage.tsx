@@ -3,6 +3,7 @@ import { GraduationCap } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useLogin } from '../hooks/useLogin';
 import { loginSchema, type LoginFormValues } from '../schema';
+import { useAuthStore } from '../store/authStore';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import {
@@ -18,6 +19,12 @@ import { extractErrorMessage } from '@/shared/lib/errors';
 
 export default function LoginPage() {
   const login = useLogin();
+  // Last-known branding for whichever school this browser last operated
+  // as (survives logout, unlike the rest of authStore) — lets the
+  // pre-auth screen still show that school's own logo instead of a
+  // generic one, without ever needing to know which school is logging
+  // in before credentials are submitted.
+  const logoUrl = useAuthStore((state) => state.branding?.logo_url);
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
@@ -31,9 +38,13 @@ export default function LoginPage() {
     <div className="flex min-h-svh items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="items-center space-y-2 text-center">
-          <div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <GraduationCap className="size-6" />
-          </div>
+          {logoUrl ? (
+            <img src={logoUrl} alt="" className="size-12 rounded-xl object-contain" />
+          ) : (
+            <div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+              <GraduationCap className="size-6" />
+            </div>
+          )}
           <CardTitle className="text-xl">School ERP</CardTitle>
           <p className="text-sm text-muted-foreground">Sign in to your school's dashboard</p>
         </CardHeader>

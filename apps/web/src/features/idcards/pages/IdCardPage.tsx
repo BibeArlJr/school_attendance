@@ -16,6 +16,7 @@ export default function IdCardPage() {
   const studentId = id ?? '';
   const cardQuery = useStudentIdCard(studentId);
   const schoolName = useAuthStore((state) => state.user?.school?.name) ?? 'Your School';
+  const schoolLogoUrl = useAuthStore((state) => state.branding?.logo_url);
   const canReissue = useCan(['super_admin', 'admin']);
   const [reissueOpen, setReissueOpen] = useState(false);
 
@@ -51,7 +52,7 @@ export default function IdCardPage() {
         )}
       </div>
 
-      <IdCardView card={card} schoolName={schoolName} />
+      <IdCardView card={card} schoolName={schoolName} schoolLogoUrl={schoolLogoUrl} />
 
       {canReissue && (
         <ReissueCardDialog open={reissueOpen} onOpenChange={setReissueOpen} studentId={studentId} />

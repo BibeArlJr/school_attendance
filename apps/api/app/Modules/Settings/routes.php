@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth:sanctum', 'can:access-settings'])->group(function () {
     Route::get('/settings/school', [SettingsController::class, 'school']);
     Route::put('/settings/school', [SettingsController::class, 'updateSchool']);
+    Route::post('/settings/school/logo', [SettingsController::class, 'uploadLogo']);
 
     Route::get('/settings/attendance-config', [SettingsController::class, 'attendanceConfig']);
     Route::put('/settings/attendance-config', [SettingsController::class, 'updateAttendanceConfig']);
