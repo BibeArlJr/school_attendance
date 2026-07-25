@@ -34,9 +34,32 @@ export const platformApi = {
     return data.data;
   },
 
-  async activateSubscription(schoolId: number): Promise<PlatformSchool> {
+  /**
+   * `days` parameterizes the quick-duration buttons (+7/+30/+90/+365 —
+   * Prompt 26 Part C revision); omitted entirely defaults to the
+   * original 365-day "Activate Subscription" behavior server-side.
+   */
+  async extendSubscription(schoolId: number, days?: number): Promise<PlatformSchool> {
     const { data } = await apiClient.post<ApiSuccessResponse<PlatformSchool>>(
       `/platform/schools/${schoolId}/activate-subscription`,
+      days ? { days } : undefined,
+    );
+    return data.data;
+  },
+
+  /** Manual override — sets amc_expiry_date literally, including a date
+   *  earlier than the current one (shortening an active subscription). */
+  async setSubscriptionExpiry(schoolId: number, amcExpiryDate: string): Promise<PlatformSchool> {
+    const { data } = await apiClient.put<ApiSuccessResponse<PlatformSchool>>(
+      `/platform/schools/${schoolId}/subscription-expiry`,
+      { amc_expiry_date: amcExpiryDate },
+    );
+    return data.data;
+  },
+
+  async cancelSubscription(schoolId: number): Promise<PlatformSchool> {
+    const { data } = await apiClient.post<ApiSuccessResponse<PlatformSchool>>(
+      `/platform/schools/${schoolId}/cancel-subscription`,
     );
     return data.data;
   },

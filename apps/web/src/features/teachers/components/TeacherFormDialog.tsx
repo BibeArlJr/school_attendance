@@ -131,6 +131,7 @@ export function TeacherFormDialog({ open, onOpenChange, teacher }: TeacherFormDi
                         <SelectContent>
                           <SelectItem value="teacher">Teacher</SelectItem>
                           <SelectItem value="guard">Guard</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

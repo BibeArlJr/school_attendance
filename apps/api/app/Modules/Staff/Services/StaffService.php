@@ -21,7 +21,7 @@ class StaffService
     }
 
     /**
-     * Creates the login (User, role=teacher or guard — Prompt 26
+     * Creates the login (User, role=teacher, guard, or admin — Prompt 26
      * generalizes this from teacher-only) and the staff profile in one
      * transaction, plus an ID card. The generated password is returned
      * once, in plain text, to the caller — it is never persisted anywhere

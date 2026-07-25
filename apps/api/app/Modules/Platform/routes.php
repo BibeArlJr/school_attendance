@@ -11,5 +11,7 @@ Route::middleware(['auth:sanctum', 'can:platform-admin'])->prefix('platform')->g
     Route::post('/schools', [PlatformSchoolController::class, 'store']);
     Route::get('/schools/{school}', [PlatformSchoolController::class, 'show']);
     Route::post('/schools/{school}/activate-subscription', [PlatformSchoolController::class, 'activateSubscription']);
+    Route::put('/schools/{school}/subscription-expiry', [PlatformSchoolController::class, 'updateSubscriptionExpiry']);
+    Route::post('/schools/{school}/cancel-subscription', [PlatformSchoolController::class, 'cancelSubscription']);
     Route::post('/active-school', [PlatformSchoolController::class, 'setActive']);
 });

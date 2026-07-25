@@ -14,6 +14,12 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
   resigned: 'outline',
 };
 
+const ROLE_INFO_TITLE: Record<string, string> = {
+  guard: 'Guard info',
+  admin: 'Admin info',
+  teacher: 'Teacher info',
+};
+
 export default function TeacherDetailPage() {
   const { id } = useParams<{ id: string }>();
   const teacherQuery = useTeacher(id ?? '');
@@ -40,7 +46,7 @@ export default function TeacherDetailPage() {
     <PageContainer title={teacher.name} description={teacher.designation}>
       <Card>
         <CardHeader>
-          <CardTitle>{teacher.role === 'guard' ? 'Guard info' : 'Teacher info'}</CardTitle>
+          <CardTitle>{ROLE_INFO_TITLE[teacher.role] ?? 'Staff info'}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1 text-sm">
           <p>

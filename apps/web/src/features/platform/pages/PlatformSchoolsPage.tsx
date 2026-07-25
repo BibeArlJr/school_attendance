@@ -1,10 +1,10 @@
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { CreateSchoolFormDialog } from '../components/CreateSchoolFormDialog';
-import { useActivateSubscription } from '../hooks/useActivateSubscription';
+import { SubscriptionManageDialog } from '../components/SubscriptionManageDialog';
 import { useSchools } from '../hooks/useSchools';
 import { useSetActiveSchool } from '../hooks/useSetActiveSchool';
-import type { LicenseStatusValue } from '../types';
+import type { LicenseStatusValue, PlatformSchool } from '../types';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { ErrorState } from '@/shared/components/feedback/ErrorState';
 import { LoadingSkeleton } from '@/shared/components/feedback/LoadingSkeleton';
@@ -28,9 +28,15 @@ const LICENSE_VARIANT: Record<LicenseStatusValue, 'default' | 'secondary' | 'out
 export default function PlatformSchoolsPage() {
   const schoolsQuery = useSchools();
   const setActiveSchool = useSetActiveSchool();
-  const activateSubscription = useActivateSubscription();
   const activeSchoolId = useAuthStore((state) => state.user?.active_school?.id);
   const [formOpen, setFormOpen] = useState(false);
+  const [managingSchoolId, setManagingSchoolId] = useState<number | null>(null);
+  const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
+  // Derived from live query data (not a stale snapshot) so the dialog's
+  // status/expiry display refreshes automatically after each mutation —
+  // every subscription mutation invalidates ['platform', 'schools'].
+  const managingSchool: PlatformSchool | null =
+    schoolsQuery.data?.find((s) => s.id === managingSchoolId) ?? null;
 
   return (
     <PageContainer
@@ -93,12 +99,12 @@ export default function PlatformSchoolsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={activateSubscription.isPending}
-                      onClick={() => activateSubscription.mutate(school.id)}
+                      onClick={() => {
+                        setManagingSchoolId(school.id);
+                        setSubscriptionDialogOpen(true);
+                      }}
                     >
-                      {school.computed_license_status === 'active' && school.amc_expiry_date
-                        ? 'Extend'
-                        : 'Activate Subscription'}
+                      Manage Subscription
                     </Button>
                     <Button
                       variant="outline"
@@ -117,6 +123,11 @@ export default function PlatformSchoolsPage() {
       )}
 
       <CreateSchoolFormDialog open={formOpen} onOpenChange={setFormOpen} />
+      <SubscriptionManageDialog
+        school={managingSchool}
+        open={subscriptionDialogOpen}
+        onOpenChange={setSubscriptionDialogOpen}
+      />
     </PageContainer>
   );
 }

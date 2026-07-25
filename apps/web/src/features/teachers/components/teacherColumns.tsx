@@ -15,6 +15,7 @@ const STATUS_VARIANT: Record<Teacher['employment_status'], 'default' | 'secondar
 const ROLE_LABEL: Record<Teacher['role'], string> = {
   teacher: 'Teacher',
   guard: 'Guard',
+  admin: 'Admin',
 };
 
 interface BuildTeacherColumnsOptions {

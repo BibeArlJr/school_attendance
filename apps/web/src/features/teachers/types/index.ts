@@ -1,9 +1,11 @@
 export type EmploymentStatus = 'active' | 'on_leave' | 'resigned';
-// Prompt 26: this list/type now covers both — "Teacher"/teachersApi/etc
-// are kept as the underlying names (existing functionality, URLs, and
+// Prompt 26: this list/type now covers all three — "Teacher"/teachersApi/
+// etc are kept as the underlying names (existing functionality, URLs, and
 // permissions stay completely unaffected), the visible UI just presents
-// it as a unified Staff list with a role column/filter.
-export type StaffRole = 'teacher' | 'guard';
+// it as a unified Staff list with a role column/filter. admin added by
+// the Part A addendum — a school previously had no way to add a second
+// admin account beyond the one auto-created at school-creation time.
+export type StaffRole = 'teacher' | 'guard' | 'admin';
 
 export interface Teacher {
   id: number;

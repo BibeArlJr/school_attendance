@@ -88,20 +88,72 @@ class PlatformSchoolController extends Controller
      * about). license_status is set to reflect the activation itself;
      * it's never what enforcement/display actually reads (that's always
      * School::licenseStatus(), computed live from amc_expiry_date).
+     *
+     * `days` parameterizes the quick-duration buttons (+7/+30/+90/+365 —
+     * Prompt 26 Part C revision); defaults to 365 so this stays
+     * backward-compatible with the original single "Activate
+     * Subscription" action from Prompt 25.
      */
-    public function activateSubscription(School $school): JsonResponse
+    public function activateSubscription(Request $request, School $school): JsonResponse
     {
+        $validated = $request->validate([
+            'days' => ['sometimes', 'integer', Rule::in([7, 30, 90, 365])],
+        ]);
+        $days = $validated['days'] ?? 365;
+
         $notYetExpired = $school->amc_expiry_date !== null
             && $school->licenseStatus() !== LicenseStatus::Expired;
 
         $base = $notYetExpired ? Carbon::parse($school->amc_expiry_date) : Carbon::today();
 
         $school->update([
-            'amc_expiry_date' => $base->copy()->addYear()->toDateString(),
+            'amc_expiry_date' => $base->copy()->addDays($days)->toDateString(),
             'license_status' => LicenseStatus::Active,
         ]);
 
-        return ApiResponse::success($this->withLicense($school->fresh()), 'Subscription activated.');
+        return ApiResponse::success($this->withLicense($school->fresh()), 'Subscription extended.');
+    }
+
+    /**
+     * Manual expiry override (Prompt 26 Part C revision) — unlike
+     * activateSubscription above, this sets amc_expiry_date literally to
+     * whatever date is given, with no "extend from the later of now/
+     * current expiry" logic. That's what makes shortening an active
+     * subscription possible: pass a date earlier than the current one
+     * and it's simply set, no separate "reduce" action needed.
+     */
+    public function updateSubscriptionExpiry(Request $request, School $school): JsonResponse
+    {
+        $validated = $request->validate([
+            'amc_expiry_date' => ['required', 'date'],
+        ]);
+
+        $school->update([
+            'amc_expiry_date' => Carbon::parse($validated['amc_expiry_date'])->toDateString(),
+            'license_status' => LicenseStatus::Active,
+        ]);
+
+        return ApiResponse::success($this->withLicense($school->fresh()), 'Subscription expiry updated.');
+    }
+
+    /**
+     * Sets amc_expiry_date to yesterday, not today — School::daysUntilExpiry()
+     * treats a same-day expiry as still within the Grace window (Prompt 25's
+     * GRACE_DAYS check is `<=`), which would NOT trip EnsureLicenseActive's
+     * write-blocking (that only fires on the computed Expired status, never
+     * Grace). Since amc_expiry_date is date-only (no time component), the
+     * only way to make "cancel right now" actually produce an immediate,
+     * genuinely-Expired status — the same enforcement natural expiry
+     * triggers — is to date it one full day in the past.
+     */
+    public function cancelSubscription(School $school): JsonResponse
+    {
+        $school->update([
+            'amc_expiry_date' => Carbon::yesterday()->toDateString(),
+            'license_status' => LicenseStatus::Expired,
+        ]);
+
+        return ApiResponse::success($this->withLicense($school->fresh()), 'Subscription canceled.');
     }
 
     /**

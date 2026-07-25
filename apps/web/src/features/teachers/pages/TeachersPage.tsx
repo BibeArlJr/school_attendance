@@ -24,6 +24,12 @@ import { extractErrorMessage } from '@/shared/lib/errors';
 
 const PER_PAGE = 10;
 
+const DELETE_ENTITY_LABEL: Record<Teacher['role'], string> = {
+  teacher: 'teacher',
+  guard: 'guard',
+  admin: 'admin',
+};
+
 export default function TeachersPage() {
   const canManage = useCan(['super_admin', 'admin']);
 
@@ -145,6 +151,7 @@ export default function TeachersPage() {
                 <SelectItem value="all">All roles</SelectItem>
                 <SelectItem value="teacher">Teacher</SelectItem>
                 <SelectItem value="guard">Guard</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
@@ -190,7 +197,7 @@ export default function TeachersPage() {
         <DeleteConfirmDialog
           open={deleteDialogOpen}
           onOpenChange={handleDeleteOpenChange}
-          entityLabel={deletingTeacher?.role === 'guard' ? 'guard' : 'teacher'}
+          entityLabel={deletingTeacher ? DELETE_ENTITY_LABEL[deletingTeacher.role] : 'teacher'}
           alternativeActionHint="If this staff member actually left the school, use the employment status menu instead — delete is only for records added by mistake."
           isPending={deleteTeacher.isPending}
           errorMessage={deleteTeacher.isError ? extractErrorMessage(deleteTeacher.error) : null}
