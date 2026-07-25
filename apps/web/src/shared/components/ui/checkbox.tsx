@@ -10,10 +10,17 @@ function Checkbox({ className, ...props }: React.ComponentProps<typeof CheckboxP
     <CheckboxPrimitive.Root
       data-slot="checkbox"
       className={cn(
-        'peer size-4 shrink-0 rounded-[4px] border border-input shadow-xs outline-none',
+        'peer relative size-4 shrink-0 rounded-[4px] border border-input shadow-xs outline-none',
         'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
         'disabled:cursor-not-allowed disabled:opacity-50',
         'data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground',
+        // Invisible hit-area expansion (Prompt 42) — the visible box
+        // stays exactly size-4 (no visual-language change), but the
+        // actual tappable region grows to ~44px, the accepted minimum
+        // reliable touch target. Table rows are comfortably taller than
+        // that everywhere this is used, so the expanded area never
+        // overlaps an adjacent row's own hit area.
+        "before:absolute before:-inset-3.5 before:content-['']",
         className,
       )}
       {...props}

@@ -281,6 +281,19 @@ to run, so this single line is all cron ever needs to know about:
   `tsc -b --force` audit (Phase 19) found no further issues, but the
   vacuous form must never be used again for verification.
 
+- **Every horizontal filter-row control (search `Input`, `Select`,
+  `BsDatePicker`, `Button`) shares one height/radius convention: h-8 /
+  rounded-lg** (Prompt 42's UI consistency audit). This was already true
+  of each primitive individually before Prompt 42 — the audit's job was
+  confirming it holds everywhere and making it an explicit, documented
+  convention (see the docblock on `buttonVariants` in
+  `shared/components/ui/button.tsx`) rather than an implicit accident.
+  `BsDatePicker` matches it by rendering a plain default `Button` as its
+  trigger — pass its `hideAdHint` prop when using it inline in a filter
+  row, or its AD-date hint line makes that one control taller than its
+  neighbors. Adding a new filter-row primitive, or changing this default
+  height, means updating Button/Input/SelectTrigger together.
+
 ## Project layout
 
 ```

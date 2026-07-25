@@ -23,6 +23,9 @@ function SelectValue({ ...props }: React.ComponentProps<typeof SelectPrimitive.V
   return <SelectPrimitive.Value data-slot="select-value" {...props} />;
 }
 
+// size="default" (h-8/rounded-lg) is the same shared filter-row height/
+// radius convention as Button's default size and Input — see button.tsx's
+// buttonVariants docblock (Prompt 42) before changing it.
 function SelectTrigger({
   className,
   size = 'default',

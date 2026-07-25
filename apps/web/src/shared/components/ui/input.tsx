@@ -1,6 +1,9 @@
 import * as React from 'react';
 import { cn } from '@/shared/lib/utils';
 
+// h-8/rounded-lg here is the same shared filter-row height/radius
+// convention as Button's default size and SelectTrigger's default size —
+// see button.tsx's buttonVariants docblock (Prompt 42) before changing it.
 function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
   return (
     <input
