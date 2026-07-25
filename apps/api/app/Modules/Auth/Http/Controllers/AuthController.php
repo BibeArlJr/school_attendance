@@ -10,6 +10,7 @@ use App\Modules\Auth\Services\AuthService;
 use App\Support\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
@@ -22,12 +23,40 @@ class AuthController extends Controller
         $result = $this->authService->login(
             $request->validated('email'),
             $request->validated('password'),
+            $request->ip(),
         );
 
         return ApiResponse::success([
             'user' => new UserResource($result['user']->load(['school', 'activeSchool'])),
             'token' => $result['token'],
+            'refresh_token' => $result['refresh_token'],
+            'expires_at' => $result['expires_at'],
         ], 'Logged in successfully.');
+    }
+
+    /**
+     * Bearer token here must be a refresh token (ability 'refresh'), not
+     * an access token — the global 'access'-ability middleware already lets
+     * this route through untouched, so it's this explicit check, not that
+     * middleware, that keeps ordinary access tokens from minting fresh
+     * pairs and silently extending a session past its intended TTL.
+     */
+    public function refresh(Request $request): JsonResponse
+    {
+        /** @var PersonalAccessToken $token */
+        $token = $request->user()->currentAccessToken();
+
+        if (! $token->can('refresh')) {
+            return ApiResponse::error('Invalid refresh token.', status: 401);
+        }
+
+        $result = $this->authService->refresh($request->user(), $token);
+
+        return ApiResponse::success([
+            'token' => $result['token'],
+            'refresh_token' => $result['refresh_token'],
+            'expires_at' => $result['expires_at'],
+        ], 'Token refreshed successfully.');
     }
 
     public function logout(Request $request): JsonResponse

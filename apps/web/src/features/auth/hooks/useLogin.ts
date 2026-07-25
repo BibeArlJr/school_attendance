@@ -11,7 +11,7 @@ export function useLogin() {
   return useMutation({
     mutationFn: authApi.login,
     onSuccess: (result) => {
-      login(result.user, result.token);
+      login(result.user, result.token, result.refresh_token, result.expires_at);
       navigate(ROUTES.DASHBOARD);
     },
   });

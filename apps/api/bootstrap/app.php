@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureLicenseActive;
+use App\Http\Middleware\RequireAccessTokenAbility;
 use App\Support\Exceptions\LicenseExpiredException;
 use App\Support\Exceptions\NoActiveSchoolSelectedException;
 use App\Support\Responses\ApiResponse;
@@ -8,6 +9,7 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -29,6 +31,17 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => null);
 
         $middleware->alias(['license-active' => EnsureLicenseActive::class]);
+
+        // Baseline defense-in-depth: nothing in this app was rate limited
+        // at all before Prompt 31 (the api group never called
+        // throttleApi()). 60 req/min per user/IP is generous enough not
+        // to interfere with normal use.
+        $middleware->throttleApi();
+
+        // Applies to every API route with zero per-route changes — see
+        // RequireAccessTokenAbility's docblock for why this is safe
+        // regardless of ordering relative to auth:sanctum.
+        $middleware->api(append: [RequireAccessTokenAbility::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
@@ -81,6 +94,21 @@ return Application::configure(basePath: dirname(__DIR__))
                     ['code' => 'license_expired'],
                     403,
                 );
+            }
+        });
+
+        // Thrown by throttle:login (Prompt 31 Part B) and the baseline
+        // throttleApi() group limiter — a clear 429 with retry-after info,
+        // not Laravel's plain-text default.
+        $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
+            if ($request->is('api/*')) {
+                $retryAfter = $e->getHeaders()['Retry-After'] ?? null;
+
+                return ApiResponse::error(
+                    'Too many attempts. Please try again later.',
+                    ['code' => 'too_many_attempts', 'retry_after' => $retryAfter !== null ? (int) $retryAfter : null],
+                    429,
+                )->withHeaders($e->getHeaders());
             }
         });
     })->create();

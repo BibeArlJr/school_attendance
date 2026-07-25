@@ -8,8 +8,11 @@ use App\Modules\Sms\Services\RealSparrowSmsService;
 use App\Modules\Staff\Models\Staff;
 use App\Modules\Student\Models\Student;
 use App\Support\Contracts\SmsServiceInterface;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
 
@@ -100,5 +103,22 @@ class AppServiceProvider extends ServiceProvider
             'student' => Student::class,
             'staff' => Staff::class,
         ]);
+
+        // Keyed by IP+email together (Prompt 31 Part B): IP-only would let
+        // one attacker burn through attempts against many accounts just as
+        // fast, email-only would let a distributed attacker bypass it
+        // entirely by spreading requests across IPs.
+        RateLimiter::for('login', function (Request $request): Limit {
+            $key = strtolower((string) $request->input('email')).'|'.$request->ip();
+
+            return Limit::perMinute(5)->by($key);
+        });
+
+        // Baseline for $middleware->throttleApi() in bootstrap/app.php —
+        // that helper targets the 'api' limiter name by convention, so it
+        // has to exist even though nothing else references it by name.
+        RateLimiter::for('api', function (Request $request): Limit {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
     }
 }

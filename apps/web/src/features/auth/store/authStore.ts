@@ -9,6 +9,8 @@ export interface SchoolBranding {
 interface AuthState {
   user: AuthUser | null;
   token: string | null;
+  refreshToken: string | null;
+  tokenExpiresAt: string | null;
   isAuthenticated: boolean;
   /**
    * The last-known branding (logo/color) for whichever school this
@@ -19,7 +21,13 @@ interface AuthState {
    * leaks one school's branding into a different school's login.
    */
   branding: SchoolBranding | null;
-  login: (user: AuthUser, token: string) => void;
+  login: (user: AuthUser, token: string, refreshToken: string, expiresAt: string) => void;
+  /**
+   * Swaps in a freshly-rotated access+refresh pair after a silent refresh
+   * (Prompt 31 Part A) — user/branding are untouched, this only ever runs
+   * mid-session for an already-authenticated user.
+   */
+  setTokens: (token: string, refreshToken: string, expiresAt: string) => void;
   logout: () => void;
   /**
    * Updates the persisted user's active_school after a successful
@@ -39,11 +47,16 @@ interface AuthState {
   updateOwnSchoolBranding: (patch: Partial<SchoolBranding>) => void;
 }
 
-// Phase 13 hardening TODO: the token currently lives in localStorage, which
-// is readable by any script on the page (XSS risk). Replace with an
-// httpOnly cookie or a short-lived access token + refresh flow before
-// production launch.
+// Phase 13 hardening TODO (resolved by Prompt 31): the token still lives in
+// localStorage — still readable by any script on the page — but per ADR
+// 0002 that storage mechanism stays (httpOnly cookies would break the
+// planned Flutter mobile client). What Prompt 31 changes instead is the
+// exposure window: the access token here is now short-lived (2h) with a
+// rotating refresh token (7d) behind it, so a stolen access token has a
+// bounded, short blast radius instead of being valid indefinitely.
 const TOKEN_KEY = 'school_erp.token';
+const REFRESH_TOKEN_KEY = 'school_erp.refresh_token';
+const TOKEN_EXPIRES_KEY = 'school_erp.token_expires_at';
 const USER_KEY = 'school_erp.user';
 const BRANDING_KEY = 'school_erp.branding';
 
@@ -90,19 +103,38 @@ const persistedToken = localStorage.getItem(TOKEN_KEY);
 export const useAuthStore = create<AuthState>((set) => ({
   user: persistedToken ? readPersistedUser() : null,
   token: persistedToken,
+  refreshToken: persistedToken ? localStorage.getItem(REFRESH_TOKEN_KEY) : null,
+  tokenExpiresAt: persistedToken ? localStorage.getItem(TOKEN_EXPIRES_KEY) : null,
   isAuthenticated: Boolean(persistedToken),
   branding: readPersistedBranding(),
-  login: (user, token) => {
+  login: (user, token, refreshToken, expiresAt) => {
     localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+    localStorage.setItem(TOKEN_EXPIRES_KEY, expiresAt);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
     const branding = brandingFromUser(user);
     persistBranding(branding);
-    set((state) => ({ user, token, isAuthenticated: true, branding: branding ?? state.branding }));
+    set((state) => ({
+      user,
+      token,
+      refreshToken,
+      tokenExpiresAt: expiresAt,
+      isAuthenticated: true,
+      branding: branding ?? state.branding,
+    }));
+  },
+  setTokens: (token, refreshToken, expiresAt) => {
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+    localStorage.setItem(TOKEN_EXPIRES_KEY, expiresAt);
+    set({ token, refreshToken, tokenExpiresAt: expiresAt });
   },
   logout: () => {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(TOKEN_EXPIRES_KEY);
     localStorage.removeItem(USER_KEY);
-    set({ user: null, token: null, isAuthenticated: false });
+    set({ user: null, token: null, refreshToken: null, tokenExpiresAt: null, isAuthenticated: false });
   },
   setActiveSchool: (school) => {
     set((state) => {

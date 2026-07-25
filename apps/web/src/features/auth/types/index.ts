@@ -29,4 +29,14 @@ export interface AuthUser {
 export interface LoginResult {
   user: AuthUser;
   token: string;
+  refresh_token: string;
+  expires_at: string;
+}
+
+// Returned by POST /auth/refresh — same access+refresh pair shape as login,
+// minus `user` (the frontend already has it, no need to re-fetch it).
+export interface RefreshResult {
+  token: string;
+  refresh_token: string;
+  expires_at: string;
 }
