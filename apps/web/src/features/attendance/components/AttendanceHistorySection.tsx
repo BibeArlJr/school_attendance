@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useStudentAttendanceSummary } from '../hooks/useStudentAttendanceSummary';
 import { useStudentCalendar } from '../hooks/useStudentCalendar';
 import type { AttendanceCalendarDay, AttendanceCalendarDayStatus } from '../types';
@@ -13,28 +13,19 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/shared/components/ui/tooltip';
+import {
+  BS_MONTH_NAMES,
+  bsMonthStartWeekday,
+  daysInBsMonth,
+  toAd,
+  todayBs,
+  WEEKDAY_NAMES,
+} from '@/shared/lib/bikramSambat';
 import { cn } from '@/shared/lib/utils';
 
 interface AttendanceHistorySectionProps {
   studentUuid: string;
 }
-
-const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-const MONTH_LABELS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
 
 const STATUS_STYLES: Record<AttendanceCalendarDayStatus, string> = {
   present: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300',
@@ -73,34 +64,63 @@ function dayTooltip(day: AttendanceCalendarDay): string {
   return parts.join(' — ');
 }
 
+/**
+ * Renders a BS (Bikram Sambat) month grid, not an AD one (Prompt 18's
+ * original AD grid, converted in Prompt 28 Part B) — BS months don't
+ * align with AD month boundaries or share fixed day-counts, so each BS
+ * calendar day here is individually mapped to its underlying AD date
+ * (via the shared toAd utility) to look up that day's attendance record.
+ * Color-coding/hover-tooltip behavior is untouched from Phase 18 — only
+ * the grid's date system changed.
+ */
 export function AttendanceHistorySection({ studentUuid }: AttendanceHistorySectionProps) {
-  const today = new Date();
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth() + 1);
+  const [view, setView] = useState<{ year: number; month: number }>(() => {
+    const today = todayBs();
+    return { year: today.year, month: today.month };
+  });
 
-  const calendarQuery = useStudentCalendar(studentUuid, year, month);
+  const totalDays = daysInBsMonth(view.year, view.month);
+  const from = toAd({ year: view.year, month: view.month, day: 1 });
+  const to = toAd({ year: view.year, month: view.month, day: totalDays });
+
+  const calendarQuery = useStudentCalendar(studentUuid, from, to);
   const summaryQuery = useStudentAttendanceSummary(studentUuid);
 
   function goToPreviousMonth() {
-    if (month === 1) {
-      setMonth(12);
-      setYear((y) => y - 1);
-    } else {
-      setMonth((m) => m - 1);
-    }
+    setView((current) =>
+      current.month === 1
+        ? { year: current.year - 1, month: 12 }
+        : { year: current.year, month: current.month - 1 },
+    );
   }
 
   function goToNextMonth() {
-    if (month === 12) {
-      setMonth(1);
-      setYear((y) => y + 1);
-    } else {
-      setMonth((m) => m + 1);
-    }
+    setView((current) =>
+      current.month === 12
+        ? { year: current.year + 1, month: 1 }
+        : { year: current.year, month: current.month + 1 },
+    );
   }
 
-  const days = calendarQuery.data ?? [];
-  const leadingBlanks = days.length > 0 ? new Date(year, month - 1, 1).getDay() : 0;
+  const daysByAdDate = useMemo(() => {
+    const map = new Map<string, AttendanceCalendarDay>();
+    for (const day of calendarQuery.data ?? []) {
+      map.set(day.date.slice(0, 10), day);
+    }
+    return map;
+  }, [calendarQuery.data]);
+
+  // Every BS day in [1, totalDays] maps 1:1 onto a consecutive AD date
+  // within [from, to] — the backend range is computed to cover exactly
+  // that span, so this lookup always finds a match.
+  const bsDays = Array.from({ length: totalDays }, (_, i) => {
+    const day = i + 1;
+    const adDate = toAd({ year: view.year, month: view.month, day });
+    return { day, adDate, record: daysByAdDate.get(adDate) };
+  });
+
+  const leadingBlanks = bsMonthStartWeekday(view.year, view.month);
+  const hasData = calendarQuery.data && calendarQuery.data.length > 0;
 
   return (
     <Card>
@@ -136,7 +156,7 @@ export function AttendanceHistorySection({ studentUuid }: AttendanceHistorySecti
             <ChevronLeft className="size-4" />
           </Button>
           <p className="text-sm font-medium">
-            {MONTH_LABELS[month - 1]} {year}
+            {BS_MONTH_NAMES[view.month - 1]} {view.year} BS
           </p>
           <Button variant="outline" size="icon-sm" onClick={goToNextMonth} aria-label="Next month">
             <ChevronRight className="size-4" />
@@ -145,12 +165,12 @@ export function AttendanceHistorySection({ studentUuid }: AttendanceHistorySecti
 
         {calendarQuery.isLoading ? (
           <LoadingSkeleton lines={4} />
-        ) : days.length === 0 ? (
+        ) : !hasData ? (
           <EmptyState title="No calendar data for this month" />
         ) : (
           <TooltipProvider>
             <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
-              {WEEKDAY_LABELS.map((label) => (
+              {WEEKDAY_NAMES.map((label) => (
                 <div key={label} className="py-1">
                   {label}
                 </div>
@@ -160,21 +180,30 @@ export function AttendanceHistorySection({ studentUuid }: AttendanceHistorySecti
               {Array.from({ length: leadingBlanks }).map((_, index) => (
                 <div key={`blank-${index}`} />
               ))}
-              {days.map((day) => (
-                <Tooltip key={day.date}>
-                  <TooltipTrigger asChild>
-                    <div
-                      className={cn(
-                        'flex aspect-square items-center justify-center rounded-md text-sm',
-                        STATUS_STYLES[day.status],
-                      )}
-                    >
-                      {Number(day.date.slice(-2))}
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>{dayTooltip(day)}</TooltipContent>
-                </Tooltip>
-              ))}
+              {bsDays.map(({ day, adDate, record }) =>
+                record ? (
+                  <Tooltip key={adDate}>
+                    <TooltipTrigger asChild>
+                      <div
+                        className={cn(
+                          'flex aspect-square items-center justify-center rounded-md text-sm',
+                          STATUS_STYLES[record.status],
+                        )}
+                      >
+                        {day}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>{dayTooltip(record)}</TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <div
+                    key={adDate}
+                    className="flex aspect-square items-center justify-center rounded-md text-sm text-muted-foreground/50"
+                  >
+                    {day}
+                  </div>
+                ),
+              )}
             </div>
           </TooltipProvider>
         )}

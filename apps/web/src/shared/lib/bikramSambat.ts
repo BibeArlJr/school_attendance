@@ -52,14 +52,19 @@ export function bsDateToString(date: BsDate): string {
   return `${date.year}-${pad(date.month)}-${pad(date.day)}`;
 }
 
-function parseBsString(bs: string): BsDate {
+/** Parses an already-BS "YYYY-MM-DD" string into parts — exported (not
+ *  just an internal helper of toBs) for the rare case where a value is
+ *  already known to be BS text rather than an AD date needing
+ *  conversion, e.g. the ~400 imported students that only ever had a
+ *  free-text `dob_bs` and no `dob` at all (Prompt 28 Part A). */
+export function parseBsDateString(bs: string): BsDate {
   const parts = bs.split('-');
   return { year: Number(parts[0]), month: Number(parts[1]), day: Number(parts[2]) };
 }
 
 /** AD date string (YYYY-MM-DD) -> BS parts. */
 export function toBs(adDate: string): BsDate {
-  return parseBsString(ADToBS(adDate));
+  return parseBsDateString(ADToBS(adDate));
 }
 
 /** BS parts -> AD date string (YYYY-MM-DD). */
@@ -67,12 +72,18 @@ export function toAd(date: BsDate): string {
   return BSToAD(bsDateToString(date));
 }
 
-/** AD date string -> a human-readable BS display string, e.g. "Ashadh 10,
- *  2082 BS" — the one formatting implementation every BS display in the
- *  app should call, so the format stays consistent everywhere. */
+/** BS parts -> a human-readable display string, e.g. "Ashadh 10, 2082
+ *  BS" — the one formatting implementation every BS display in the app
+ *  should call, so the format stays consistent everywhere. */
+export function formatBsDate(date: BsDate): string {
+  return `${BS_MONTH_NAMES[date.month - 1]} ${date.day}, ${date.year} BS`;
+}
+
+/** AD date string -> the same human-readable BS display string, via
+ *  toBs + formatBsDate — the common case (you have a stored AD date and
+ *  want to show it in BS) in one call. */
 export function formatBs(adDate: string): string {
-  const bs = toBs(adDate);
-  return `${BS_MONTH_NAMES[bs.month - 1]} ${bs.day}, ${bs.year} BS`;
+  return formatBsDate(toBs(adDate));
 }
 
 /**

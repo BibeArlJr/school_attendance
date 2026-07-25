@@ -1,7 +1,16 @@
 import type { ClassFormValues, StudentFormValues } from '../schema';
 import type { Student, SchoolClass } from '../types';
 import { apiClient } from '@/shared/lib/apiClient';
+import { bsDateToString, toBs } from '@/shared/lib/bikramSambat';
 import type { ApiSuccessResponse, PaginatedResponse } from '@/shared/types';
+
+// BsDatePicker's value/onChange only ever speaks AD (Prompt 27's shared
+// contract) — the BS value "as entered" is re-derived here from that AD
+// string via toBs, which round-trips exactly (toBs/toAd are pure
+// inverses), so this is not a lossy re-guess of what the user picked.
+function dobBsFor(dob: string): string | null {
+  return dob ? bsDateToString(toBs(dob)) : null;
+}
 
 export interface StudentListParams {
   page?: number;
@@ -36,6 +45,7 @@ export const studentsApi = {
       first_name: values.first_name,
       last_name: values.last_name,
       dob: values.dob,
+      dob_bs: dobBsFor(values.dob),
       gender: values.gender,
       admission_date: values.admission_date,
       roll_no: values.roll_no?.trim() ? values.roll_no.trim() : null,
@@ -48,6 +58,7 @@ export const studentsApi = {
     const { data } = await apiClient.put<ApiSuccessResponse<Student>>(`/students/${uuid}`, {
       ...values,
       class_id: Number(values.class_id),
+      dob_bs: dobBsFor(values.dob),
     });
     return data.data;
   },

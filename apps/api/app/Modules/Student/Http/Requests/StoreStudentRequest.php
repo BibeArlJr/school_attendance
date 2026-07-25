@@ -22,6 +22,13 @@ class StoreStudentRequest extends FormRequest
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'dob' => ['required', 'date', 'before:today'],
+            // Prompt 28: BsDatePicker on the frontend always sends both —
+            // dob (converted Gregorian, still the field every date
+            // comparison/attendance calculation reads) and dob_bs (the BS
+            // value as entered, kept only for display). Nullable here
+            // because import (a separate path, not this request) is the
+            // one existing case where dob_bs is set without dob.
+            'dob_bs' => ['nullable', 'string', 'max:20'],
             'gender' => ['required', Rule::in(['male', 'female', 'other'])],
             'admission_date' => ['required', 'date'],
             'roll_no' => ['nullable', 'string', 'max:50'],

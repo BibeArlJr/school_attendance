@@ -196,10 +196,8 @@ class AttendanceAnalyticsService
     /**
      * @return list<array{date: string, status: string, day_type: string, label: ?string, in_time: ?string, out_time: ?string}>
      */
-    public function studentCalendar(Student $student, int $year, int $month): array
+    public function studentCalendar(Student $student, Carbon $from, Carbon $to): array
     {
-        $from = Carbon::create($year, $month, 1)->startOfDay();
-        $to = $from->copy()->endOfMonth();
         $today = Carbon::today();
 
         $config = SchoolConfig::query()->findOrFail($student->school_id);

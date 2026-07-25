@@ -75,14 +75,19 @@ export const attendanceApi = {
     return data.data;
   },
 
+  /** `from`/`to` are plain Gregorian date strings (YYYY-MM-DD) — the
+   *  caller (AttendanceHistorySection) computes the exact AD span a BS
+   *  month covers via the shared toAd/daysInBsMonth utilities and asks
+   *  for exactly that (Prompt 28 Part B), since a BS month's days never
+   *  line up with an AD calendar month's. */
   async studentCalendar(
     studentUuid: string,
-    year: number,
-    month: number,
+    from: string,
+    to: string,
   ): Promise<AttendanceCalendarDay[]> {
     const { data } = await apiClient.get<ApiSuccessResponse<AttendanceCalendarDay[]>>(
       `/students/${studentUuid}/attendance-calendar`,
-      { params: { year, month } },
+      { params: { from, to } },
     );
     return data.data;
   },

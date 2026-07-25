@@ -8,6 +8,7 @@ import { useUpdateStudent } from '../hooks/useUpdateStudent';
 import { studentSchema, type StudentFormValues } from '../schema';
 import type { Student } from '../types';
 import { parentsApi, studentGuardiansApi } from '@/features/parents/api/parentsApi';
+import { BsDatePicker } from '@/shared/components/BsDatePicker';
 import { Button } from '@/shared/components/ui/button';
 import {
   Dialog,
@@ -191,7 +192,7 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
                   <FormItem>
                     <FormLabel>Date of birth</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <BsDatePicker value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

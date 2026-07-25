@@ -96,15 +96,23 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Per-student attendance calendar for one month — colors each day
-     * present/late/absent/holiday/non_school_day/upcoming (Prompt 18 Part B).
+     * Per-student attendance calendar for an explicit date range — colors
+     * each day present/late/absent/holiday/non_school_day/upcoming
+     * (Prompt 18 Part B). Takes `from`/`to` (plain Gregorian dates)
+     * rather than year/month (Prompt 28 Part B) — the frontend now
+     * renders a BS month grid, and a BS month's day range essentially
+     * never lines up with an AD calendar month's, so the caller computes
+     * the exact AD span a given BS month covers (via the shared toAd/
+     * daysInBsMonth utilities) and asks for exactly that. The underlying
+     * per-day status logic is untouched either way — it was already a
+     * plain date-range scan, never actually Gregorian-month-aware.
      */
     public function studentCalendar(Request $request, Student $student): JsonResponse
     {
-        $year = (int) $request->query('year', now()->year);
-        $month = (int) $request->query('month', now()->month);
+        $from = Carbon::parse($request->query('from', now()->startOfMonth()->toDateString()));
+        $to = Carbon::parse($request->query('to', now()->endOfMonth()->toDateString()));
 
-        return ApiResponse::success($this->analytics->studentCalendar($student, $year, $month));
+        return ApiResponse::success($this->analytics->studentCalendar($student, $from, $to));
     }
 
     /**

@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { useStudent } from '../hooks/useStudent';
-import { formatDob } from '../lib/formatDob';
+import { formatDobBs } from '../lib/formatDob';
 import { AttendanceHistorySection } from '@/features/attendance/components/AttendanceHistorySection';
 import { IdCardSection } from '@/features/idcards/components/IdCardSection';
 import { GuardiansSection } from '@/features/parents/components/GuardiansSection';
@@ -65,7 +65,7 @@ export default function StudentDetailPage() {
               : '—'}
           </p>
           <p>
-            <span className="text-muted-foreground">Date of birth:</span> {formatDob(student)}
+            <span className="text-muted-foreground">Date of birth:</span> {formatDobBs(student)}
           </p>
           <p>
             <span className="text-muted-foreground">Gender:</span>{' '}
