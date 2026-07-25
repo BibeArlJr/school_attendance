@@ -3,6 +3,7 @@
 namespace App\Modules\IdCard\Models;
 
 use App\Modules\School\Models\School;
+use App\Support\Concerns\BelongsToSchool;
 use App\Support\Enums\IdCardStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class IdCard extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
         'school_id',
         'owner_type',

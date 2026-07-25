@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Modules\Platform\Http\Requests\StorePlatformSchoolRequest;
 use App\Modules\Platform\Services\PlatformSchoolService;
 use App\Modules\School\Models\School;
+use App\Modules\Student\Models\Student;
+use App\Support\Concerns\BelongsToSchool;
 use App\Support\Enums\LicenseStatus;
 use App\Support\Responses\ApiResponse;
 use Carbon\Carbon;
@@ -29,7 +31,19 @@ class PlatformSchoolController extends Controller
         $schools = School::query()
             ->withCount([
                 'users as staff_count' => fn ($query) => $query->whereIn('role', ['admin', 'teacher', 'guard']),
-                'students as students_count' => fn ($query) => $query->where('status', 'active'),
+                // Deliberate, explicit bypass (Prompt 40): this is one of
+                // the two places (alongside the school list itself)
+                // meant to see every school's count in the same
+                // response — the withCount subquery would otherwise
+                // inherit Student's new tenant scope and, since it's
+                // already correlated on students.school_id = schools.id,
+                // end up double-filtered against whichever single
+                // school (if any) the acting super_admin happens to
+                // have selected as their own active_school_id, zeroing
+                // out every other row's count.
+                'students as students_count' => fn ($query) => $query
+                    ->withoutGlobalScope(BelongsToSchool::class)
+                    ->where('status', 'active'),
             ])
             ->orderBy('name')
             ->get();
@@ -41,7 +55,10 @@ class PlatformSchoolController extends Controller
     {
         $school->loadCount([
             'users as staff_count' => fn ($query) => $query->whereIn('role', ['admin', 'teacher', 'guard']),
-            'students as students_count' => fn ($query) => $query->where('status', 'active'),
+            // Same deliberate bypass as index() above.
+            'students as students_count' => fn ($query) => $query
+                ->withoutGlobalScope(BelongsToSchool::class)
+                ->where('status', 'active'),
         ]);
 
         return ApiResponse::success($this->withLicense($school));

@@ -3,12 +3,15 @@
 namespace App\Modules\Attendance\Models;
 
 use App\Modules\School\Models\School;
+use App\Support\Concerns\BelongsToSchool;
 use App\Support\Enums\CalendarDayType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SchoolCalendar extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
         'school_id',
         'date',

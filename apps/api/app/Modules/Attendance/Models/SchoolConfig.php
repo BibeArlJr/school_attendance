@@ -3,11 +3,14 @@
 namespace App\Modules\Attendance\Models;
 
 use App\Modules\School\Models\School;
+use App\Support\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SchoolConfig extends Model
 {
+    use BelongsToSchool;
+
     protected $primaryKey = 'school_id';
 
     public $incrementing = false;

@@ -4,6 +4,7 @@ namespace App\Modules\Import\Models;
 
 use App\Models\User;
 use App\Modules\School\Models\School;
+use App\Support\Concerns\BelongsToSchool;
 use App\Support\Enums\ImportBatchStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ImportBatch extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
         'school_id',
         'file_name',

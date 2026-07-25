@@ -3,6 +3,7 @@
 namespace App\Modules\School\Models;
 
 use App\Modules\Student\Models\Student;
+use App\Support\Concerns\BelongsToSchool;
 use App\Support\Concerns\HasUuidRouteKey;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class SchoolClass extends Model
 {
     use HasUuidRouteKey;
+    use BelongsToSchool;
 
     protected $table = 'classes';
 

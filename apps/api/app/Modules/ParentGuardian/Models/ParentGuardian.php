@@ -4,6 +4,7 @@ namespace App\Modules\ParentGuardian\Models;
 
 use App\Models\User;
 use App\Modules\School\Models\School;
+use App\Support\Concerns\BelongsToSchool;
 use App\Support\Concerns\HasUuidRouteKey;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class ParentGuardian extends Model
 {
     use HasUuidRouteKey;
+    use BelongsToSchool;
 
     protected $fillable = [
         'school_id',

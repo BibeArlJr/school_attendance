@@ -2,12 +2,15 @@
 
 namespace App\Modules\School\Models;
 
+use App\Support\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AcademicYear extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
         'school_id',
         'label',

@@ -4,6 +4,7 @@ namespace App\Modules\Attendance\Models;
 
 use App\Models\User;
 use App\Modules\School\Models\School;
+use App\Support\Concerns\BelongsToSchool;
 use App\Support\Enums\AttendanceRecordStatus;
 use App\Support\Enums\AttendanceSource;
 use App\Support\Enums\RecordDayType;
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class AttendanceRecord extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
         'school_id',
         'owner_type',

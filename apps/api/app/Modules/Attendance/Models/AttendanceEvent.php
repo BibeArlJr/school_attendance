@@ -4,6 +4,7 @@ namespace App\Modules\Attendance\Models;
 
 use App\Models\User;
 use App\Modules\School\Models\School;
+use App\Support\Concerns\BelongsToSchool;
 use App\Support\Enums\AttendanceEventResult;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 // update/delete route for the underlying scan data at all.
 class AttendanceEvent extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
         'school_id',
         'barcode_value',

@@ -4,12 +4,15 @@ namespace App\Modules\Sms\Models;
 
 use App\Modules\Attendance\Models\AttendanceRecord;
 use App\Modules\School\Models\School;
+use App\Support\Concerns\BelongsToSchool;
 use App\Support\Enums\SmsLogStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SmsLog extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
         'school_id',
         'recipient_phone',

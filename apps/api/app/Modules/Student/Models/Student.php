@@ -7,6 +7,7 @@ use App\Modules\Import\Models\ImportBatch;
 use App\Modules\ParentGuardian\Models\StudentParentLink;
 use App\Modules\School\Models\School;
 use App\Modules\School\Models\SchoolClass;
+use App\Support\Concerns\BelongsToSchool;
 use App\Support\Concerns\HasUuidRouteKey;
 use App\Support\Enums\StudentStatus;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 class Student extends Model
 {
     use HasUuidRouteKey;
+    use BelongsToSchool;
 
     protected $fillable = [
         'school_id',
