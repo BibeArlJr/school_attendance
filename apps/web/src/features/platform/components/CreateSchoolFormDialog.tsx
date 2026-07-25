@@ -35,6 +35,7 @@ const DEFAULTS: CreateSchoolFormValues = {
   contact_phone: '',
   admin_name: '',
   admin_email: '',
+  admin_phone: '',
 };
 
 export function CreateSchoolFormDialog({ open, onOpenChange }: CreateSchoolFormDialogProps) {
@@ -64,6 +65,7 @@ export function CreateSchoolFormDialog({ open, onOpenChange }: CreateSchoolFormD
         contact_phone: values.contact_phone || undefined,
         admin_name: values.admin_name,
         admin_email: values.admin_email,
+        admin_phone: values.admin_phone || undefined,
       })
       .then((result) => {
         onOpenChange(false);
@@ -161,6 +163,22 @@ export function CreateSchoolFormDialog({ open, onOpenChange }: CreateSchoolFormD
                         <FormControl>
                           <Input type="email" {...field} />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="admin_phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Admin phone (optional)</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground">
+                          Used for license expiry reminder texts.
+                        </p>
                         <FormMessage />
                       </FormItem>
                     )}

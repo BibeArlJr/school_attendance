@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Building2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import { LicenseBanner } from './LicenseBanner';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { ROUTES } from '@/app/router/routes';
@@ -49,6 +50,7 @@ export function AppShell() {
       <div className="flex min-w-0 flex-1 flex-col print:overflow-visible">
         <div className="print:hidden">
           <Topbar onOpenMobileMenu={() => setMobileOpen(true)} />
+          <LicenseBanner />
         </div>
 
         <main className="flex-1 overflow-y-auto print:overflow-visible">

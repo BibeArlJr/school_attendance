@@ -110,6 +110,10 @@ class PlatformSchoolController extends Controller
             'amc_expiry_date' => $base->copy()->addDays($days)->toDateString(),
             'license_status' => LicenseStatus::Active,
         ]);
+        // New period starts now (Prompt 33 Part A) — last period's
+        // reminder sends must not suppress this period's.
+        $school->resetReminders();
+        $school->save();
 
         return ApiResponse::success($this->withLicense($school->fresh()), 'Subscription extended.');
     }
@@ -132,6 +136,11 @@ class PlatformSchoolController extends Controller
             'amc_expiry_date' => Carbon::parse($validated['amc_expiry_date'])->toDateString(),
             'license_status' => LicenseStatus::Active,
         ]);
+        // Same reset as activateSubscription() above — a manual expiry
+        // change is still a renewal from the reminder system's point of
+        // view (Prompt 33 Part A).
+        $school->resetReminders();
+        $school->save();
 
         return ApiResponse::success($this->withLicense($school->fresh()), 'Subscription expiry updated.');
     }

@@ -47,6 +47,7 @@ class PlatformSchoolService
             $admin = User::create([
                 'name' => $data['admin_name'],
                 'email' => $data['admin_email'],
+                'phone' => $data['admin_phone'] ?? null,
                 'password' => $temporaryPassword,
                 'school_id' => $school->id,
                 'role' => UserRole::Admin,

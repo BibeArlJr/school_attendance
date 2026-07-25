@@ -10,6 +10,7 @@ export interface CreateSchoolInput {
   contact_phone?: string;
   admin_name: string;
   admin_email: string;
+  admin_phone?: string;
 }
 
 export const platformApi = {

@@ -9,14 +9,19 @@ use Illuminate\Http\Request;
 
 /**
  * Blocks WRITE actions for a school whose subscription has expired
- * (Prompt 25 Part C) — graceful degradation, not a lockout: this is only
- * ever attached to specific write routes (creating/editing students,
- * teachers, parents, attendance corrections), never to read routes, and
- * never to the gate-scanner scan endpoint itself (scanning keeps working
- * regardless — locking out the physical gate hardware over a billing
- * lapse would be a far more disruptive outcome than anything asked for
- * here). super_admin is exempt entirely — they're the one role that can
- * still reactivate a school, so they can't be locked out of it.
+ * (Prompt 25 Part C, extended by Prompt 33 Part C) — attached to every
+ * write route the license-strategy spec lists as blocked: student/staff/
+ * parent create-edit-delete, imports, attendance corrections, settings
+ * changes, and gate-scanner barcode scans (which also gates the SMS sent
+ * as part of that scan, since it never reaches the service layer). Never
+ * attached to read routes. super_admin is exempt entirely — they're the
+ * one role that can still reactivate a school, so they can't be locked
+ * out of it.
+ *
+ * Prompt 25 originally carved out an explicit exception for gate-scanner
+ * scans specifically to keep physical hardware working through a billing
+ * lapse; Prompt 33 deliberately reverses that so scanning matches the
+ * rest of the enforcement list.
  */
 class EnsureLicenseActive
 {

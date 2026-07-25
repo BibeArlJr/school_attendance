@@ -40,7 +40,36 @@ class School extends Model
             'slug' => 'string',
             'license_status' => LicenseStatus::class,
             'amc_expiry_date' => 'date',
+            'reminder_30_sent_at' => 'datetime',
+            'reminder_15_sent_at' => 'datetime',
+            'reminder_7_sent_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Deliberately not in $fillable — these are only ever written by
+     * LicenseReminderService (internal, no HTTP path sets them directly)
+     * and reset by the two Platform Console actions that change
+     * amc_expiry_date. Threshold must be one of 30/15/7.
+     */
+    public function reminderColumn(int $thresholdDays): string
+    {
+        return "reminder_{$thresholdDays}_sent_at";
+    }
+
+    /**
+     * Clears all three reminder flags — called whenever the license is
+     * renewed/reactivated (Prompt 33 Part A) so the new period's
+     * thresholds can fire again instead of staying permanently
+     * suppressed by the previous period's sends.
+     */
+    public function resetReminders(): void
+    {
+        $this->forceFill([
+            'reminder_30_sent_at' => null,
+            'reminder_15_sent_at' => null,
+            'reminder_7_sent_at' => null,
+        ]);
     }
 
     /**

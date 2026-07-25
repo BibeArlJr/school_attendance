@@ -203,6 +203,34 @@ npm run format
 npm run build
 ```
 
+## Scheduled jobs (Prompt 33)
+
+Laravel's scheduler (`routes/console.php`) currently runs one daily job:
+`app:send-license-reminders`, which SMS-reminds each school's admin(s) at
+30/15/7 days before their subscription expires (see
+`App\Support\Services\LicenseReminderService`). This is the first
+scheduled job in the project — `php artisan schedule:run` does nothing by
+itself unless something calls it every minute, which is not automatic.
+
+**Local development:** run it manually whenever you want to trigger due
+reminders immediately, or leave a terminal open running:
+
+```bash
+cd apps/api
+php artisan schedule:work   # re-checks the schedule every minute, foreground
+# or, to run the license-reminder job itself once, on demand:
+php artisan app:send-license-reminders
+```
+
+**Production:** add one crontab entry (`crontab -e`) pointing at the
+project's `artisan` — Laravel's scheduler itself decides when
+`app:send-license-reminders` (or any future scheduled job) actually needs
+to run, so this single line is all cron ever needs to know about:
+
+```
+* * * * * cd /path/to/school-erp/apps/api && php artisan schedule:run >> /dev/null 2>&1
+```
+
 ## Backend conventions
 
 - **Never return a raw `User` model (or a relation that resolves to one)

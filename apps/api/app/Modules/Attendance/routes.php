@@ -9,7 +9,11 @@ use Illuminate\Support\Facades\Route;
 // reviewed_by/reviewed_at/needs_review/review_note, never what was
 // actually scanned.
 Route::middleware(['auth:sanctum', 'can:access-gate-scanner'])->group(function () {
-    Route::post('/gate-scanner/scan', [GateScannerController::class, 'scan']);
+    // license-active here (Prompt 33 Part C) reverses Prompt 25's original
+    // exception for this route — see EnsureLicenseActive's docblock for
+    // the tradeoff this makes (physical scanning now stops on expiry,
+    // where it deliberately didn't before).
+    Route::post('/gate-scanner/scan', [GateScannerController::class, 'scan'])->middleware('license-active');
     Route::get('/gate-scanner/calendar', [GateScannerController::class, 'calendar']);
 });
 

@@ -23,6 +23,10 @@ class StorePlatformSchoolRequest extends FormRequest
             'contact_phone' => ['nullable', 'string', 'max:50'],
             'admin_name' => ['required', 'string', 'max:255'],
             'admin_email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            // Optional (Prompt 33 Part B): without it, this admin simply
+            // won't receive license-reminder SMS — reminders skip admins
+            // with no phone on file rather than failing.
+            'admin_phone' => ['nullable', 'string', 'max:50'],
         ];
     }
 }

@@ -7,6 +7,9 @@ export const createSchoolSchema = z.object({
   contact_phone: z.string().max(50, 'Too long').optional(),
   admin_name: z.string().min(1, "Admin's name is required").max(255, 'Too long'),
   admin_email: z.string().min(1, "Admin's email is required").email('Enter a valid email'),
+  // Optional (Prompt 33 Part B) — without it this admin won't receive
+  // license-reminder SMS, but everything else works fine.
+  admin_phone: z.string().max(50, 'Too long').optional(),
 });
 
 export type CreateSchoolFormValues = z.infer<typeof createSchoolSchema>;
