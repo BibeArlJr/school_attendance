@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureLicenseActive;
 use App\Http\Middleware\RequireAccessTokenAbility;
+use App\Http\Middleware\SecurityHeaders;
 use App\Support\Exceptions\LicenseExpiredException;
 use App\Support\Exceptions\NoActiveSchoolSelectedException;
 use App\Support\Responses\ApiResponse;
@@ -41,7 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Applies to every API route with zero per-route changes — see
         // RequireAccessTokenAbility's docblock for why this is safe
         // regardless of ordering relative to auth:sanctum.
-        $middleware->api(append: [RequireAccessTokenAbility::class]);
+        $middleware->api(append: [RequireAccessTokenAbility::class, SecurityHeaders::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

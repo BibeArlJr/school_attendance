@@ -249,6 +249,22 @@ to run, so this single line is all cron ever needs to know about:
   as a substitute for a Resource — that only narrows what's *fetched*, not
   what a controller is allowed to *return*.
 
+- **`User` is intentionally excluded from the `BelongsToSchool` global
+  scope** (`app/Support/Concerns/BelongsToSchool.php`, added after Prompt
+  40's multi-tenant audit). Sanctum's guard resolves the authenticated
+  user by querying `User` directly, before `Auth::user()` has anything to
+  return — scoping `User` here would make that resolution depend on the
+  very thing it's trying to produce.
+
+  This exclusion is only safe because no route binds `{user}` directly —
+  every access path goes through an already-scoped parent (`Staff`, etc.).
+  **If a future route ever binds `{user}` directly, it must add an
+  explicit manual `school_id` check** (the way `SchoolController::show`
+  does for `School`, which is outside the trait's reach for the same
+  kind of reason — no `school_id` column of its own). Without that check,
+  a direct `{user}` binding is an unscoped hole again, exactly like the
+  ones Prompt 40 closed everywhere else.
+
 ## Frontend conventions
 
 - **Type-check verification must always use `npx tsc -b` (or `npx tsc -b

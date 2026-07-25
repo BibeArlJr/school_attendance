@@ -1,0 +1,24 @@
+# Defense in depth (Prompt 41): this directory only ever receives files
+# through SettingsController::uploadLogo(), which already enforces
+# `image` + `mimes:jpg,jpeg,png,webp` server-side validation with a
+# randomly-generated filename — so nothing PHP-executable can land here
+# through the app's own upload path today. This exists as a second layer
+# in case that ever changes (a future upload endpoint, a validation bug):
+# even a stray executable file here is never served as code, only as a
+# static file, regardless of its extension.
+<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|cgi|sh)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Deny,Allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
