@@ -17,6 +17,7 @@ use App\Support\Enums\StaffEmploymentStatus;
 use App\Support\Enums\StudentStatus;
 use App\Support\Responses\ApiResponse;
 use App\Support\Services\CurrentSchoolResolver;
+use App\Support\Services\NepalTime;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,7 +41,11 @@ class AttendanceController extends Controller
     public function index(Request $request): JsonResponse
     {
         $schoolId = $this->schoolResolver->resolve($request->user());
-        $date = $request->query('date', now()->toDateString());
+        // "Today" defaults to Nepal's calendar day (Prompt 39) — matches
+        // how attendance_records.date is now written (NepalTime, not
+        // UTC), so the default view doesn't miss records around the
+        // UTC/NPT day boundary (00:00-05:44 NPT).
+        $date = $request->query('date', NepalTime::now()->toDateString());
         $ownerType = $request->query('owner_type', 'student');
 
         // "Absent" has no stored row for a no-show (see AttendanceAnalyticsService)

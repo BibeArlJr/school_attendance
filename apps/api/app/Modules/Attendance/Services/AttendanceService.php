@@ -17,6 +17,7 @@ use App\Support\Enums\CalendarDayType;
 use App\Support\Enums\IdCardStatus;
 use App\Support\Enums\RecordDayType;
 use App\Support\Enums\StudentStatus;
+use App\Support\Services\NepalTime;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -53,7 +54,15 @@ class AttendanceService
         ?int $gateDeviceId,
         ?int $guardUserId,
     ): ScanOutcome {
+        // $now is the true UTC instant — used only for scanned_at (the
+        // honest record of when this happened) and for diffing against
+        // other scanned_at instants. Every NPT-semantic wall-clock field
+        // (attendance_records.date/in_time/out_time, day-of-week/calendar
+        // lookups, late/early/window comparisons, the SMS text's time)
+        // must instead derive from $nepalNow (Prompt 39) — Nepal's local
+        // wall clock, not UTC's.
         $now = Carbon::now();
+        $nepalNow = NepalTime::now();
         $gateDeviceId ??= GateDevice::query()->where('school_id', $schoolId)->value('id');
 
         // --- Step 1: identity resolution ---
@@ -107,21 +116,21 @@ class AttendanceService
                 ->where('school_id', $schoolId)
                 ->where('owner_type', $ownerType)
                 ->where('owner_id', $owner->id)
-                ->where('date', $now->toDateString())
+                ->where('date', $nepalNow->toDateString())
                 ->first();
 
             return new ScanOutcome($event, $owner, $existingRecord);
         }
 
-        return DB::transaction(function () use ($schoolId, $barcodeValue, $gateDeviceId, $guardUserId, $now, $owner, $ownerType, $config) {
+        return DB::transaction(function () use ($schoolId, $barcodeValue, $gateDeviceId, $guardUserId, $now, $nepalNow, $owner, $ownerType, $config) {
             // --- Step 4: day_type resolution ---
-            [$calendarDayType, $recordDayType] = $this->resolveDayType($schoolId, $now, $config);
+            [$calendarDayType, $recordDayType] = $this->resolveDayType($schoolId, $nepalNow, $config);
 
             $record = AttendanceRecord::query()->firstOrNew([
                 'school_id' => $schoolId,
                 'owner_type' => $ownerType,
                 'owner_id' => $owner->id,
-                'date' => $now->toDateString(),
+                'date' => $nepalNow->toDateString(),
             ]);
 
             if (! $record->exists) {
@@ -134,37 +143,37 @@ class AttendanceService
             // --- Step 3 (+ step 5's defensive 4th case) ---
             if ($record->in_time === null && $record->out_time === null) {
                 // No scan yet today: IN.
-                $record->in_time = $now->format('H:i:s');
+                $record->in_time = $nepalNow->format('H:i:s');
                 $result = AttendanceEventResult::MatchedIn;
 
                 $lateBy = Carbon::parse($config->start_time)->addMinutes($config->late_threshold_minutes);
-                if ($now->format('H:i:s') > $lateBy->format('H:i:s')) {
+                if ($nepalNow->format('H:i:s') > $lateBy->format('H:i:s')) {
                     $record->late = true;
                 }
 
-                if ($this->isOutsideScheduledWindow($now, $config)) {
+                if ($this->isOutsideScheduledWindow($nepalNow, $config)) {
                     $eventNeedsReview = true;
                 }
             } elseif ($record->in_time !== null && $record->out_time === null) {
                 // Already checked in today, no out yet: OUT.
-                $record->out_time = $now->format('H:i:s');
+                $record->out_time = $nepalNow->format('H:i:s');
                 $result = AttendanceEventResult::MatchedOut;
 
-                $earlyBy = $this->earlyDepartureThreshold($calendarDayType, $config, $now);
-                if ($now->format('H:i:s') < $earlyBy->format('H:i:s')) {
+                $earlyBy = $this->earlyDepartureThreshold($calendarDayType, $config, $nepalNow);
+                if ($nepalNow->format('H:i:s') < $earlyBy->format('H:i:s')) {
                     $record->early_departure = true;
                 }
             } elseif ($record->in_time !== null && $record->out_time !== null) {
                 // Re-entry/re-exit: only first-in/last-out per day is tracked
                 // here — full history stays in attendance_events regardless.
-                $record->out_time = $now->format('H:i:s');
+                $record->out_time = $nepalNow->format('H:i:s');
                 $result = AttendanceEventResult::MatchedOut;
             } else {
                 // Defensive: out_time set with no in_time (e.g. a prior
                 // manual correction left the record in this state).
                 // Shouldn't happen via the branches above, but if it does,
                 // still process it as an out-scan and still notify.
-                $record->out_time = $now->format('H:i:s');
+                $record->out_time = $nepalNow->format('H:i:s');
                 $record->status = AttendanceRecordStatus::OutWithoutIn;
                 $eventNeedsReview = true;
                 $result = AttendanceEventResult::MatchedOut;
@@ -182,7 +191,7 @@ class AttendanceService
             // staff-card rejection above (Prompt 34 Part B).
             $smsSent = false;
             if (in_array($result, [AttendanceEventResult::MatchedIn, AttendanceEventResult::MatchedOut], true)) {
-                $smsSent = $this->sendParentNotification($owner, $result, $now, $schoolId, $record->id);
+                $smsSent = $this->sendParentNotification($owner, $result, $nepalNow, $schoolId, $record->id);
             }
 
             return new ScanOutcome($event, $owner, $record, $smsSent);
@@ -210,29 +219,29 @@ class AttendanceService
     /**
      * @return array{0: CalendarDayType, 1: RecordDayType}
      */
-    private function resolveDayType(int $schoolId, Carbon $now, SchoolConfig $config): array
+    private function resolveDayType(int $schoolId, Carbon $nepalNow, SchoolConfig $config): array
     {
         $calendarEntry = SchoolCalendar::query()
             ->where('school_id', $schoolId)
-            ->whereDate('date', $now->toDateString())
+            ->whereDate('date', $nepalNow->toDateString())
             ->first();
 
         $calendarDayType = $calendarEntry?->day_type ?? CalendarDayType::Working;
 
-        $isWorkingWeekday = in_array($now->dayOfWeek, $config->working_days, true);
+        $isWorkingWeekday = in_array($nepalNow->dayOfWeek, $config->working_days, true);
         $isNonSchoolDay = ! $isWorkingWeekday
             || in_array($calendarDayType, [CalendarDayType::Holiday, CalendarDayType::ExamDay], true);
 
         return [$calendarDayType, $isNonSchoolDay ? RecordDayType::NonSchoolDay : RecordDayType::Working];
     }
 
-    private function isOutsideScheduledWindow(Carbon $now, SchoolConfig $config): bool
+    private function isOutsideScheduledWindow(Carbon $nepalNow, SchoolConfig $config): bool
     {
         $windowStart = Carbon::parse($config->start_time)->subMinutes(self::OUT_OF_WINDOW_BUFFER_MINUTES);
         $windowEnd = Carbon::parse($config->end_time)->addMinutes(self::OUT_OF_WINDOW_BUFFER_MINUTES);
 
-        return $now->format('H:i:s') < $windowStart->format('H:i:s')
-            || $now->format('H:i:s') > $windowEnd->format('H:i:s');
+        return $nepalNow->format('H:i:s') < $windowStart->format('H:i:s')
+            || $nepalNow->format('H:i:s') > $windowEnd->format('H:i:s');
     }
 
     /**
@@ -242,12 +251,12 @@ class AttendanceService
      * "early." Not explicitly spelled out in the spec, but half_day_end_time
      * exists in school_calendars specifically for this.
      */
-    private function earlyDepartureThreshold(CalendarDayType $calendarDayType, SchoolConfig $config, Carbon $now): Carbon
+    private function earlyDepartureThreshold(CalendarDayType $calendarDayType, SchoolConfig $config, Carbon $nepalNow): Carbon
     {
         if ($calendarDayType === CalendarDayType::HalfDay) {
             $calendarEntry = SchoolCalendar::query()
                 ->where('school_id', $config->school_id)
-                ->whereDate('date', $now->toDateString())
+                ->whereDate('date', $nepalNow->toDateString())
                 ->first();
 
             if ($calendarEntry?->half_day_end_time) {
@@ -262,7 +271,7 @@ class AttendanceService
     private function sendParentNotification(
         Student $student,
         AttendanceEventResult $result,
-        Carbon $now,
+        Carbon $nepalNow,
         int $schoolId,
         ?int $recordId,
     ): bool {
@@ -279,7 +288,7 @@ class AttendanceService
 
         $school = $student->school;
         $action = $result === AttendanceEventResult::MatchedIn ? 'entered' : 'left';
-        $time = $now->format('g:i A');
+        $time = $nepalNow->format('g:i A');
         $message = "Dear Parent, your child {$student->first_name} {$student->last_name} "
             . "{$action} {$school->name} at {$time}.";
 

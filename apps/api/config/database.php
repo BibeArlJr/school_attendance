@@ -97,6 +97,14 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // Explicit, not host-OS-inherited (Prompt 39) — matches
+            // config('app.timezone'). Harmless for the timestamp/time
+            // "without time zone" columns this app uses (unaffected by
+            // session TimeZone either way), but pins the one GUC that
+            // would matter for any future timestamptz value or raw
+            // NOW() call, instead of silently depending on whatever
+            // zone the Postgres server's host happens to be in.
+            'timezone' => 'UTC',
         ],
 
         'sqlsrv' => [
