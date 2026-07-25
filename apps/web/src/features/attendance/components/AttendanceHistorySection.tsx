@@ -21,6 +21,7 @@ import {
   todayBs,
   WEEKDAY_NAMES,
 } from '@/shared/lib/bikramSambat';
+import { formatTime12h } from '@/shared/lib/time';
 import { cn } from '@/shared/lib/utils';
 
 interface AttendanceHistorySectionProps {
@@ -45,20 +46,11 @@ const STATUS_LABELS: Record<AttendanceCalendarDayStatus, string> = {
   upcoming: 'Upcoming',
 };
 
-function formatTime(time: string | null): string | null {
-  if (!time) return null;
-  const [hoursStr, minutesStr] = time.split(':');
-  const hours = Number(hoursStr);
-  const period = hours >= 12 ? 'PM' : 'AM';
-  const displayHours = hours % 12 === 0 ? 12 : hours % 12;
-  return `${displayHours}:${minutesStr} ${period}`;
-}
-
 function dayTooltip(day: AttendanceCalendarDay): string {
   const parts = [STATUS_LABELS[day.status]];
   if (day.label) parts.push(day.label);
-  const inTime = formatTime(day.in_time);
-  const outTime = formatTime(day.out_time);
+  const inTime = day.in_time ? formatTime12h(day.in_time) : null;
+  const outTime = day.out_time ? formatTime12h(day.out_time) : null;
   if (inTime) parts.push(`In: ${inTime}`);
   if (outTime) parts.push(`Out: ${outTime}`);
   return parts.join(' — ');

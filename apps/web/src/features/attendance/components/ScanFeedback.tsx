@@ -2,17 +2,10 @@ import { motion } from 'framer-motion';
 import { AlertTriangle, CheckCircle2, Clock, LogIn, LogOut, XCircle } from 'lucide-react';
 import type { ScanResult } from '../types';
 import { Badge } from '@/shared/components/ui/badge';
+import { formatTime12h } from '@/shared/lib/time';
 
 interface ScanFeedbackProps {
   scan: ScanResult;
-}
-
-function formatTime(time: string): string {
-  const [hoursStr, minutesStr] = time.split(':');
-  const hours = Number(hoursStr);
-  const period = hours >= 12 ? 'PM' : 'AM';
-  const displayHours = hours % 12 === 0 ? 12 : hours % 12;
-  return `${displayHours}:${minutesStr} ${period}`;
 }
 
 const REJECTION_MESSAGES: Record<string, string> = {
@@ -78,7 +71,7 @@ export function ScanFeedback({ scan }: ScanFeedbackProps) {
         )}
         {time && (
           <p className="text-lg font-semibold text-emerald-800 dark:text-emerald-300">
-            {formatTime(time)}
+            {formatTime12h(time)}
           </p>
         )}
         <div className="flex flex-wrap justify-center gap-2">

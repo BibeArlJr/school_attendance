@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/components/ui/dialog';
+import { formatDateTime12h } from '@/shared/lib/time';
 
 interface SmsLogDetailDialogProps {
   log: SmsLog | null;
@@ -41,7 +42,7 @@ export function SmsLogDetailDialog({ log, onOpenChange }: SmsLogDetailDialogProp
               <Badge variant={STATUS_VARIANT[log.status]} className="capitalize">
                 {log.status}
               </Badge>
-              <span className="text-muted-foreground">{new Date(log.sent_at).toLocaleString()}</span>
+              <span className="text-muted-foreground">{formatDateTime12h(log.sent_at)}</span>
             </div>
 
             <div className="space-y-1">

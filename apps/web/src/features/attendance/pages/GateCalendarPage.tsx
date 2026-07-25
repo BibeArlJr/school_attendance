@@ -10,6 +10,7 @@ import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
 import { formatBs } from '@/shared/lib/bikramSambat';
+import { formatTime12h } from '@/shared/lib/time';
 
 const DAY_TYPE_LABEL: Record<string, string> = {
   working: 'Working (override)',
@@ -77,7 +78,9 @@ export default function GateCalendarPage() {
                   </Badge>
                 </TableCell>
                 <TableCell>{entry.label ?? '—'}</TableCell>
-                <TableCell>{entry.half_day_end_time?.slice(0, 5) ?? '—'}</TableCell>
+                <TableCell>
+                  {entry.half_day_end_time ? formatTime12h(entry.half_day_end_time) : '—'}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

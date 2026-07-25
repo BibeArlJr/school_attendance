@@ -10,20 +10,13 @@ import { useAuthStore } from '@/features/auth/store/authStore';
 import { PageContainer } from '@/shared/components/layout/PageContainer';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
+import { formatTime12h } from '@/shared/lib/time';
 import { getNotificationService } from '@/shared/services/mock';
 
 // How long the big feedback panel stays up before auto-clearing and
 // refocusing the input for the next scan — matches the "feel fast, no
 // more than ~2 seconds" requirement from the product brief.
 const FEEDBACK_DISPLAY_MS = 2000;
-
-function formatTimeForMessage(time: string): string {
-  const [hoursStr, minutesStr] = time.split(':');
-  const hours = Number(hoursStr);
-  const period = hours >= 12 ? 'PM' : 'AM';
-  const displayHours = hours % 12 === 0 ? 12 : hours % 12;
-  return `${displayHours}:${minutesStr} ${period}`;
-}
 
 function buildNotificationMessage(scan: ScanResult, schoolName: string): string | null {
   if (!scan.student || !scan.record) {
@@ -36,7 +29,7 @@ function buildNotificationMessage(scan: ScanResult, schoolName: string): string 
     return null;
   }
 
-  return `Dear Parent, your child ${scan.student.first_name} ${scan.student.last_name} ${action} ${schoolName} at ${formatTimeForMessage(time)}.`;
+  return `Dear Parent, your child ${scan.student.first_name} ${scan.student.last_name} ${action} ${schoolName} at ${formatTime12h(time)}.`;
 }
 
 export default function GateScannerPage() {

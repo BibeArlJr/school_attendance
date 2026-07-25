@@ -8,6 +8,7 @@ import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
 import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
+import { formatDateTime12h } from '@/shared/lib/time';
 
 const RESULT_LABEL: Record<string, string> = {
   unknown_barcode: 'Unknown barcode',
@@ -50,7 +51,7 @@ export function AnomalyReviewSection({ licenseExpired }: AnomalyReviewSectionPro
                       ? `${event.student.first_name} ${event.student.last_name}`
                       : (event.staff?.name ?? 'Unresolved')}
                     {' · '}
-                    {new Date(event.scanned_at).toLocaleString()}
+                    {formatDateTime12h(event.scanned_at)}
                     {event.gate_device ? ` · ${event.gate_device.name}` : ''}
                   </p>
                 </div>

@@ -15,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { LICENSE_EXPIRED_MESSAGE, useLicenseExpired } from '@/shared/hooks/useLicenseExpired';
 import { formatBs } from '@/shared/lib/bikramSambat';
 import { extractErrorMessage } from '@/shared/lib/errors';
+import { formatTime12h } from '@/shared/lib/time';
 
 const DAY_TYPE_LABEL: Record<string, string> = {
   working: 'Working (override)',
@@ -95,7 +96,9 @@ export function SchoolCalendarSection() {
                     </Badge>
                   </TableCell>
                   <TableCell>{entry.label ?? '—'}</TableCell>
-                  <TableCell>{entry.half_day_end_time?.slice(0, 5) ?? '—'}</TableCell>
+                  <TableCell>
+                    {entry.half_day_end_time ? formatTime12h(entry.half_day_end_time) : '—'}
+                  </TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-1">
                       <Button

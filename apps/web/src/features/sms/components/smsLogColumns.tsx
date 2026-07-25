@@ -1,6 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import type { SmsLog } from '../types';
 import { Badge } from '@/shared/components/ui/badge';
+import { formatDateTime12h } from '@/shared/lib/time';
 
 const STATUS_VARIANT: Record<SmsLog['status'], 'default' | 'destructive'> = {
   sent: 'default',
@@ -50,7 +51,7 @@ export function buildSmsLogColumns(): ColumnDef<SmsLog>[] {
     {
       accessorKey: 'sent_at',
       header: 'Sent At',
-      cell: ({ row }) => new Date(row.original.sent_at).toLocaleString(),
+      cell: ({ row }) => formatDateTime12h(row.original.sent_at),
     },
   ];
 }

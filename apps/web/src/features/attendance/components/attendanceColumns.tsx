@@ -4,6 +4,7 @@ import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
 import { formatBs } from '@/shared/lib/bikramSambat';
+import { formatTime12h } from '@/shared/lib/time';
 
 const STATUS_VARIANT: Record<AttendanceRecord['status'], 'default' | 'secondary' | 'outline'> = {
   present: 'default',
@@ -53,12 +54,12 @@ export function buildAttendanceColumns({
     {
       accessorKey: 'in_time',
       header: 'In',
-      cell: ({ row }) => row.original.in_time ?? '—',
+      cell: ({ row }) => (row.original.in_time ? formatTime12h(row.original.in_time) : '—'),
     },
     {
       accessorKey: 'out_time',
       header: 'Out',
-      cell: ({ row }) => row.original.out_time ?? '—',
+      cell: ({ row }) => (row.original.out_time ? formatTime12h(row.original.out_time) : '—'),
     },
     {
       accessorKey: 'status',
