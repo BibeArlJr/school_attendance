@@ -16,7 +16,7 @@ export interface IdCardStaffSummary {
   id: number;
   uuid: string;
   name: string;
-  designation: string;
+  designation: string | null;
 }
 
 export interface IdCard {

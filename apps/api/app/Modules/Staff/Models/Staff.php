@@ -19,15 +19,12 @@ class Staff extends Model
         'school_id',
         'user_id',
         'designation',
-        'qualification',
-        'joined_date',
         'employment_status',
     ];
 
     protected function casts(): array
     {
         return [
-            'joined_date' => 'date',
             'employment_status' => StaffEmploymentStatus::class,
         ];
     }

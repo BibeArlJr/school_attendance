@@ -477,8 +477,6 @@ class DemoSeeder extends Seeder
             'school_id' => $school->id,
             'user_id' => $teacher->id,
             'designation' => 'Class Teacher',
-            'qualification' => 'B.Ed.',
-            'joined_date' => now()->subYears(2)->toDateString(),
             'employment_status' => 'active',
         ]);
         $idCardService->generateForStaff($staff);
@@ -497,8 +495,6 @@ class DemoSeeder extends Seeder
             'school_id' => $school->id,
             'user_id' => $onLeaveUser->id,
             'designation' => 'Subject Teacher',
-            'qualification' => 'M.Ed.',
-            'joined_date' => now()->subYear()->toDateString(),
             'employment_status' => 'on_leave',
         ]);
         $idCardService->generateForStaff($onLeaveStaff);
@@ -507,8 +503,6 @@ class DemoSeeder extends Seeder
             'school_id' => $school->id,
             'user_id' => $qaTeacher->id,
             'designation' => 'QA Test Account — Not A Real Employee',
-            'qualification' => 'N/A',
-            'joined_date' => now()->toDateString(),
             'employment_status' => 'active',
         ]);
         $idCardService->generateForStaff($qaStaff);

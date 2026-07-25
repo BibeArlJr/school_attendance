@@ -5,7 +5,6 @@ import { EmploymentStatusMenu } from './EmploymentStatusMenu';
 import { teacherDetailPath } from '@/app/router/routes';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
-import { formatBs } from '@/shared/lib/bikramSambat';
 
 const STATUS_VARIANT: Record<Teacher['employment_status'], 'default' | 'secondary' | 'outline'> = {
   active: 'default',
@@ -48,14 +47,7 @@ export function buildTeacherColumns({
     {
       accessorKey: 'designation',
       header: 'Designation',
-    },
-    {
-      accessorKey: 'joined_date',
-      header: 'Joined',
-      // Sorting still reads the raw accessorKey value (an ISO string,
-      // which sorts correctly lexically) — this `cell` only overrides
-      // the rendered display, not the sort comparator.
-      cell: ({ row }) => formatBs(row.original.joined_date.slice(0, 10)),
+      cell: ({ row }) => row.original.designation ?? '—',
     },
     {
       accessorKey: 'employment_status',

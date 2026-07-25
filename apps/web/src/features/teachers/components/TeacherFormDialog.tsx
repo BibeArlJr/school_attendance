@@ -6,7 +6,6 @@ import { useUpdateTeacher } from '../hooks/useUpdateTeacher';
 import { teacherSchema, type TeacherFormValues } from '../schema';
 import type { Teacher } from '../types';
 import { PasswordRevealDialog } from './PasswordRevealDialog';
-import { BsDatePicker } from '@/shared/components/BsDatePicker';
 import { Button } from '@/shared/components/ui/button';
 import {
   Dialog,
@@ -44,8 +43,6 @@ function defaultsFor(teacher?: Teacher | null): TeacherFormValues {
     email: teacher?.email ?? '',
     role: teacher?.role ?? 'teacher',
     designation: teacher?.designation ?? '',
-    qualification: teacher?.qualification ?? '',
-    joined_date: teacher?.joined_date.slice(0, 10) ?? '',
   };
 }
 
@@ -145,35 +142,9 @@ export function TeacherFormDialog({ open, onOpenChange, teacher }: TeacherFormDi
                 name="designation"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Designation</FormLabel>
+                    <FormLabel>Designation (optional)</FormLabel>
                     <FormControl>
                       <Input placeholder="Science Teacher" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="qualification"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Qualification (optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="M.Sc." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="joined_date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Joined date</FormLabel>
-                    <FormControl>
-                      <BsDatePicker value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

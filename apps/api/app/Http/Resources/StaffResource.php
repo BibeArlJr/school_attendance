@@ -25,8 +25,6 @@ class StaffResource extends JsonResource
             'role' => $user->role->value,
             'is_active' => $user->is_active,
             'designation' => $this->designation,
-            'qualification' => $this->qualification,
-            'joined_date' => $this->joined_date->toDateString(),
             'employment_status' => $this->employment_status->value,
         ];
     }

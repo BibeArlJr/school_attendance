@@ -48,9 +48,7 @@ class StaffService
             $staff = Staff::create([
                 'school_id' => $schoolId,
                 'user_id' => $user->id,
-                'designation' => $data['designation'],
-                'qualification' => $data['qualification'] ?? null,
-                'joined_date' => $data['joined_date'],
+                'designation' => $data['designation'] ?? null,
                 // Explicit, not relying on the DB column default — a
                 // freshly ::create()'d in-memory model doesn't get
                 // server-side defaults hydrated back without a refetch.
@@ -70,9 +68,7 @@ class StaffService
     {
         return DB::transaction(function () use ($staff, $data) {
             $staff->update([
-                'designation' => $data['designation'],
-                'qualification' => $data['qualification'] ?? null,
-                'joined_date' => $data['joined_date'],
+                'designation' => $data['designation'] ?? null,
             ]);
 
             $staff->user->update([

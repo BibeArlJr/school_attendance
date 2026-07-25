@@ -25,9 +25,7 @@ class UpdateStaffRequest extends FormRequest
                 'max:255',
                 Rule::unique('users', 'email')->ignore($this->route('staff')->user_id),
             ],
-            'designation' => ['required', 'string', 'max:255'],
-            'qualification' => ['nullable', 'string', 'max:255'],
-            'joined_date' => ['required', 'date'],
+            'designation' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

@@ -9,9 +9,7 @@ export const teacherSchema = z.object({
   // precedent) so react-hook-form's generic always matches this
   // resolver's inferred type exactly.
   role: z.enum(['teacher', 'guard', 'admin']),
-  designation: z.string().min(1, 'Designation is required').max(255, 'Too long'),
-  qualification: z.string().max(255, 'Too long').optional(),
-  joined_date: z.string().min(1, 'Joined date is required'),
+  designation: z.string().max(255, 'Too long').optional(),
 });
 
 export type TeacherFormValues = z.infer<typeof teacherSchema>;

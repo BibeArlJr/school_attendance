@@ -33,7 +33,7 @@ function ownerName(scan: ScanResult): string | null {
 
 function ownerSubtitle(scan: ScanResult): string {
   if (scan.owner_type === 'staff' && scan.staff) {
-    return scan.staff.designation;
+    return scan.staff.designation ?? '';
   }
   if (scan.student?.school_class) {
     return `${scan.student.school_class.name}${scan.student.school_class.section ? ` - ${scan.student.school_class.section}` : ''}`;

@@ -28,9 +28,7 @@ class StoreStaffRequest extends FormRequest
             // auto-created at school-creation time (Prompt 24) — there
             // was previously no way to add a second one.
             'role' => ['required', 'in:teacher,guard,admin'],
-            'designation' => ['required', 'string', 'max:255'],
-            'qualification' => ['nullable', 'string', 'max:255'],
-            'joined_date' => ['required', 'date'],
+            'designation' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

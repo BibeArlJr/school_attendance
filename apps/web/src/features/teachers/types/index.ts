@@ -15,8 +15,6 @@ export interface Teacher {
   email: string;
   role: StaffRole;
   is_active: boolean;
-  designation: string;
-  qualification: string | null;
-  joined_date: string;
+  designation: string | null;
   employment_status: EmploymentStatus;
 }

@@ -20,7 +20,7 @@ export interface AttendanceStudentSummary {
 export interface AttendanceStaffSummary {
   id: number;
   name: string;
-  designation: string;
+  designation: string | null;
 }
 
 export interface ScanResult {

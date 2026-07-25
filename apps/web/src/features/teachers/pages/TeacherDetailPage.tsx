@@ -7,7 +7,6 @@ import { PageContainer } from '@/shared/components/layout/PageContainer';
 import { Badge } from '@/shared/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { useCan } from '@/shared/hooks/useCan';
-import { formatBs } from '@/shared/lib/bikramSambat';
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
   active: 'default',
@@ -44,7 +43,7 @@ export default function TeacherDetailPage() {
   }
 
   return (
-    <PageContainer title={teacher.name} description={teacher.designation}>
+    <PageContainer title={teacher.name} description={teacher.designation ?? undefined}>
       <Card>
         <CardHeader>
           <CardTitle>{ROLE_INFO_TITLE[teacher.role] ?? 'Staff info'}</CardTitle>
@@ -58,15 +57,8 @@ export default function TeacherDetailPage() {
             <span className="capitalize">{teacher.role}</span>
           </p>
           <p>
-            <span className="text-muted-foreground">Designation:</span> {teacher.designation}
-          </p>
-          <p>
-            <span className="text-muted-foreground">Qualification:</span>{' '}
-            {teacher.qualification ?? '—'}
-          </p>
-          <p>
-            <span className="text-muted-foreground">Joined date:</span>{' '}
-            {formatBs(teacher.joined_date.slice(0, 10))}
+            <span className="text-muted-foreground">Designation:</span>{' '}
+            {teacher.designation ?? '—'}
           </p>
           <p className="flex items-center gap-2">
             <span className="text-muted-foreground">Employment status:</span>
