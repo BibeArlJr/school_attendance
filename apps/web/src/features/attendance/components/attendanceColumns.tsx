@@ -3,6 +3,7 @@ import type { AttendanceRecord } from '../types';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
+import { formatBs } from '@/shared/lib/bikramSambat';
 
 const STATUS_VARIANT: Record<AttendanceRecord['status'], 'default' | 'secondary' | 'outline'> = {
   present: 'default',
@@ -26,6 +27,15 @@ export function buildAttendanceColumns({
   onEdit,
 }: BuildAttendanceColumnsOptions): ColumnDef<AttendanceRecord>[] {
   const columns: ColumnDef<AttendanceRecord>[] = [
+    {
+      // date is already a plain "YYYY-MM-DD" string (AttendanceRecordResource),
+      // which sorts correctly lexicographically as-is — no custom
+      // sortingFn needed (unlike Roll No., which is text that needs
+      // numeric parsing to sort correctly).
+      accessorKey: 'date',
+      header: 'Date',
+      cell: ({ row }) => formatBs(row.original.date),
+    },
     {
       id: 'name',
       header: 'Name',
