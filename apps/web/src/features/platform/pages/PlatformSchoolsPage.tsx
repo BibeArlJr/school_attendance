@@ -63,6 +63,7 @@ export default function PlatformSchoolsPage() {
               <TableHead>Students</TableHead>
               <TableHead>Staff</TableHead>
               <TableHead>License</TableHead>
+              <TableHead>Days Remaining</TableHead>
               <TableHead>Created</TableHead>
               <TableHead />
             </TableRow>
@@ -81,18 +82,24 @@ export default function PlatformSchoolsPage() {
                 <TableCell>{school.students_count}</TableCell>
                 <TableCell>{school.staff_count}</TableCell>
                 <TableCell>
-                  <div className="flex flex-col gap-0.5">
-                    <Badge variant={LICENSE_VARIANT[school.computed_license_status]} className="w-fit">
-                      {LICENSE_LABEL[school.computed_license_status]}
-                    </Badge>
-                    {school.days_until_expiry !== null && (
-                      <span className="text-xs text-muted-foreground">
-                        {school.days_until_expiry >= 0
-                          ? `${school.days_until_expiry}d left`
-                          : `expired ${Math.abs(school.days_until_expiry)}d ago`}
-                      </span>
-                    )}
-                  </div>
+                  <Badge variant={LICENSE_VARIANT[school.computed_license_status]} className="w-fit">
+                    {LICENSE_LABEL[school.computed_license_status]}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {/* Computed live from amc_expiry_date server-side
+                      (days_until_expiry, already returned by every
+                      schools-list/detail response) — not reimplemented
+                      here, just displayed (Prompt 36 Part C). */}
+                  {school.days_until_expiry === null ? (
+                    <span className="text-muted-foreground">—</span>
+                  ) : school.days_until_expiry < 0 ? (
+                    <span className="font-medium text-destructive">
+                      Expired {Math.abs(school.days_until_expiry)}d ago
+                    </span>
+                  ) : (
+                    <span>{school.days_until_expiry}d</span>
+                  )}
                 </TableCell>
                 <TableCell>{school.created_at.slice(0, 10)}</TableCell>
                 <TableCell>

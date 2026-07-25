@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CreditsCard } from '../components/CreditsCard';
+import { SmsLogDetailDialog } from '../components/SmsLogDetailDialog';
 import { buildSmsLogColumns } from '../components/smsLogColumns';
 import { useSmsLogs } from '../hooks/useSmsLogs';
+import type { SmsLog } from '../types';
 import { DataTable } from '@/shared/components/data-table/DataTable';
 import { PageContainer } from '@/shared/components/layout/PageContainer';
 import {
@@ -19,6 +21,7 @@ export default function SmsLogPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [pageIndex, setPageIndex] = useState(0);
+  const [selectedLog, setSelectedLog] = useState<SmsLog | null>(null);
 
   useEffect(() => {
     const id = setTimeout(() => setDebouncedSearch(search), 300);
@@ -55,6 +58,7 @@ export default function SmsLogPage() {
         onPageChange={setPageIndex}
         totalCount={logsQuery.data?.total}
         emptyTitle="No SMS activity yet"
+        onRowClick={setSelectedLog}
         filters={
           <Select
             value={statusFilter}
@@ -74,6 +78,8 @@ export default function SmsLogPage() {
           </Select>
         }
       />
+
+      <SmsLogDetailDialog log={selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)} />
     </PageContainer>
   );
 }

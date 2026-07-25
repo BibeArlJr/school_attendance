@@ -89,6 +89,9 @@ interface DataTableProps<TData extends { id: number }, TValue> {
    * per-row delete UI's own RBAC gating.
    */
   selection?: DataTableSelection<TData>;
+  /** Optional — makes each row clickable (e.g. opening a detail view).
+   *  Omit for tables where rows aren't independently actionable. */
+  onRowClick?: (row: TData) => void;
 }
 
 /**
@@ -114,6 +117,7 @@ export function DataTable<TData extends { id: number }, TValue>({
   actions,
   emptyTitle = 'No results',
   selection,
+  onRowClick,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -310,7 +314,12 @@ export function DataTable<TData extends { id: number }, TValue>({
               </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() ? 'selected' : undefined}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() ? 'selected' : undefined}
+                  className={onRowClick ? 'cursor-pointer' : undefined}
+                  onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}

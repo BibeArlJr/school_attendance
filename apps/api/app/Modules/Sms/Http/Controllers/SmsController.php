@@ -23,7 +23,9 @@ class SmsController extends Controller
     {
         $schoolId = $this->schoolResolver->resolve($request->user());
 
-        $query = SmsLog::query()->where('school_id', $schoolId);
+        // Eager-loaded so SmsLogResource's student link (Prompt 36 Part A)
+        // never N+1s across a page of results.
+        $query = SmsLog::query()->where('school_id', $schoolId)->with('relatedAttendanceRecord.owner');
 
         if ($search = trim((string) $request->query('search', ''))) {
             $query->where('recipient_phone', 'ilike', "%{$search}%");

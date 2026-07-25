@@ -46,6 +46,25 @@ const QUICK_DURATIONS = [
   { label: '+1 year', days: 365 },
 ];
 
+function addDaysToIso(iso: string, days: number): string {
+  const date = new Date(iso);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+/**
+ * Mirrors PlatformSchoolController::activateSubscription() exactly
+ * (Prompt 25 Part C's rule): extends from the current expiry if the
+ * school isn't expired yet, starts fresh from today otherwise — so the
+ * confirmation dialog's preview date is never wrong relative to what the
+ * backend will actually compute.
+ */
+function previewNewExpiry(school: PlatformSchool, days: number): string {
+  const notYetExpired = school.amc_expiry_date !== null && school.computed_license_status !== 'expired';
+  const base = notYetExpired ? school.amc_expiry_date! : new Date().toISOString().slice(0, 10);
+  return addDaysToIso(base, days);
+}
+
 /**
  * Replaces the single "Activate Subscription"/"Extend" button (Prompt
  * 25 Part C) with a real management panel (Prompt 26 Part C revision):
@@ -65,6 +84,11 @@ export function SubscriptionManageDialog({ school, open, onOpenChange }: Subscri
   const [manualDate, setManualDate] = useState('');
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [confirmDeactivateOpen, setConfirmDeactivateOpen] = useState(false);
+  // Which quick-duration button (if any) is awaiting confirmation —
+  // holding the duration itself (not just a boolean) is what lets the
+  // confirm dialog show the exact days/resulting date for whichever
+  // button was actually clicked (Prompt 36 Part B).
+  const [confirmExtendDays, setConfirmExtendDays] = useState<number | null>(null);
   // Resets the form fields only on the open-transition, not on every
   // background refetch of `school` while the dialog stays open (which
   // would otherwise clobber whatever date the user is mid-typing) —
@@ -79,6 +103,7 @@ export function SubscriptionManageDialog({ school, open, onOpenChange }: Subscri
       setManualDate(school?.amc_expiry_date ?? '');
       setConfirmCancelOpen(false);
       setConfirmDeactivateOpen(false);
+      setConfirmExtendDays(null);
     }
   }
 
@@ -108,6 +133,14 @@ export function SubscriptionManageDialog({ school, open, onOpenChange }: Subscri
     deactivateSchool.mutate(school!.id, {
       onSuccess: () => setConfirmDeactivateOpen(false),
     });
+  }
+
+  function handleExtendConfirm() {
+    if (confirmExtendDays === null) return;
+    extendSubscription.mutate(
+      { schoolId: school!.id, days: confirmExtendDays },
+      { onSuccess: () => setConfirmExtendDays(null) },
+    );
   }
 
   return (
@@ -145,7 +178,7 @@ export function SubscriptionManageDialog({ school, open, onOpenChange }: Subscri
                   variant="outline"
                   size="sm"
                   disabled={isPending}
-                  onClick={() => extendSubscription.mutate({ schoolId: school.id, days: duration.days })}
+                  onClick={() => setConfirmExtendDays(duration.days)}
                 >
                   {duration.label}
                 </Button>
@@ -284,6 +317,35 @@ export function SubscriptionManageDialog({ school, open, onOpenChange }: Subscri
               onClick={handleDeactivateConfirm}
             >
               {deactivateSchool.isPending ? 'Deactivating…' : 'Yes, deactivate now'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={confirmExtendDays !== null}
+        onOpenChange={(next) => !next && setConfirmExtendDays(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Extend {school.name}&apos;s subscription?</DialogTitle>
+          </DialogHeader>
+          {confirmExtendDays !== null && (
+            <p className="text-sm text-muted-foreground">
+              Extends the subscription by {confirmExtendDays} day{confirmExtendDays === 1 ? '' : 's'}.
+              New expiry:{' '}
+              <span className="font-medium text-foreground">
+                {formatBs(previewNewExpiry(school, confirmExtendDays))}
+              </span>{' '}
+              ({previewNewExpiry(school, confirmExtendDays)} AD).
+            </p>
+          )}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setConfirmExtendDays(null)}>
+              Cancel
+            </Button>
+            <Button type="button" disabled={extendSubscription.isPending} onClick={handleExtendConfirm}>
+              {extendSubscription.isPending ? 'Extending…' : 'Yes, extend'}
             </Button>
           </DialogFooter>
         </DialogContent>
