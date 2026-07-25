@@ -45,7 +45,12 @@ function SidebarContent({
                 'flex items-center gap-3 rounded-md px-2.5 py-2 text-sm font-medium outline-none transition-colors',
                 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
                 'focus-visible:bg-sidebar-accent focus-visible:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring',
-                isActive && 'bg-sidebar-accent text-sidebar-accent-foreground',
+                // Keyed off --primary (via bg-primary/10 / text-primary)
+                // rather than the neutral --sidebar-accent used for
+                // hover/focus above — this is the one spot in the app
+                // where "current page" is shown, and it should read as
+                // the school's own accent color, not a fixed gray.
+                isActive && 'bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary',
                 collapsed && 'justify-center px-0',
               )
             }
