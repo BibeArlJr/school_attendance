@@ -2,6 +2,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import type { AttendanceRecord } from '../types';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
+import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
 
 const STATUS_VARIANT: Record<AttendanceRecord['status'], 'default' | 'secondary' | 'outline'> = {
   present: 'default',
@@ -13,6 +14,7 @@ const STATUS_VARIANT: Record<AttendanceRecord['status'], 'default' | 'secondary'
 
 interface BuildAttendanceColumnsOptions {
   canManage: boolean;
+  licenseExpired: boolean;
   onEdit: (record: AttendanceRecord) => void;
 }
 
@@ -20,6 +22,7 @@ interface BuildAttendanceColumnsOptions {
 // owner-type branch that used to build a Name/Designation pair here).
 export function buildAttendanceColumns({
   canManage,
+  licenseExpired,
   onEdit,
 }: BuildAttendanceColumnsOptions): ColumnDef<AttendanceRecord>[] {
   const columns: ColumnDef<AttendanceRecord>[] = [
@@ -73,7 +76,13 @@ export function buildAttendanceColumns({
         // behind it — nothing to correct.
         row.original.source === null ? null : (
           <div className="flex justify-end">
-            <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={licenseExpired}
+              title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+              onClick={() => onEdit(row.original)}
+            >
               Edit
             </Button>
           </div>

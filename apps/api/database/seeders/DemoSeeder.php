@@ -124,10 +124,10 @@ class DemoSeeder extends Seeder
         );
 
         $classDefs = [
-            ['name' => 'Grade 1', 'section' => 'A', 'class_teacher_id' => $teacher->id],
-            ['name' => 'Grade 1', 'section' => 'B', 'class_teacher_id' => null],
-            ['name' => 'Grade 2', 'section' => 'A', 'class_teacher_id' => null],
-            ['name' => 'Grade 3', 'section' => 'A', 'class_teacher_id' => null],
+            ['name' => 'Grade 1', 'section' => 'A', 'class_teacher_name' => $teacher->name],
+            ['name' => 'Grade 1', 'section' => 'B', 'class_teacher_name' => null],
+            ['name' => 'Grade 2', 'section' => 'A', 'class_teacher_name' => null],
+            ['name' => 'Grade 3', 'section' => 'A', 'class_teacher_name' => null],
         ];
 
         $classes = collect($classDefs)->map(
@@ -138,7 +138,7 @@ class DemoSeeder extends Seeder
                     'name' => $def['name'],
                     'section' => $def['section'],
                 ],
-                ['class_teacher_id' => $def['class_teacher_id']],
+                ['class_teacher_name' => $def['class_teacher_name']],
             ),
         )->values();
 

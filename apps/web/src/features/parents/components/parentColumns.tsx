@@ -4,13 +4,16 @@ import { Link } from 'react-router-dom';
 import type { ParentGuardian } from '../types';
 import { parentDetailPath } from '@/app/router/routes';
 import { Button } from '@/shared/components/ui/button';
+import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
 
 interface BuildParentColumnsOptions {
+  licenseExpired: boolean;
   onEdit: (parent: ParentGuardian) => void;
   onDeleteRequest: (parent: ParentGuardian) => void;
 }
 
 export function buildParentColumns({
+  licenseExpired,
   onEdit,
   onDeleteRequest,
 }: BuildParentColumnsOptions): ColumnDef<ParentGuardian>[] {
@@ -45,13 +48,21 @@ export function buildParentColumns({
       enableSorting: false,
       cell: ({ row }) => (
         <div className="flex justify-end gap-1">
-          <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={licenseExpired}
+            title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+            onClick={() => onEdit(row.original)}
+          >
             Edit
           </Button>
           <Button
             variant="ghost"
             size="icon-sm"
             className="text-destructive hover:text-destructive"
+            disabled={licenseExpired}
+            title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
             aria-label={`Delete ${row.original.name}`}
             onClick={() => onDeleteRequest(row.original)}
           >

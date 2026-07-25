@@ -28,11 +28,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
+import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
 
 interface ManualCorrectionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   record: AttendanceRecord | null;
+  licenseExpired: boolean;
 }
 
 function defaultsFor(record: AttendanceRecord | null): ManualCorrectionFormValues {
@@ -44,7 +46,12 @@ function defaultsFor(record: AttendanceRecord | null): ManualCorrectionFormValue
   };
 }
 
-export function ManualCorrectionDialog({ open, onOpenChange, record }: ManualCorrectionDialogProps) {
+export function ManualCorrectionDialog({
+  open,
+  onOpenChange,
+  record,
+  licenseExpired,
+}: ManualCorrectionDialogProps) {
   const updateRecord = useUpdateAttendanceRecord();
 
   const form = useForm<ManualCorrectionFormValues>({
@@ -154,7 +161,11 @@ export function ManualCorrectionDialog({ open, onOpenChange, record }: ManualCor
             />
 
             <DialogFooter>
-              <Button type="submit" disabled={updateRecord.isPending}>
+              <Button
+                type="submit"
+                disabled={updateRecord.isPending || licenseExpired}
+                title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+              >
                 {updateRecord.isPending ? 'Saving…' : 'Save correction'}
               </Button>
             </DialogFooter>

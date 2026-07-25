@@ -1,12 +1,6 @@
 export type StudentStatus = 'active' | 'inactive' | 'transferred' | 'alumni';
 export type Gender = 'male' | 'female' | 'other';
 
-export interface ClassTeacherSummary {
-  id: number;
-  name: string;
-  email: string;
-}
-
 export interface SchoolClass {
   id: number;
   uuid: string;
@@ -18,8 +12,9 @@ export interface SchoolClass {
   // class's name. Classes are already returned sorted by this (nulls
   // last, falling back to name/section) — no need to re-sort client-side.
   grade_level: number | null;
-  class_teacher_id: number | null;
-  class_teacher?: ClassTeacherSummary | null;
+  // Plain text, not an FK (Prompt 35 Part F) — class_teacher_id/the
+  // classTeacher relation were dropped; nothing to look up anymore.
+  class_teacher_name: string | null;
   // Live count (Prompt 17) — computed server-side via withCount on every
   // list/create/update response, never cached/stale.
   active_students_count?: number;

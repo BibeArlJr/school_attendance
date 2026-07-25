@@ -64,4 +64,20 @@ export const platformApi = {
     );
     return data.data;
   },
+
+  /** Orthogonal to the subscription actions above (Prompt 35 Part E) —
+   *  blocks 100% of login for this school, not just write access. */
+  async deactivateSchool(schoolId: number): Promise<PlatformSchool> {
+    const { data } = await apiClient.post<ApiSuccessResponse<PlatformSchool>>(
+      `/platform/schools/${schoolId}/deactivate`,
+    );
+    return data.data;
+  },
+
+  async reactivateSchool(schoolId: number): Promise<PlatformSchool> {
+    const { data } = await apiClient.post<ApiSuccessResponse<PlatformSchool>>(
+      `/platform/schools/${schoolId}/reactivate`,
+    );
+    return data.data;
+  },
 };

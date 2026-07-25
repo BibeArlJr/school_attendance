@@ -9,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu';
+import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
 
 const TRANSITIONS: { status: EmploymentStatus; label: string }[] = [
   { status: 'active', label: 'Mark as Active' },
@@ -18,17 +19,24 @@ const TRANSITIONS: { status: EmploymentStatus; label: string }[] = [
 
 interface EmploymentStatusMenuProps {
   staff: Staff;
+  licenseExpired: boolean;
   onDeleteRequest: (staff: Staff) => void;
 }
 
-export function EmploymentStatusMenu({ staff, onDeleteRequest }: EmploymentStatusMenuProps) {
+export function EmploymentStatusMenu({ staff, licenseExpired, onDeleteRequest }: EmploymentStatusMenuProps) {
   const updateStatus = useUpdateEmploymentStatus();
   const availableTransitions = TRANSITIONS.filter((t) => t.status !== staff.employment_status);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={`Change employment status for ${staff.name}`}>
+        <Button
+          variant="ghost"
+          size="icon"
+          disabled={licenseExpired}
+          title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+          aria-label={`Change employment status for ${staff.name}`}
+        >
           <MoreHorizontal className="size-4" />
         </Button>
       </DropdownMenuTrigger>

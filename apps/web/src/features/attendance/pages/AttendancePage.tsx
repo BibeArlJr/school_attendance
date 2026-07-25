@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select';
 import { useCan } from '@/shared/hooks/useCan';
+import { useLicenseExpired } from '@/shared/hooks/useLicenseExpired';
 
 const PER_PAGE = 15;
 
@@ -26,6 +27,7 @@ function today(): string {
 
 export default function AttendancePage() {
   const canManage = useCan(['super_admin', 'admin']);
+  const licenseExpired = useLicenseExpired(canManage);
   // Pre-filtered arrival from the dashboard's Present/Absent stat cards
   // (Prompt 18) — read once on mount, not kept in sync with the URL
   // afterward, since this page manages its own filter state locally like
@@ -64,12 +66,13 @@ export default function AttendancePage() {
     () =>
       buildAttendanceColumns({
         canManage,
+        licenseExpired,
         onEdit: (record) => {
           setEditingRecord(record);
           setCorrectionOpen(true);
         },
       }),
-    [canManage],
+    [canManage, licenseExpired],
   );
 
   return (
@@ -146,7 +149,7 @@ export default function AttendancePage() {
 
       {canManage && (
         <div className="mt-6">
-          <AnomalyReviewSection />
+          <AnomalyReviewSection licenseExpired={licenseExpired} />
         </div>
       )}
 
@@ -154,6 +157,7 @@ export default function AttendancePage() {
         open={correctionOpen}
         onOpenChange={setCorrectionOpen}
         record={editingRecord}
+        licenseExpired={licenseExpired}
       />
     </PageContainer>
   );

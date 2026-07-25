@@ -43,7 +43,26 @@ class School extends Model
             'reminder_30_sent_at' => 'datetime',
             'reminder_15_sent_at' => 'datetime',
             'reminder_7_sent_at' => 'datetime',
+            'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * Platform-level "is this school allowed on this platform at all,"
+     * orthogonal to license_status/amc_expiry_date (Prompt 35 Part E).
+     * Deliberately not in $fillable — only ever set by
+     * PlatformSchoolController's deactivate/reactivate actions, not raw
+     * mass-assignment. Blocks 100% of login (unlike license expiry, which
+     * still allows read-only login) — see AuthService::login().
+     */
+    public function deactivate(): void
+    {
+        $this->forceFill(['is_active' => false])->save();
+    }
+
+    public function reactivate(): void
+    {
+        $this->forceFill(['is_active' => true])->save();
     }
 
     /**

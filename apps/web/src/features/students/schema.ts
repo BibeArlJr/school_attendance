@@ -47,10 +47,9 @@ export type StudentFormValues = z.infer<typeof studentSchema>;
 export const classSchema = z.object({
   name: z.string().min(1, 'Class name is required').max(255, 'Too long'),
   section: z.string().max(50, 'Too long').optional(),
-  // 'none' is the Select sentinel for "no class teacher assigned" — Radix
-  // Select doesn't allow an empty-string item value — mapped to null at
-  // the API boundary (see api/studentsApi.ts).
-  class_teacher_id: z.string().optional(),
+  // Plain text, not an FK (Prompt 35 Part F) — class_teacher_id was a
+  // broken reference once Teacher accounts stopped existing (Prompt 34).
+  class_teacher_name: z.string().max(255, 'Too long').optional(),
 });
 
 export type ClassFormValues = z.infer<typeof classSchema>;

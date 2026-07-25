@@ -9,6 +9,7 @@ import { PageContainer } from '@/shared/components/layout/PageContainer';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { LICENSE_EXPIRED_MESSAGE, useLicenseExpired } from '@/shared/hooks/useLicenseExpired';
 
 const RELATION_LABEL: Record<string, string> = {
   father: 'Father',
@@ -21,6 +22,9 @@ export default function ParentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const parentQuery = useParent(id ?? '');
   const [editOpen, setEditOpen] = useState(false);
+  // No useCan guard on this page — access-parents is already
+  // admin/super_admin-only at the route level (see ParentsPage.tsx).
+  const licenseExpired = useLicenseExpired();
 
   if (parentQuery.isLoading) {
     return (
@@ -44,7 +48,13 @@ export default function ParentDetailPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Contact info</CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={licenseExpired}
+            title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+            onClick={() => setEditOpen(true)}
+          >
             Edit
           </Button>
         </CardHeader>
@@ -96,7 +106,12 @@ export default function ParentDetailPage() {
         </CardContent>
       </Card>
 
-      <ParentFormDialog open={editOpen} onOpenChange={setEditOpen} parent={parent} />
+      <ParentFormDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        parent={parent}
+        licenseExpired={licenseExpired}
+      />
     </PageContainer>
   );
 }

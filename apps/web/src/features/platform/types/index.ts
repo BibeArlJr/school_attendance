@@ -17,6 +17,10 @@ export interface PlatformSchool {
   // (a record of the last activation action, not the source of truth).
   computed_license_status: LicenseStatusValue;
   days_until_expiry: number | null;
+  // Orthogonal to license status (Prompt 35 Part E) — a platform-level
+  // suspension that blocks 100% of login for this school, including its
+  // own admin. Unrelated to whether the subscription has expired.
+  is_active: boolean;
 }
 
 export interface CreateSchoolResult {

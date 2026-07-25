@@ -30,11 +30,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
+import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
 
 interface StaffFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   staff?: Staff | null;
+  licenseExpired: boolean;
 }
 
 function defaultsFor(staff?: Staff | null): StaffFormValues {
@@ -49,7 +51,7 @@ function defaultsFor(staff?: Staff | null): StaffFormValues {
   };
 }
 
-export function StaffFormDialog({ open, onOpenChange, staff }: StaffFormDialogProps) {
+export function StaffFormDialog({ open, onOpenChange, staff, licenseExpired }: StaffFormDialogProps) {
   const isEdit = Boolean(staff);
   const createStaff = useCreateStaff();
   const updateStaff = useUpdateStaff();
@@ -153,7 +155,11 @@ export function StaffFormDialog({ open, onOpenChange, staff }: StaffFormDialogPr
                 )}
               />
               <DialogFooter>
-                <Button type="submit" disabled={isPending}>
+                <Button
+                  type="submit"
+                  disabled={isPending || licenseExpired}
+                  title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+                >
                   {isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Add staff member'}
                 </Button>
               </DialogFooter>

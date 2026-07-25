@@ -20,6 +20,7 @@ import {
 } from '@/shared/components/ui/select';
 import { useBulkDelete } from '@/shared/hooks/useBulkDelete';
 import { useCan } from '@/shared/hooks/useCan';
+import { LICENSE_EXPIRED_MESSAGE, useLicenseExpired } from '@/shared/hooks/useLicenseExpired';
 import { extractErrorMessage } from '@/shared/lib/errors';
 
 const PER_PAGE = 10;
@@ -32,6 +33,7 @@ const DELETE_ENTITY_LABEL: Record<Staff['role'], string> = {
 
 export default function StaffPage() {
   const canManage = useCan(['super_admin', 'admin']);
+  const licenseExpired = useLicenseExpired(canManage);
 
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -87,6 +89,7 @@ export default function StaffPage() {
   const columns = useMemo(
     () =>
       buildStaffColumns({
+        licenseExpired,
         onEdit: (staff) => {
           setEditingStaff(staff);
           setFormOpen(true);
@@ -100,7 +103,7 @@ export default function StaffPage() {
           setDeleteDialogOpen(true);
         },
       }),
-    [resetPassword],
+    [resetPassword, licenseExpired],
   );
 
   function handleDeleteOpenChange(nextOpen: boolean) {
@@ -174,6 +177,8 @@ export default function StaffPage() {
         actions={
           canManage ? (
             <Button
+              disabled={licenseExpired}
+              title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
               onClick={() => {
                 setEditingStaff(null);
                 setFormOpen(true);
@@ -187,7 +192,12 @@ export default function StaffPage() {
       />
 
       {canManage && (
-        <StaffFormDialog open={formOpen} onOpenChange={setFormOpen} staff={editingStaff} />
+        <StaffFormDialog
+          open={formOpen}
+          onOpenChange={setFormOpen}
+          staff={editingStaff}
+          licenseExpired={licenseExpired}
+        />
       )}
 
       <PasswordRevealDialog

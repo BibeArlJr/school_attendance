@@ -2,7 +2,6 @@
 
 namespace App\Modules\School\Models;
 
-use App\Models\User;
 use App\Modules\Student\Models\Student;
 use App\Support\Concerns\HasUuidRouteKey;
 use Illuminate\Database\Eloquent\Model;
@@ -22,7 +21,7 @@ class SchoolClass extends Model
         'academic_year_id',
         'name',
         'section',
-        'class_teacher_id',
+        'class_teacher_name',
         'grade_level',
     ];
 
@@ -34,11 +33,6 @@ class SchoolClass extends Model
     public function academicYear(): BelongsTo
     {
         return $this->belongsTo(AcademicYear::class);
-    }
-
-    public function classTeacher(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'class_teacher_id');
     }
 
     public function students(): HasMany

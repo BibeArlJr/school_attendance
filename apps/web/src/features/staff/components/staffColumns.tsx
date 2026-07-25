@@ -5,6 +5,7 @@ import { EmploymentStatusMenu } from './EmploymentStatusMenu';
 import { staffDetailPath } from '@/app/router/routes';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
+import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
 
 const STATUS_VARIANT: Record<Staff['employment_status'], 'default' | 'secondary' | 'outline'> = {
   active: 'default',
@@ -19,12 +20,14 @@ const ROLE_LABEL: Record<Staff['role'], string> = {
 };
 
 interface BuildStaffColumnsOptions {
+  licenseExpired: boolean;
   onEdit: (staff: Staff) => void;
   onResetPassword: (staff: Staff) => void;
   onDeleteRequest: (staff: Staff) => void;
 }
 
 export function buildStaffColumns({
+  licenseExpired,
   onEdit,
   onResetPassword,
   onDeleteRequest,
@@ -64,13 +67,29 @@ export function buildStaffColumns({
       enableSorting: false,
       cell: ({ row }) => (
         <div className="flex justify-end gap-1">
-          <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={licenseExpired}
+            title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+            onClick={() => onEdit(row.original)}
+          >
             Edit
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => onResetPassword(row.original)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={licenseExpired}
+            title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+            onClick={() => onResetPassword(row.original)}
+          >
             Reset password
           </Button>
-          <EmploymentStatusMenu staff={row.original} onDeleteRequest={onDeleteRequest} />
+          <EmploymentStatusMenu
+            staff={row.original}
+            licenseExpired={licenseExpired}
+            onDeleteRequest={onDeleteRequest}
+          />
         </div>
       ),
     },

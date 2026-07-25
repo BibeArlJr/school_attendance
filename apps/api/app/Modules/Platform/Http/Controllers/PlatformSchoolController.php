@@ -166,6 +166,27 @@ class PlatformSchoolController extends Controller
     }
 
     /**
+     * Platform-level suspension (Prompt 35 Part E) — orthogonal to
+     * license_status/amc_expiry_date, and deliberately more severe: it
+     * blocks 100% of login for that school's users, including their own
+     * admin, where an expired license still allows read-only login. No
+     * data touched beyond the one flag — see School::deactivate().
+     */
+    public function deactivate(School $school): JsonResponse
+    {
+        $school->deactivate();
+
+        return ApiResponse::success($this->withLicense($school->fresh()), 'School deactivated.');
+    }
+
+    public function reactivate(School $school): JsonResponse
+    {
+        $school->reactivate();
+
+        return ApiResponse::success($this->withLicense($school->fresh()), 'School reactivated.');
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function withLicense(School $school): array

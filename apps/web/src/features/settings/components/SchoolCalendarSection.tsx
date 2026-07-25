@@ -12,6 +12,7 @@ import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
+import { LICENSE_EXPIRED_MESSAGE, useLicenseExpired } from '@/shared/hooks/useLicenseExpired';
 import { formatBs } from '@/shared/lib/bikramSambat';
 import { extractErrorMessage } from '@/shared/lib/errors';
 
@@ -30,6 +31,7 @@ const DAY_TYPE_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
 };
 
 export function SchoolCalendarSection() {
+  const licenseExpired = useLicenseExpired();
   const entriesQuery = useCalendarEntries();
   const deleteEntry = useDeleteCalendarEntry();
 
@@ -51,6 +53,8 @@ export function SchoolCalendarSection() {
         <CardTitle>School Calendar</CardTitle>
         <Button
           size="sm"
+          disabled={licenseExpired}
+          title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
           onClick={() => {
             setEditingEntry(null);
             setFormOpen(true);
@@ -97,6 +101,8 @@ export function SchoolCalendarSection() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        disabled={licenseExpired}
+                        title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
                         onClick={() => {
                           setEditingEntry(entry);
                           setFormOpen(true);
@@ -108,6 +114,8 @@ export function SchoolCalendarSection() {
                         variant="ghost"
                         size="sm"
                         className="text-destructive hover:text-destructive"
+                        disabled={licenseExpired}
+                        title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
                         onClick={() => {
                           setDeletingEntry(entry);
                           setDeleteDialogOpen(true);

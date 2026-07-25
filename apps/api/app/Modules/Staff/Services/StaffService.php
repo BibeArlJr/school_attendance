@@ -5,7 +5,6 @@ namespace App\Modules\Staff\Services;
 use App\Models\User;
 use App\Modules\Attendance\Models\AttendanceRecord;
 use App\Modules\IdCard\Models\IdCard;
-use App\Modules\School\Models\SchoolClass;
 use App\Modules\Staff\Models\Staff;
 use App\Support\Enums\StaffEmploymentStatus;
 use App\Support\Enums\UserRole;
@@ -107,10 +106,10 @@ class StaffService
 
     /**
      * Real delete, not a status change — only allowed with zero
-     * attendance history and no current class_teacher assignment (that
-     * must be reassigned/cleared first — this never auto-nullifies it).
-     * classes.class_teacher_id references users.id, not staff.id, so the
-     * check goes through $staff->user_id.
+     * attendance history. class_teacher assignment is no longer a
+     * blocking concern (Prompt 35 Part F) — classes.class_teacher_name
+     * is plain text now, not an FK to this staff member's user row, so
+     * there's nothing left to leave dangling.
      */
     public function destroy(Staff $staff): void
     {
@@ -122,14 +121,6 @@ class StaffService
         if ($hasAttendance) {
             throw new DeleteBlockedException(
                 'Cannot delete: this staff member has attendance history. Use the employment status menu instead.',
-            );
-        }
-
-        $isClassTeacher = SchoolClass::query()->where('class_teacher_id', $staff->user_id)->exists();
-
-        if ($isClassTeacher) {
-            throw new DeleteBlockedException(
-                'Cannot delete: this staff member is assigned as a class teacher. Reassign that class first.',
             );
         }
 

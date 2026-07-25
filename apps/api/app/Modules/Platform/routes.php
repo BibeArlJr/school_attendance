@@ -13,5 +13,8 @@ Route::middleware(['auth:sanctum', 'can:platform-admin'])->prefix('platform')->g
     Route::post('/schools/{school}/activate-subscription', [PlatformSchoolController::class, 'activateSubscription']);
     Route::put('/schools/{school}/subscription-expiry', [PlatformSchoolController::class, 'updateSubscriptionExpiry']);
     Route::post('/schools/{school}/cancel-subscription', [PlatformSchoolController::class, 'cancelSubscription']);
+    // Prompt 35 Part E — orthogonal to the subscription actions above.
+    Route::post('/schools/{school}/deactivate', [PlatformSchoolController::class, 'deactivate']);
+    Route::post('/schools/{school}/reactivate', [PlatformSchoolController::class, 'reactivate']);
     Route::post('/active-school', [PlatformSchoolController::class, 'setActive']);
 });

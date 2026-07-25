@@ -22,12 +22,14 @@ import {
 } from '@/shared/components/ui/select';
 import { useBulkDelete } from '@/shared/hooks/useBulkDelete';
 import { useCan } from '@/shared/hooks/useCan';
+import { LICENSE_EXPIRED_MESSAGE, useLicenseExpired } from '@/shared/hooks/useLicenseExpired';
 import { extractErrorMessage } from '@/shared/lib/errors';
 
 const PER_PAGE = 10;
 
 export default function StudentsPage() {
   const canManage = useCan(['super_admin', 'admin']);
+  const licenseExpired = useLicenseExpired(canManage);
 
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -83,6 +85,7 @@ export default function StudentsPage() {
     () =>
       buildStudentColumns({
         canManage,
+        licenseExpired,
         onEdit: (student) => {
           setEditingStudent(student);
           setFormOpen(true);
@@ -90,6 +93,7 @@ export default function StudentsPage() {
         renderStatusMenu: (student) => (
           <StudentStatusMenu
             student={student}
+            licenseExpired={licenseExpired}
             onDeleteRequest={(target) => {
               setDeletingStudent(target);
               setDeleteDialogOpen(true);
@@ -97,7 +101,7 @@ export default function StudentsPage() {
           />
         ),
       }),
-    [canManage],
+    [canManage, licenseExpired],
   );
 
   function handleDeleteOpenChange(nextOpen: boolean) {
@@ -182,6 +186,8 @@ export default function StudentsPage() {
                 </Link>
               </Button>
               <Button
+                disabled={licenseExpired}
+                title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
                 onClick={() => {
                   setEditingStudent(null);
                   setFormOpen(true);
@@ -196,7 +202,12 @@ export default function StudentsPage() {
       />
 
       {canManage && (
-        <StudentFormDialog open={formOpen} onOpenChange={setFormOpen} student={editingStudent} />
+        <StudentFormDialog
+          open={formOpen}
+          onOpenChange={setFormOpen}
+          student={editingStudent}
+          licenseExpired={licenseExpired}
+        />
       )}
 
       {canManage && (

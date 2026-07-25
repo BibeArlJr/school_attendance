@@ -7,6 +7,7 @@ import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
+import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
 
 const RESULT_LABEL: Record<string, string> = {
   unknown_barcode: 'Unknown barcode',
@@ -16,7 +17,11 @@ const RESULT_LABEL: Record<string, string> = {
   matched_out: 'Exit (flagged)',
 };
 
-export function AnomalyReviewSection() {
+interface AnomalyReviewSectionProps {
+  licenseExpired: boolean;
+}
+
+export function AnomalyReviewSection({ licenseExpired }: AnomalyReviewSectionProps) {
   const anomaliesQuery = useAnomalies(1);
   const reviewAnomaly = useReviewAnomaly();
   const [notes, setNotes] = useState<Record<number, string>>({});
@@ -59,7 +64,8 @@ export function AnomalyReviewSection() {
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={reviewAnomaly.isPending}
+                    disabled={reviewAnomaly.isPending || licenseExpired}
+                    title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
                     onClick={() =>
                       reviewAnomaly.mutate({ eventId: event.id, reviewNote: notes[event.id] || undefined })
                     }

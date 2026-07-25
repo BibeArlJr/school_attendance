@@ -19,6 +19,7 @@ import {
   FormMessage,
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
+import { LICENSE_EXPIRED_MESSAGE, useLicenseExpired } from '@/shared/hooks/useLicenseExpired';
 import { extractErrorMessage } from '@/shared/lib/errors';
 
 const WEEKDAYS = [
@@ -32,6 +33,7 @@ const WEEKDAYS = [
 ];
 
 export function AttendanceRulesSection() {
+  const licenseExpired = useLicenseExpired();
   const configQuery = useAttendanceConfig();
   const updateConfig = useUpdateAttendanceConfig();
 
@@ -210,7 +212,11 @@ export function AttendanceRulesSection() {
               )}
             />
 
-            <Button type="submit" disabled={updateConfig.isPending}>
+            <Button
+              type="submit"
+              disabled={updateConfig.isPending || licenseExpired}
+              title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+            >
               {updateConfig.isPending ? 'Saving…' : 'Save changes'}
             </Button>
             {updateConfig.isError && (

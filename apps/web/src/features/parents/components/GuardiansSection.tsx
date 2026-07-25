@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/components/ui/dialog';
+import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
 
 const RELATION_LABEL: Record<StudentGuardianLink['relation'], string> = {
   father: 'Father',
@@ -26,9 +27,10 @@ const RELATION_LABEL: Record<StudentGuardianLink['relation'], string> = {
 
 interface GuardiansSectionProps {
   studentId: string;
+  licenseExpired: boolean;
 }
 
-export function GuardiansSection({ studentId }: GuardiansSectionProps) {
+export function GuardiansSection({ studentId, licenseExpired }: GuardiansSectionProps) {
   const guardiansQuery = useStudentGuardians(studentId);
   const unlinkGuardian = useUnlinkGuardian(studentId);
   const [addOpen, setAddOpen] = useState(false);
@@ -51,6 +53,8 @@ export function GuardiansSection({ studentId }: GuardiansSectionProps) {
         <CardTitle>Guardians</CardTitle>
         <Button
           size="sm"
+          disabled={licenseExpired}
+          title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
           onClick={() => {
             setAddDialogKey((key) => key + 1);
             setAddOpen(true);
@@ -82,7 +86,13 @@ export function GuardiansSection({ studentId }: GuardiansSectionProps) {
                     {link.parent.email ? ` · ${link.parent.email}` : ''}
                   </p>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setPendingUnlink(link)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={licenseExpired}
+                  title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+                  onClick={() => setPendingUnlink(link)}
+                >
                   Unlink
                 </Button>
               </li>

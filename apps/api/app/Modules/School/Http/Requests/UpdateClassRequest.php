@@ -3,7 +3,6 @@
 namespace App\Modules\School\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateClassRequest extends FormRequest
 {
@@ -20,7 +19,9 @@ class UpdateClassRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'section' => ['nullable', 'string', 'max:50'],
-            'class_teacher_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
+            // Plain text, not an FK (Prompt 35 Part F) — see
+            // StoreClassRequest's comment.
+            'class_teacher_name' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

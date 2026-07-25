@@ -11,10 +11,12 @@ import { DeleteConfirmDialog } from '@/shared/components/DeleteConfirmDialog';
 import { Button } from '@/shared/components/ui/button';
 import { useBulkDelete } from '@/shared/hooks/useBulkDelete';
 import { useCan } from '@/shared/hooks/useCan';
+import { LICENSE_EXPIRED_MESSAGE, useLicenseExpired } from '@/shared/hooks/useLicenseExpired';
 import { extractErrorMessage } from '@/shared/lib/errors';
 
 export default function ClassesPage() {
   const canManage = useCan(['super_admin', 'admin']);
+  const licenseExpired = useLicenseExpired(canManage);
   const classesQuery = useClasses();
   const [search, setSearch] = useState('');
   const [editingClass, setEditingClass] = useState<SchoolClass | null>(null);
@@ -52,6 +54,7 @@ export default function ClassesPage() {
     () =>
       buildClassColumns({
         canManage,
+        licenseExpired,
         onEdit: (schoolClass) => {
           setEditingClass(schoolClass);
           setFormOpen(true);
@@ -61,7 +64,7 @@ export default function ClassesPage() {
           setDeleteDialogOpen(true);
         },
       }),
-    [canManage],
+    [canManage, licenseExpired],
   );
 
   return (
@@ -94,6 +97,8 @@ export default function ClassesPage() {
         actions={
           canManage ? (
             <Button
+              disabled={licenseExpired}
+              title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
               onClick={() => {
                 setEditingClass(null);
                 setFormOpen(true);
@@ -107,7 +112,12 @@ export default function ClassesPage() {
       />
 
       {canManage && (
-        <ClassFormDialog open={formOpen} onOpenChange={setFormOpen} schoolClass={editingClass} />
+        <ClassFormDialog
+          open={formOpen}
+          onOpenChange={setFormOpen}
+          schoolClass={editingClass}
+          licenseExpired={licenseExpired}
+        />
       )}
 
       {canManage && (

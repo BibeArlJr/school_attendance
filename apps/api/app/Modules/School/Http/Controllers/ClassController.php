@@ -3,7 +3,6 @@
 namespace App\Modules\School\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\TeacherResource;
 use App\Modules\School\Http\Requests\StoreClassRequest;
 use App\Modules\School\Http\Requests\UpdateClassRequest;
 use App\Modules\School\Models\SchoolClass;
@@ -28,11 +27,6 @@ class ClassController extends Controller
 
         $classes = SchoolClass::query()
             ->where('school_id', $schoolId)
-            // Column-limited eager load: a defensive belt-and-braces measure
-            // alongside User::$hidden and TeacherResource below — the class
-            // teacher relation resolves to a User, so it's never returned
-            // unscoped.
-            ->with('classTeacher:id,name,email')
             ->withCount(['students as active_students_count' => fn ($q) => $q->where('status', 'active')])
             // grade_level ASC puts NULLs last by Postgres's default sort
             // behavior — classes without an inferable grade level fall
@@ -43,12 +37,7 @@ class ClassController extends Controller
             ->orderBy('section')
             ->get();
 
-        return ApiResponse::success(
-            $classes->map(fn (SchoolClass $class) => [
-                ...$class->toArray(),
-                'class_teacher' => $class->classTeacher ? new TeacherResource($class->classTeacher) : null,
-            ]),
-        );
+        return ApiResponse::success($classes);
     }
 
     public function store(StoreClassRequest $request): JsonResponse
@@ -56,14 +45,14 @@ class ClassController extends Controller
         $schoolId = $this->schoolResolver->resolve($request->user());
         $class = $this->classService->create($request->validated(), $schoolId);
 
-        return ApiResponse::success(self::withTeacher($class), 'Class created successfully.', 201);
+        return ApiResponse::success(self::withCount($class), 'Class created successfully.', 201);
     }
 
     public function update(UpdateClassRequest $request, SchoolClass $class): JsonResponse
     {
         $class->update($request->validated());
 
-        return ApiResponse::success(self::withTeacher($class), 'Class updated successfully.');
+        return ApiResponse::success(self::withCount($class), 'Class updated successfully.');
     }
 
     public function destroy(SchoolClass $class): JsonResponse
@@ -77,14 +66,10 @@ class ClassController extends Controller
         return ApiResponse::success(null, 'Class deleted successfully.');
     }
 
-    private static function withTeacher(SchoolClass $class): array
+    private static function withCount(SchoolClass $class): SchoolClass
     {
-        $class->load('classTeacher:id,name,email');
         $class->loadCount(['students as active_students_count' => fn ($q) => $q->where('status', 'active')]);
 
-        return [
-            ...$class->toArray(),
-            'class_teacher' => $class->classTeacher ? new TeacherResource($class->classTeacher) : null,
-        ];
+        return $class;
     }
 }

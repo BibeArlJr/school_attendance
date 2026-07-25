@@ -22,11 +22,13 @@ import {
   FormMessage,
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
+import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
 
 interface ParentFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   parent?: ParentGuardian | null;
+  licenseExpired: boolean;
 }
 
 function defaultsFor(parent?: ParentGuardian | null): ParentFormValues {
@@ -37,7 +39,7 @@ function defaultsFor(parent?: ParentGuardian | null): ParentFormValues {
   };
 }
 
-export function ParentFormDialog({ open, onOpenChange, parent }: ParentFormDialogProps) {
+export function ParentFormDialog({ open, onOpenChange, parent, licenseExpired }: ParentFormDialogProps) {
   const isEdit = Boolean(parent);
   const createParent = useCreateParent();
   const updateParent = useUpdateParent();
@@ -113,7 +115,11 @@ export function ParentFormDialog({ open, onOpenChange, parent }: ParentFormDialo
               )}
             />
             <DialogFooter>
-              <Button type="submit" disabled={isPending}>
+              <Button
+                type="submit"
+                disabled={isPending || licenseExpired}
+                title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+              >
                 {isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Add parent'}
               </Button>
             </DialogFooter>

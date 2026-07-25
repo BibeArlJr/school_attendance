@@ -33,12 +33,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
+import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
+import { parseBsDateString, toAd } from '@/shared/lib/bikramSambat';
 import { extractErrorMessage } from '@/shared/lib/errors';
 
 interface StudentFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   student?: Student | null;
+  licenseExpired: boolean;
+}
+
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/**
+ * Bug fix (Prompt 35 Part C): the previous version only ever read
+ * `student.dob` (AD), which is null for every bulk-imported student —
+ * they only have `dob_bs` set. BsDatePicker's value is always AD (see
+ * its own docblock), so this converts dob_bs -> AD the same way
+ * formatDobBs already does for the read-only Detail page display,
+ * instead of silently falling through to an empty (blank-looking)
+ * picker for exactly the students most likely to need editing.
+ */
+function dobDefaultFor(student?: Student | null): string {
+  if (!student) return '';
+  if (student.dob) return student.dob.slice(0, 10);
+  if (student.dob_bs) return toAd(parseBsDateString(student.dob_bs));
+  return '';
 }
 
 function defaultsFor(student?: Student | null): StudentFormValues {
@@ -46,12 +69,14 @@ function defaultsFor(student?: Student | null): StudentFormValues {
     class_id: student?.class_id ? String(student.class_id) : '',
     first_name: student?.first_name ?? '',
     last_name: student?.last_name ?? '',
-    // Imported students have no `dob` (only `dob_bs`) — `?.` alone
-    // doesn't protect against `dob` itself being null once `student`
-    // exists, so this stays optional-chained one level deeper too.
-    dob: student?.dob?.slice(0, 10) ?? '',
+    dob: dobDefaultFor(student),
     gender: student?.gender ?? 'male',
-    admission_date: student?.admission_date.slice(0, 10) ?? '',
+    // No longer a visible field (Prompt 35 Part B) — a new student
+    // silently defaults to today; editing an existing one silently keeps
+    // whatever admission_date it already has. Still sent to the backend
+    // exactly as before (studentsApi.ts), which still requires it —
+    // frontend-only removal, nothing server-side changed.
+    admission_date: student?.admission_date.slice(0, 10) ?? today(),
     roll_no: '',
     address: student?.address ?? '',
     guardian_name: '',
@@ -59,7 +84,7 @@ function defaultsFor(student?: Student | null): StudentFormValues {
   };
 }
 
-export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDialogProps) {
+export function StudentFormDialog({ open, onOpenChange, student, licenseExpired }: StudentFormDialogProps) {
   const isEdit = Boolean(student);
   const classesQuery = useClasses();
   const createStudent = useCreateStudent();
@@ -222,20 +247,6 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="admission_date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Admission date</FormLabel>
-                  <FormControl>
-                    <BsDatePicker value={field.value} onChange={field.onChange} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             {/* Roll No./Address/Guardian only apply to a brand-new student —
                 editing an existing one manages these elsewhere (enrollment
                 isn't re-threaded on edit, and guardians have their own
@@ -313,7 +324,11 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
             )}
 
             <DialogFooter>
-              <Button type="submit" disabled={isPending}>
+              <Button
+                type="submit"
+                disabled={isPending || licenseExpired}
+                title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+              >
                 {isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Add student'}
               </Button>
             </DialogFooter>

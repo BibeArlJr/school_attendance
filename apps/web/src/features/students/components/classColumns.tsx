@@ -2,15 +2,18 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { Trash2 } from 'lucide-react';
 import type { SchoolClass } from '../types';
 import { Button } from '@/shared/components/ui/button';
+import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
 
 interface BuildClassColumnsOptions {
   canManage: boolean;
+  licenseExpired: boolean;
   onEdit: (schoolClass: SchoolClass) => void;
   onDeleteRequest: (schoolClass: SchoolClass) => void;
 }
 
 export function buildClassColumns({
   canManage,
+  licenseExpired,
   onEdit,
   onDeleteRequest,
 }: BuildClassColumnsOptions): ColumnDef<SchoolClass>[] {
@@ -26,10 +29,10 @@ export function buildClassColumns({
       accessorFn: (row) => row.section ?? '—',
     },
     {
-      id: 'class_teacher',
+      id: 'class_teacher_name',
       header: 'Class Teacher',
       enableSorting: false,
-      accessorFn: (row) => row.class_teacher?.name ?? '—',
+      accessorFn: (row) => row.class_teacher_name ?? '—',
     },
     {
       id: 'active_students_count',
@@ -46,13 +49,21 @@ export function buildClassColumns({
       enableSorting: false,
       cell: ({ row }) => (
         <div className="flex justify-end gap-1">
-          <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={licenseExpired}
+            title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+            onClick={() => onEdit(row.original)}
+          >
             Edit
           </Button>
           <Button
             variant="ghost"
             size="icon-sm"
             className="text-destructive hover:text-destructive"
+            disabled={licenseExpired}
+            title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
             aria-label={`Delete ${row.original.name}`}
             onClick={() => onDeleteRequest(row.original)}
           >

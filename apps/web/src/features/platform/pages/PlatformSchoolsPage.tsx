@@ -73,7 +73,8 @@ export default function PlatformSchoolsPage() {
                 <TableCell>
                   <div className="flex items-center gap-2">
                     {school.name}
-                    {activeSchoolId === school.id && <Badge>Active</Badge>}
+                    {activeSchoolId === school.id && <Badge>Managing</Badge>}
+                    {!school.is_active && <Badge variant="destructive">Suspended</Badge>}
                   </div>
                 </TableCell>
                 <TableCell>{school.school_code}</TableCell>

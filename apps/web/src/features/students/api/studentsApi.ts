@@ -78,10 +78,7 @@ export const studentsApi = {
 function toClassPayload(values: ClassFormValues) {
   return {
     ...values,
-    class_teacher_id:
-      values.class_teacher_id && values.class_teacher_id !== 'none'
-        ? Number(values.class_teacher_id)
-        : null,
+    class_teacher_name: values.class_teacher_name?.trim() ? values.class_teacher_name.trim() : null,
   };
 }
 

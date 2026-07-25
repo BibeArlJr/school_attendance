@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { useCancelSubscription, useExtendSubscription, useSetSubscriptionExpiry } from '../hooks/useSubscriptionMutations';
+import {
+  useCancelSubscription,
+  useDeactivateSchool,
+  useExtendSubscription,
+  useReactivateSchool,
+  useSetSubscriptionExpiry,
+} from '../hooks/useSubscriptionMutations';
 import type { LicenseStatusValue, PlatformSchool } from '../types';
 import { BsDatePicker } from '@/shared/components/BsDatePicker';
 import { Badge } from '@/shared/components/ui/badge';
@@ -53,9 +59,12 @@ export function SubscriptionManageDialog({ school, open, onOpenChange }: Subscri
   const extendSubscription = useExtendSubscription();
   const setSubscriptionExpiry = useSetSubscriptionExpiry();
   const cancelSubscription = useCancelSubscription();
+  const deactivateSchool = useDeactivateSchool();
+  const reactivateSchool = useReactivateSchool();
 
   const [manualDate, setManualDate] = useState('');
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const [confirmDeactivateOpen, setConfirmDeactivateOpen] = useState(false);
   // Resets the form fields only on the open-transition, not on every
   // background refetch of `school` while the dialog stays open (which
   // would otherwise clobber whatever date the user is mid-typing) —
@@ -69,6 +78,7 @@ export function SubscriptionManageDialog({ school, open, onOpenChange }: Subscri
     if (open) {
       setManualDate(school?.amc_expiry_date ?? '');
       setConfirmCancelOpen(false);
+      setConfirmDeactivateOpen(false);
     }
   }
 
@@ -77,7 +87,11 @@ export function SubscriptionManageDialog({ school, open, onOpenChange }: Subscri
   }
 
   const isPending =
-    extendSubscription.isPending || setSubscriptionExpiry.isPending || cancelSubscription.isPending;
+    extendSubscription.isPending
+    || setSubscriptionExpiry.isPending
+    || cancelSubscription.isPending
+    || deactivateSchool.isPending
+    || reactivateSchool.isPending;
 
   function handleManualSubmit() {
     if (!manualDate) return;
@@ -87,6 +101,12 @@ export function SubscriptionManageDialog({ school, open, onOpenChange }: Subscri
   function handleCancelConfirm() {
     cancelSubscription.mutate(school!.id, {
       onSuccess: () => setConfirmCancelOpen(false),
+    });
+  }
+
+  function handleDeactivateConfirm() {
+    deactivateSchool.mutate(school!.id, {
+      onSuccess: () => setConfirmDeactivateOpen(false),
     });
   }
 
@@ -171,6 +191,42 @@ export function SubscriptionManageDialog({ school, open, onOpenChange }: Subscri
             </p>
           </div>
 
+          <Separator />
+
+          <div className="space-y-2 rounded-md border border-destructive/50 bg-destructive/5 p-3">
+            <div className="flex items-center gap-2">
+              <Label>Platform access</Label>
+              <Badge variant={school.is_active ? 'default' : 'destructive'}>
+                {school.is_active ? 'Active' : 'Suspended'}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Distinct from the subscription above — this is a platform-level suspension, not a
+              billing action. A deactivated school's login is blocked entirely, for every user
+              including its own admin, whether or not the subscription is current. No data is
+              touched.
+            </p>
+            {school.is_active ? (
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={isPending}
+                onClick={() => setConfirmDeactivateOpen(true)}
+              >
+                Deactivate School
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isPending}
+                onClick={() => reactivateSchool.mutate(school.id)}
+              >
+                {reactivateSchool.isPending ? 'Reactivating…' : 'Reactivate School'}
+              </Button>
+            )}
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Close
@@ -201,6 +257,33 @@ export function SubscriptionManageDialog({ school, open, onOpenChange }: Subscri
               onClick={handleCancelConfirm}
             >
               {cancelSubscription.isPending ? 'Canceling…' : 'Yes, cancel now'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirmDeactivateOpen} onOpenChange={setConfirmDeactivateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Deactivate {school.name}?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This is not the same as expiring the subscription — it blocks every login for this
+            school immediately, including the school's own admin. Nobody at {school.name} will be
+            able to sign in at all, even to read data, until you reactivate. No data is deleted or
+            changed beyond this.
+          </p>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setConfirmDeactivateOpen(false)}>
+              Keep active
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deactivateSchool.isPending}
+              onClick={handleDeactivateConfirm}
+            >
+              {deactivateSchool.isPending ? 'Deactivating…' : 'Yes, deactivate now'}
             </Button>
           </DialogFooter>
         </DialogContent>

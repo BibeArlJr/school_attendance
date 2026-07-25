@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog';
 import { useCan } from '@/shared/hooks/useCan';
+import { LICENSE_EXPIRED_MESSAGE, useLicenseExpired } from '@/shared/hooks/useLicenseExpired';
 
 type FilterTab = 'all' | 'clean' | 'needs_review' | 'duplicates';
 
@@ -39,6 +40,7 @@ export default function ImportReviewPage() {
   const classesQuery = useClasses();
   const commitImport = useCommitImport(Number(batchId));
   const canManage = useCan(['super_admin', 'admin']);
+  const licenseExpired = useLicenseExpired(canManage);
 
   const [decisions, setDecisions] = useState<LocalDecisions>({});
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
@@ -326,7 +328,11 @@ export default function ImportReviewPage() {
           <span className="text-sm text-muted-foreground">
             {acceptCount} row{acceptCount === 1 ? '' : 's'} will be created
           </span>
-          <Button onClick={() => setConfirmOpen(true)} disabled={acceptCount === 0}>
+          <Button
+            onClick={() => setConfirmOpen(true)}
+            disabled={acceptCount === 0 || licenseExpired}
+            title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+          >
             Commit import
           </Button>
         </div>

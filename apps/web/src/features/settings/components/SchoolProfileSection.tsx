@@ -19,9 +19,14 @@ import {
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
+import { LICENSE_EXPIRED_MESSAGE, useLicenseExpired } from '@/shared/hooks/useLicenseExpired';
 import { extractErrorMessage } from '@/shared/lib/errors';
 
 export function SchoolProfileSection() {
+  // No canManage prop here — every Settings sub-section is only ever
+  // rendered on a route already gated admin/super_admin-only
+  // (config/modules.php's 'settings' entry), so this is safe unconditional.
+  const licenseExpired = useLicenseExpired();
   const profileQuery = useSchoolProfile();
   const updateProfile = useUpdateSchoolProfile();
   const uploadLogo = useUploadSchoolLogo();
@@ -108,7 +113,8 @@ export function SchoolProfileSection() {
               type="button"
               variant="outline"
               size="sm"
-              disabled={uploadLogo.isPending}
+              disabled={uploadLogo.isPending || licenseExpired}
+              title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
               onClick={() => fileInputRef.current?.click()}
             >
               {uploadLogo.isPending ? 'Uploading…' : 'Upload logo'}
@@ -166,7 +172,11 @@ export function SchoolProfileSection() {
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={updateProfile.isPending}>
+            <Button
+              type="submit"
+              disabled={updateProfile.isPending || licenseExpired}
+              title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+            >
               {updateProfile.isPending ? 'Saving…' : 'Save changes'}
             </Button>
             {updateProfile.isError && (

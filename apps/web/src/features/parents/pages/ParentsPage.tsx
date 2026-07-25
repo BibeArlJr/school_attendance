@@ -11,11 +11,16 @@ import { DeleteConfirmDialog } from '@/shared/components/DeleteConfirmDialog';
 import { PageContainer } from '@/shared/components/layout/PageContainer';
 import { Button } from '@/shared/components/ui/button';
 import { useBulkDelete } from '@/shared/hooks/useBulkDelete';
+import { LICENSE_EXPIRED_MESSAGE, useLicenseExpired } from '@/shared/hooks/useLicenseExpired';
 import { extractErrorMessage } from '@/shared/lib/errors';
 
 const PER_PAGE = 10;
 
 export default function ParentsPage() {
+  // No useCan guard here — access-parents (config/modules.php) is already
+  // admin/super_admin-only at the route level, so anyone who reaches this
+  // page can manage; always-enabled matches that.
+  const licenseExpired = useLicenseExpired();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [pageIndex, setPageIndex] = useState(0);
@@ -49,6 +54,7 @@ export default function ParentsPage() {
   const columns = useMemo(
     () =>
       buildParentColumns({
+        licenseExpired,
         onEdit: (parent) => {
           setEditingParent(parent);
           setFormOpen(true);
@@ -58,7 +64,7 @@ export default function ParentsPage() {
           setDeleteDialogOpen(true);
         },
       }),
-    [],
+    [licenseExpired],
   );
 
   function handleDeleteOpenChange(nextOpen: boolean) {
@@ -99,6 +105,8 @@ export default function ParentsPage() {
         }}
         actions={
           <Button
+            disabled={licenseExpired}
+            title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
             onClick={() => {
               setEditingParent(null);
               setFormOpen(true);
@@ -110,7 +118,12 @@ export default function ParentsPage() {
         }
       />
 
-      <ParentFormDialog open={formOpen} onOpenChange={setFormOpen} parent={editingParent} />
+      <ParentFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        parent={editingParent}
+        licenseExpired={licenseExpired}
+      />
 
       <DeleteConfirmDialog
         open={deleteDialogOpen}

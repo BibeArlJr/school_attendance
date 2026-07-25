@@ -6,6 +6,7 @@ import type { Student } from '../types';
 import { parentDetailPath, studentDetailPath } from '@/app/router/routes';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
+import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
 
 const STATUS_VARIANT: Record<Student['status'], 'default' | 'secondary' | 'outline'> = {
   active: 'default',
@@ -16,12 +17,14 @@ const STATUS_VARIANT: Record<Student['status'], 'default' | 'secondary' | 'outli
 
 interface BuildStudentColumnsOptions {
   canManage: boolean;
+  licenseExpired: boolean;
   onEdit: (student: Student) => void;
   renderStatusMenu: (student: Student) => ReactNode;
 }
 
 export function buildStudentColumns({
   canManage,
+  licenseExpired,
   onEdit,
   renderStatusMenu,
 }: BuildStudentColumnsOptions): ColumnDef<Student>[] {
@@ -123,7 +126,13 @@ export function buildStudentColumns({
       enableSorting: false,
       cell: ({ row }) => (
         <div className="flex justify-end gap-1">
-          <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={licenseExpired}
+            title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+            onClick={() => onEdit(row.original)}
+          >
             Edit
           </Button>
           {renderStatusMenu(row.original)}

@@ -42,3 +42,30 @@ export function useCancelSubscription() {
     },
   });
 }
+
+// Deliberately separate from the subscription hooks above (Prompt 35
+// Part E) — deactivation is a platform-level suspension, not a
+// license-expiry action, even though both invalidate the same list.
+export function useDeactivateSchool() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: platformApi.deactivateSchool,
+    onSuccess: (school) => {
+      void queryClient.invalidateQueries({ queryKey: ['platform', 'schools'] });
+      toast.success(`${school.name} deactivated — all logins for this school are now blocked.`);
+    },
+  });
+}
+
+export function useReactivateSchool() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: platformApi.reactivateSchool,
+    onSuccess: (school) => {
+      void queryClient.invalidateQueries({ queryKey: ['platform', 'schools'] });
+      toast.success(`${school.name} reactivated — logins are restored.`);
+    },
+  });
+}

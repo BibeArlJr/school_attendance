@@ -36,6 +36,18 @@ class AuthService
             ]);
         }
 
+        // School-level suspension (Prompt 35 Part E) — deliberately
+        // blocks 100% of login, including that school's own admin, unlike
+        // license expiry (which still allows read-only login). Never
+        // applies to super_admin: they have no school_id at all.
+        if ($user->school && ! $user->school->is_active) {
+            $this->logFailedLogin($email, $ip);
+
+            throw ValidationException::withMessages([
+                'email' => ["This school's access has been suspended. Contact your platform administrator."],
+            ]);
+        }
+
         return ['user' => $user, ...$this->issueTokenPair($user)];
     }
 

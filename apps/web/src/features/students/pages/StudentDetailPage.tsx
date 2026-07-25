@@ -10,6 +10,7 @@ import { PageContainer } from '@/shared/components/layout/PageContainer';
 import { Badge } from '@/shared/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { useCan } from '@/shared/hooks/useCan';
+import { useLicenseExpired } from '@/shared/hooks/useLicenseExpired';
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
   active: 'default',
@@ -26,6 +27,7 @@ export default function StudentDetailPage() {
   // unlike Students, so this section (and its underlying query) must never
   // render for a role that only has access-students.
   const canViewGuardians = useCan(['super_admin', 'admin']);
+  const licenseExpired = useLicenseExpired(canViewGuardians);
 
   if (studentQuery.isLoading) {
     return (
@@ -90,7 +92,7 @@ export default function StudentDetailPage() {
 
       {canViewGuardians && (
         <div className="mt-4">
-          <GuardiansSection studentId={student.uuid} />
+          <GuardiansSection studentId={student.uuid} licenseExpired={licenseExpired} />
         </div>
       )}
     </PageContainer>

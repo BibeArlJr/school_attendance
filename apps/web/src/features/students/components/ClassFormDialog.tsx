@@ -5,7 +5,6 @@ import { useCreateClass } from '../hooks/useCreateClass';
 import { useUpdateClass } from '../hooks/useUpdateClass';
 import { classSchema, type ClassFormValues } from '../schema';
 import type { SchoolClass } from '../types';
-import { useStaffList } from '@/features/staff/hooks/useStaffList';
 import { Button } from '@/shared/components/ui/button';
 import {
   Dialog,
@@ -23,42 +22,27 @@ import {
   FormMessage,
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/components/ui/select';
+import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
 
 interface ClassFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   schoolClass?: SchoolClass | null;
+  licenseExpired: boolean;
 }
 
 function defaultsFor(schoolClass?: SchoolClass | null): ClassFormValues {
   return {
     name: schoolClass?.name ?? '',
     section: schoolClass?.section ?? '',
-    class_teacher_id: schoolClass?.class_teacher_id ? String(schoolClass.class_teacher_id) : 'none',
+    class_teacher_name: schoolClass?.class_teacher_name ?? '',
   };
 }
 
-export function ClassFormDialog({ open, onOpenChange, schoolClass }: ClassFormDialogProps) {
+export function ClassFormDialog({ open, onOpenChange, schoolClass, licenseExpired }: ClassFormDialogProps) {
   const isEdit = Boolean(schoolClass);
   const createClass = useCreateClass();
   const updateClass = useUpdateClass();
-  // Only active teachers are offered as a class teacher — a resigned or
-  // on-leave teacher shouldn't be assignable to a new class, matching the
-  // spec's `employment_status=active` filter.
-  // role: 'teacher' — the staff list now also includes guards (Prompt
-  // 26), who aren't valid class-teacher assignments. Since Prompt 34
-  // removed teacher as a creatable role and deactivated every existing
-  // one, this query now always returns an empty list — left as-is
-  // (out of Prompt 34's scope), not broken, just naturally empty until
-  // class-teacher assignment is revisited.
-  const activeTeachersQuery = useStaffList({ employment_status: 'active', role: 'teacher', per_page: 100 });
 
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classSchema),
@@ -119,31 +103,23 @@ export function ClassFormDialog({ open, onOpenChange, schoolClass }: ClassFormDi
             />
             <FormField
               control={form.control}
-              name="class_teacher_id"
+              name="class_teacher_name"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Class teacher (optional)</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="No teacher assigned" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">No teacher assigned</SelectItem>
-                      {activeTeachersQuery.data?.data.map((teacher) => (
-                        <SelectItem key={teacher.id} value={String(teacher.user_id)}>
-                          {teacher.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Input placeholder="e.g. Sunita Rana" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <DialogFooter>
-              <Button type="submit" disabled={isPending}>
+              <Button
+                type="submit"
+                disabled={isPending || licenseExpired}
+                title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+              >
                 {isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Add class'}
               </Button>
             </DialogFooter>

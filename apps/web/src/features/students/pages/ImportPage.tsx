@@ -9,12 +9,14 @@ import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
 import { useCan } from '@/shared/hooks/useCan';
+import { LICENSE_EXPIRED_MESSAGE, useLicenseExpired } from '@/shared/hooks/useLicenseExpired';
 
 export default function ImportPage() {
   const navigate = useNavigate();
   const uploadImport = useUploadImport();
   const [file, setFile] = useState<File | null>(null);
   const canManage = useCan(['super_admin', 'admin']);
+  const licenseExpired = useLicenseExpired(canManage);
 
   function handleUpload() {
     if (!file) {
@@ -48,7 +50,11 @@ export default function ImportPage() {
             className="max-w-xs"
           />
           {file && <p className="text-sm text-muted-foreground">{file.name}</p>}
-          <Button onClick={handleUpload} disabled={!file || uploadImport.isPending}>
+          <Button
+            onClick={handleUpload}
+            disabled={!file || uploadImport.isPending || licenseExpired}
+            title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+          >
             {uploadImport.isPending ? 'Parsing file — this can take a few seconds…' : 'Upload and parse'}
           </Button>
         </CardContent>

@@ -236,9 +236,8 @@ to run, so this single line is all cron ever needs to know about:
 - **Never return a raw `User` model (or a relation that resolves to one)
   directly from a controller or response.** Always route it through
   `App\Http\Resources\UserResource`, or a narrower purpose-built resource
-  (e.g. `TeacherResource` for the `classTeacher` relation on `SchoolClass`,
-  which only ever needs `id`/`name`/`email`) if `UserResource`'s full field
-  set doesn't apply.
+  if `UserResource`'s full field set doesn't apply (e.g. `StaffResource`
+  for a Staff Management row).
 
   `User::$hidden` (`protected $hidden = ['password', 'remember_token'];`)
   suppresses those columns at the model level and covers `toArray()`,
