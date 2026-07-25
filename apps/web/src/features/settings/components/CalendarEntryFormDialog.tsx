@@ -14,6 +14,7 @@ import {
 } from '../schema';
 import type { SchoolCalendarEntry } from '../types';
 import { BsDatePicker } from '@/shared/components/BsDatePicker';
+import { BsDateRangePicker } from '@/shared/components/BsDateRangePicker';
 import { Button } from '@/shared/components/ui/button';
 import {
   Dialog,
@@ -191,34 +192,24 @@ function RangeEntryForm({ onDone }: { onDone: () => void }) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <FormField
-            control={form.control}
-            name="start_date"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Start date</FormLabel>
-                <FormControl>
-                  <BsDatePicker value={field.value} onChange={field.onChange} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="end_date"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>End date</FormLabel>
-                <FormControl>
-                  <BsDatePicker value={field.value} onChange={field.onChange} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <FormItem>
+          <FormLabel>Date range</FormLabel>
+          <FormControl>
+            <BsDateRangePicker
+              startValue={form.watch('start_date')}
+              endValue={form.watch('end_date')}
+              onChange={(start, end) => {
+                form.setValue('start_date', start, { shouldValidate: true });
+                form.setValue('end_date', end, { shouldValidate: true });
+              }}
+            />
+          </FormControl>
+          {(form.formState.errors.start_date || form.formState.errors.end_date) && (
+            <p className="text-sm text-destructive">
+              {form.formState.errors.start_date?.message ?? form.formState.errors.end_date?.message}
+            </p>
+          )}
+        </FormItem>
         <DayTypeAndLabelFields control={form.control} dayType={dayType} />
 
         {createRange.isError && (

@@ -12,13 +12,8 @@ import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
-import { adToBs, BS_MONTH_NAMES } from '@/shared/lib/bikramSambat';
+import { formatBs } from '@/shared/lib/bikramSambat';
 import { extractErrorMessage } from '@/shared/lib/errors';
-
-function formatBs(adDate: string): string {
-  const bs = adToBs(adDate);
-  return `${BS_MONTH_NAMES[bs.month - 1]} ${bs.day}, ${bs.year} BS`;
-}
 
 const DAY_TYPE_LABEL: Record<string, string> = {
   working: 'Working (override)',
