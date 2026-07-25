@@ -64,3 +64,27 @@ export const calendarEntrySchema = z
   });
 
 export type CalendarEntryFormValues = z.infer<typeof calendarEntrySchema>;
+
+export const calendarRangeSchema = z
+  .object({
+    start_date: z.string().min(1, 'Start date is required'),
+    end_date: z.string().min(1, 'End date is required'),
+    day_type: z.enum(['working', 'holiday', 'half_day', 'exam_day']),
+    label: z.string().max(255, 'Too long').optional(),
+    half_day_end_time: z.string().optional(),
+  })
+  .refine((data) => data.end_date >= data.start_date, {
+    message: 'End date must be on or after the start date',
+    path: ['end_date'],
+  })
+  .superRefine((data, ctx) => {
+    if (data.day_type === 'half_day' && !data.half_day_end_time) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Required for a half day',
+        path: ['half_day_end_time'],
+      });
+    }
+  });
+
+export type CalendarRangeFormValues = z.infer<typeof calendarRangeSchema>;

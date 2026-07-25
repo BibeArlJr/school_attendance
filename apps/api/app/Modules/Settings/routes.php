@@ -22,6 +22,9 @@ Route::middleware(['auth:sanctum', 'can:access-settings'])->group(function () {
 
     Route::get('/settings/calendar', [SettingsCalendarController::class, 'index']);
     Route::post('/settings/calendar', [SettingsCalendarController::class, 'store']);
+    // Registered before the {schoolCalendar} routes below so "range" is
+    // never captured as a route-model-binding id.
+    Route::post('/settings/calendar/range', [SettingsCalendarController::class, 'storeRange']);
     Route::put('/settings/calendar/{schoolCalendar}', [SettingsCalendarController::class, 'update']);
     Route::delete('/settings/calendar/{schoolCalendar}', [SettingsCalendarController::class, 'destroy']);
 });

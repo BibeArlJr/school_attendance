@@ -12,7 +12,13 @@ import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
+import { adToBs, BS_MONTH_NAMES } from '@/shared/lib/bikramSambat';
 import { extractErrorMessage } from '@/shared/lib/errors';
+
+function formatBs(adDate: string): string {
+  const bs = adToBs(adDate);
+  return `${BS_MONTH_NAMES[bs.month - 1]} ${bs.day}, ${bs.year} BS`;
+}
 
 const DAY_TYPE_LABEL: Record<string, string> = {
   working: 'Working (override)',
@@ -80,7 +86,10 @@ export function SchoolCalendarSection() {
             <TableBody>
               {entriesQuery.data.map((entry) => (
                 <TableRow key={entry.id}>
-                  <TableCell>{entry.date.slice(0, 10)}</TableCell>
+                  <TableCell>
+                    <div>{formatBs(entry.date.slice(0, 10))}</div>
+                    <div className="text-xs text-muted-foreground">{entry.date.slice(0, 10)} AD</div>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={DAY_TYPE_VARIANT[entry.day_type]}>
                       {DAY_TYPE_LABEL[entry.day_type]}

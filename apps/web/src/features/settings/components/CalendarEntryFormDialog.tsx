@@ -1,9 +1,19 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { useCreateCalendarEntry, useUpdateCalendarEntry } from '../hooks/useCalendarMutations';
-import { calendarEntrySchema, type CalendarEntryFormValues } from '../schema';
+import { useEffect, useState } from 'react';
+import { useForm, type Control, type Path } from 'react-hook-form';
+import {
+  useCreateCalendarEntry,
+  useCreateCalendarRange,
+  useUpdateCalendarEntry,
+} from '../hooks/useCalendarMutations';
+import {
+  calendarEntrySchema,
+  calendarRangeSchema,
+  type CalendarEntryFormValues,
+  type CalendarRangeFormValues,
+} from '../schema';
 import type { SchoolCalendarEntry } from '../types';
+import { BsDatePicker } from '@/shared/components/BsDatePicker';
 import { Button } from '@/shared/components/ui/button';
 import {
   Dialog,
@@ -29,6 +39,7 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select';
 import { extractErrorMessage } from '@/shared/lib/errors';
+import { cn } from '@/shared/lib/utils';
 
 interface CalendarEntryFormDialogProps {
   open: boolean;
@@ -36,7 +47,14 @@ interface CalendarEntryFormDialogProps {
   entry?: SchoolCalendarEntry | null;
 }
 
-function defaultsFor(entry?: SchoolCalendarEntry | null): CalendarEntryFormValues {
+const DAY_TYPE_OPTIONS = [
+  { value: 'holiday', label: 'Holiday' },
+  { value: 'half_day', label: 'Half day' },
+  { value: 'exam_day', label: 'Exam day' },
+  { value: 'working', label: 'Working (override)' },
+];
+
+function defaultsForEntry(entry?: SchoolCalendarEntry | null): CalendarEntryFormValues {
   return {
     date: entry?.date.slice(0, 10) ?? '',
     day_type: entry?.day_type ?? 'holiday',
@@ -45,7 +63,27 @@ function defaultsFor(entry?: SchoolCalendarEntry | null): CalendarEntryFormValue
   };
 }
 
-export function CalendarEntryFormDialog({ open, onOpenChange, entry }: CalendarEntryFormDialogProps) {
+const RANGE_DEFAULTS: CalendarRangeFormValues = {
+  start_date: '',
+  end_date: '',
+  day_type: 'holiday',
+  label: '',
+  half_day_end_time: '',
+};
+
+/**
+ * Single-date create/edit form — unchanged behavior from Phase 23, just
+ * with the plain `<Input type="date">` swapped for the BS calendar
+ * picker (Prompt 27 Part B). The picker still emits/receives a plain AD
+ * date string, so the payload shape and validation are untouched.
+ */
+function SingleEntryForm({
+  entry,
+  onDone,
+}: {
+  entry?: SchoolCalendarEntry | null;
+  onDone: () => void;
+}) {
   const isEdit = Boolean(entry);
   const createEntry = useCreateCalendarEntry();
   const updateEntry = useUpdateCalendarEntry();
@@ -53,17 +91,15 @@ export function CalendarEntryFormDialog({ open, onOpenChange, entry }: CalendarE
 
   const form = useForm<CalendarEntryFormValues>({
     resolver: zodResolver(calendarEntrySchema),
-    defaultValues: defaultsFor(entry),
+    defaultValues: defaultsForEntry(entry),
   });
 
   useEffect(() => {
-    if (open) {
-      form.reset(defaultsFor(entry));
-      createEntry.reset();
-      updateEntry.reset();
-    }
+    form.reset(defaultsForEntry(entry));
+    createEntry.reset();
+    updateEntry.reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, entry]);
+  }, [entry]);
 
   function onSubmit(values: CalendarEntryFormValues) {
     const payload = {
@@ -77,98 +113,267 @@ export function CalendarEntryFormDialog({ open, onOpenChange, entry }: CalendarE
       ? updateEntry.mutateAsync({ id: entry!.id, values: payload })
       : createEntry.mutateAsync(payload);
 
-    void promise.then(() => onOpenChange(false));
+    void promise.then(onDone);
   }
 
   const dayType = form.watch('day_type');
 
   return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="date"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Date</FormLabel>
+              <FormControl>
+                <BsDatePicker value={field.value} onChange={field.onChange} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <DayTypeAndLabelFields control={form.control} dayType={dayType} />
+
+        {mutation.isError && (
+          <p className="text-sm text-destructive">{extractErrorMessage(mutation.error)}</p>
+        )}
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onDone}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Add entry'}
+          </Button>
+        </DialogFooter>
+      </form>
+    </Form>
+  );
+}
+
+/**
+ * Range create form (Prompt 27 Part A) — creates one school_calendars
+ * row per date in [start_date, end_date] in a single action. Create-only
+ * (editing a range doesn't make sense — each resulting row is edited
+ * individually afterward via the single-entry form, same as any other
+ * calendar entry).
+ */
+function RangeEntryForm({ onDone }: { onDone: () => void }) {
+  const createRange = useCreateCalendarRange();
+
+  const form = useForm<CalendarRangeFormValues>({
+    resolver: zodResolver(calendarRangeSchema),
+    defaultValues: RANGE_DEFAULTS,
+  });
+
+  useEffect(() => {
+    form.reset(RANGE_DEFAULTS);
+    createRange.reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function onSubmit(values: CalendarRangeFormValues) {
+    const payload = {
+      start_date: values.start_date,
+      end_date: values.end_date,
+      day_type: values.day_type,
+      label: values.label || null,
+      half_day_end_time: values.day_type === 'half_day' ? values.half_day_end_time || null : null,
+    };
+
+    void createRange.mutateAsync(payload).then(onDone);
+  }
+
+  const dayType = form.watch('day_type');
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <FormField
+            control={form.control}
+            name="start_date"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Start date</FormLabel>
+                <FormControl>
+                  <BsDatePicker value={field.value} onChange={field.onChange} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="end_date"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>End date</FormLabel>
+                <FormControl>
+                  <BsDatePicker value={field.value} onChange={field.onChange} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <DayTypeAndLabelFields control={form.control} dayType={dayType} />
+
+        {createRange.isError && (
+          <p className="text-sm text-destructive">{extractErrorMessage(createRange.error)}</p>
+        )}
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onDone}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={createRange.isPending}>
+            {createRange.isPending ? 'Adding…' : 'Add range'}
+          </Button>
+        </DialogFooter>
+      </form>
+    </Form>
+  );
+}
+
+interface SharedCalendarFields {
+  day_type: 'working' | 'holiday' | 'half_day' | 'exam_day';
+  label?: string;
+  half_day_end_time?: string;
+}
+
+/** Shared Day type / Label / (conditional) Half-day-end-time fields —
+ *  identical between the single and range forms, just bound to whichever
+ *  form's control is passed in. Generic over T (constrained to
+ *  SharedCalendarFields) so both CalendarEntryFormValues and
+ *  CalendarRangeFormValues type-check here without an `any`, since both
+ *  genuinely share these three field names and value types. */
+function DayTypeAndLabelFields<T extends SharedCalendarFields>({
+  control,
+  dayType,
+}: {
+  control: Control<T>;
+  dayType: string;
+}) {
+  return (
+    <>
+      <FormField
+        control={control}
+        name={'day_type' as Path<T>}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Day type</FormLabel>
+            <Select value={field.value} onValueChange={field.onChange}>
+              <FormControl>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {DAY_TYPE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={control}
+        name={'label' as Path<T>}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Label (optional)</FormLabel>
+            <FormControl>
+              <Input {...field} placeholder="e.g. Dashain" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      {dayType === 'half_day' && (
+        <FormField
+          control={control}
+          name={'half_day_end_time' as Path<T>}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Half day ends at</FormLabel>
+              <FormControl>
+                <Input type="time" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
+    </>
+  );
+}
+
+export function CalendarEntryFormDialog({ open, onOpenChange, entry }: CalendarEntryFormDialogProps) {
+  const isEdit = Boolean(entry);
+  const [mode, setMode] = useState<'single' | 'range'>('single');
+  // Resets the mode toggle back to "single" each time the dialog opens,
+  // without an effect (React's "adjusting state during rendering"
+  // pattern: https://react.dev/learn/you-might-not-need-an-effect) —
+  // an effect here would setState synchronously on mount/update, which
+  // triggers a disallowed cascading re-render.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setMode('single');
+    }
+  }
+
+  function close() {
+    onOpenChange(false);
+  }
+
+  return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit Calendar Entry' : 'Add Calendar Entry'}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? 'Edit Calendar Entry' : mode === 'range' ? 'Add Date Range' : 'Add Calendar Entry'}
+          </DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Date</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="day_type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Day type</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="holiday">Holiday</SelectItem>
-                      <SelectItem value="half_day">Half day</SelectItem>
-                      <SelectItem value="exam_day">Exam day</SelectItem>
-                      <SelectItem value="working">Working (override)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="label"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Label (optional)</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="e.g. Dashain" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            {dayType === 'half_day' && (
-              <FormField
-                control={form.control}
-                name="half_day_end_time"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Half day ends at</FormLabel>
-                    <FormControl>
-                      <Input type="time" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
 
-            {mutation.isError && (
-              <p className="text-sm text-destructive">{extractErrorMessage(mutation.error)}</p>
-            )}
+        {!isEdit && (
+          <div className="flex gap-1 rounded-md bg-muted p-1">
+            <button
+              type="button"
+              onClick={() => setMode('single')}
+              className={cn(
+                'flex-1 rounded-sm px-2 py-1 text-sm font-medium transition-colors',
+                mode === 'single' ? 'bg-background shadow-sm' : 'text-muted-foreground',
+              )}
+            >
+              Single date
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('range')}
+              className={cn(
+                'flex-1 rounded-sm px-2 py-1 text-sm font-medium transition-colors',
+                mode === 'range' ? 'bg-background shadow-sm' : 'text-muted-foreground',
+              )}
+            >
+              Date range
+            </button>
+          </div>
+        )}
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Add entry'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+        {mode === 'range' && !isEdit ? (
+          <RangeEntryForm onDone={close} />
+        ) : (
+          <SingleEntryForm entry={entry} onDone={close} />
+        )}
       </DialogContent>
     </Dialog>
   );

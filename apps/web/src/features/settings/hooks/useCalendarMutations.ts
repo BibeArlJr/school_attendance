@@ -14,6 +14,19 @@ export function useCreateCalendarEntry() {
   });
 }
 
+export function useCreateCalendarRange() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: settingsApi.createCalendarRange,
+    onSuccess: (entries) => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'calendar'] });
+      const count = entries.length;
+      toast.success(`${count} calendar ${count === 1 ? 'entry' : 'entries'} added successfully.`);
+    },
+  });
+}
+
 export function useUpdateCalendarEntry() {
   const queryClient = useQueryClient();
 

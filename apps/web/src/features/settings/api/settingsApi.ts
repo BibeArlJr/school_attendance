@@ -29,6 +29,14 @@ export interface CalendarEntryInput {
   half_day_end_time: string | null;
 }
 
+export interface CalendarRangeInput {
+  start_date: string;
+  end_date: string;
+  day_type: string;
+  label: string | null;
+  half_day_end_time: string | null;
+}
+
 export const settingsApi = {
   async getSchool(): Promise<SchoolProfile> {
     const { data } = await apiClient.get<ApiSuccessResponse<SchoolProfile>>('/settings/school');
@@ -85,6 +93,14 @@ export const settingsApi = {
   async createCalendarEntry(values: CalendarEntryInput): Promise<SchoolCalendarEntry> {
     const { data } = await apiClient.post<ApiSuccessResponse<SchoolCalendarEntry>>(
       '/settings/calendar',
+      values,
+    );
+    return data.data;
+  },
+
+  async createCalendarRange(values: CalendarRangeInput): Promise<SchoolCalendarEntry[]> {
+    const { data } = await apiClient.post<ApiSuccessResponse<SchoolCalendarEntry[]>>(
+      '/settings/calendar/range',
       values,
     );
     return data.data;
