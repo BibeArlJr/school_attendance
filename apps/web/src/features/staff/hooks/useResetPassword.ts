@@ -1,8 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
-import { teachersApi } from '../api/teachersApi';
+import { staffApi } from '../api/staffApi';
 
 export function useResetPassword() {
   return useMutation({
-    mutationFn: (id: string) => teachersApi.resetPassword(id),
+    mutationFn: (id: string) => staffApi.resetPassword(id),
   });
 }

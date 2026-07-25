@@ -9,7 +9,6 @@ import { useClasses } from '@/features/students/hooks/useClasses';
 import { BsDatePicker } from '@/shared/components/BsDatePicker';
 import { DataTable } from '@/shared/components/data-table/DataTable';
 import { PageContainer } from '@/shared/components/layout/PageContainer';
-import { Button } from '@/shared/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -32,7 +31,6 @@ export default function AttendancePage() {
   // afterward, since this page manages its own filter state locally like
   // every other list page in the app.
   const [searchParams] = useSearchParams();
-  const [ownerType, setOwnerType] = useState<'student' | 'staff'>('student');
   const [date, setDate] = useState(searchParams.get('date') ?? today());
   const [classFilter, setClassFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') ?? 'all');
@@ -49,21 +47,15 @@ export default function AttendancePage() {
 
   const classesQuery = useClasses();
 
-  function handleOwnerTypeChange(value: 'student' | 'staff') {
-    setOwnerType(value);
-    setClassFilter('all');
-    setStatusFilter('all');
-    setSearch('');
-    setDebouncedSearch('');
-    setPageIndex(0);
-  }
-
+  // Student-only (Prompt 34 Part B removed the Staff tab and staff
+  // attendance tracking entirely) — 'student' is no longer a piece of
+  // state, just a fixed value passed through to the query/columns.
   const recordsQuery = useAttendanceRecords({
     date,
-    owner_type: ownerType,
+    owner_type: 'student',
     page: pageIndex + 1,
     per_page: PER_PAGE,
-    class_id: ownerType === 'student' && classFilter !== 'all' ? Number(classFilter) : undefined,
+    class_id: classFilter !== 'all' ? Number(classFilter) : undefined,
     status: statusFilter !== 'all' ? statusFilter : undefined,
     search: debouncedSearch || undefined,
   });
@@ -72,34 +64,16 @@ export default function AttendancePage() {
     () =>
       buildAttendanceColumns({
         canManage,
-        ownerType,
         onEdit: (record) => {
           setEditingRecord(record);
           setCorrectionOpen(true);
         },
       }),
-    [canManage, ownerType],
+    [canManage],
   );
 
   return (
     <PageContainer title="Attendance" description="Daily attendance records from gate scans.">
-      <div className="mb-4 flex gap-2">
-        <Button
-          variant={ownerType === 'student' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => handleOwnerTypeChange('student')}
-        >
-          Students
-        </Button>
-        <Button
-          variant={ownerType === 'staff' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => handleOwnerTypeChange('staff')}
-        >
-          Staff
-        </Button>
-      </div>
-
       <DataTable
         columns={columns}
         data={recordsQuery.data?.data ?? []}
@@ -109,7 +83,7 @@ export default function AttendancePage() {
           setSearch(value);
           setPageIndex(0);
         }}
-        searchPlaceholder={ownerType === 'student' ? 'Search by name' : 'Search by name or designation'}
+        searchPlaceholder="Search by name"
         pageIndex={pageIndex}
         pageCount={recordsQuery.data?.last_page ?? 1}
         onPageChange={setPageIndex}
@@ -127,28 +101,26 @@ export default function AttendancePage() {
                 hideAdHint
               />
             </div>
-            {ownerType === 'student' && (
-              <Select
-                value={classFilter}
-                onValueChange={(value) => {
-                  setClassFilter(value);
-                  setPageIndex(0);
-                }}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="All classes" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All classes</SelectItem>
-                  {classesQuery.data?.map((schoolClass) => (
-                    <SelectItem key={schoolClass.id} value={String(schoolClass.id)}>
-                      {schoolClass.name}
-                      {schoolClass.section ? ` - ${schoolClass.section}` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <Select
+              value={classFilter}
+              onValueChange={(value) => {
+                setClassFilter(value);
+                setPageIndex(0);
+              }}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="All classes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All classes</SelectItem>
+                {classesQuery.data?.map((schoolClass) => (
+                  <SelectItem key={schoolClass.id} value={String(schoolClass.id)}>
+                    {schoolClass.name}
+                    {schoolClass.section ? ` - ${schoolClass.section}` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select
               value={statusFilter}
               onValueChange={(value) => {

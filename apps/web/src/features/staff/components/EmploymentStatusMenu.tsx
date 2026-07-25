@@ -1,6 +1,6 @@
 import { MoreHorizontal, Trash2 } from 'lucide-react';
 import { useUpdateEmploymentStatus } from '../hooks/useUpdateEmploymentStatus';
-import type { EmploymentStatus, Teacher } from '../types';
+import type { EmploymentStatus, Staff } from '../types';
 import { Button } from '@/shared/components/ui/button';
 import {
   DropdownMenu,
@@ -17,18 +17,18 @@ const TRANSITIONS: { status: EmploymentStatus; label: string }[] = [
 ];
 
 interface EmploymentStatusMenuProps {
-  teacher: Teacher;
-  onDeleteRequest: (teacher: Teacher) => void;
+  staff: Staff;
+  onDeleteRequest: (staff: Staff) => void;
 }
 
-export function EmploymentStatusMenu({ teacher, onDeleteRequest }: EmploymentStatusMenuProps) {
+export function EmploymentStatusMenu({ staff, onDeleteRequest }: EmploymentStatusMenuProps) {
   const updateStatus = useUpdateEmploymentStatus();
-  const availableTransitions = TRANSITIONS.filter((t) => t.status !== teacher.employment_status);
+  const availableTransitions = TRANSITIONS.filter((t) => t.status !== staff.employment_status);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={`Change employment status for ${teacher.name}`}>
+        <Button variant="ghost" size="icon" aria-label={`Change employment status for ${staff.name}`}>
           <MoreHorizontal className="size-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -37,14 +37,14 @@ export function EmploymentStatusMenu({ teacher, onDeleteRequest }: EmploymentSta
           <DropdownMenuItem
             key={transition.status}
             onClick={() =>
-              updateStatus.mutate({ id: teacher.uuid, employmentStatus: transition.status })
+              updateStatus.mutate({ id: staff.uuid, employmentStatus: transition.status })
             }
           >
             {transition.label}
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onClick={() => onDeleteRequest(teacher)}>
+        <DropdownMenuItem variant="destructive" onClick={() => onDeleteRequest(staff)}>
           <Trash2 className="size-4" />
           Delete
         </DropdownMenuItem>

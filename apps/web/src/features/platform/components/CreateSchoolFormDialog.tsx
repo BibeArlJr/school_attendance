@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useCreateSchool } from '../hooks/useCreateSchool';
 import { createSchoolSchema, type CreateSchoolFormValues } from '../schema';
-import { PasswordRevealDialog } from '@/features/teachers/components/PasswordRevealDialog';
+import { PasswordRevealDialog } from '@/features/staff/components/PasswordRevealDialog';
 import { Button } from '@/shared/components/ui/button';
 import {
   Dialog,

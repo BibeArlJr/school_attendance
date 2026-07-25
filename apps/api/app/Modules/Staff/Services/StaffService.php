@@ -5,7 +5,6 @@ namespace App\Modules\Staff\Services;
 use App\Models\User;
 use App\Modules\Attendance\Models\AttendanceRecord;
 use App\Modules\IdCard\Models\IdCard;
-use App\Modules\IdCard\Services\IdCardService;
 use App\Modules\School\Models\SchoolClass;
 use App\Modules\Staff\Models\Staff;
 use App\Support\Enums\StaffEmploymentStatus;
@@ -16,17 +15,15 @@ use Illuminate\Support\Str;
 
 class StaffService
 {
-    public function __construct(private readonly IdCardService $idCardService)
-    {
-    }
-
     /**
-     * Creates the login (User, role=teacher, guard, or admin — Prompt 26
-     * generalizes this from teacher-only) and the staff profile in one
-     * transaction, plus an ID card. The generated password is returned
-     * once, in plain text, to the caller — it is never persisted anywhere
-     * except as a hash (User::$casts hashes it on save) and never appears
-     * in any later response.
+     * Creates the login (User, role=guard or admin — Prompt 26
+     * generalized this from teacher-only, Prompt 34 removed teacher as a
+     * creatable role entirely) and the staff profile in one transaction.
+     * No ID card is generated (Prompt 34 Part C — staff no longer scan
+     * in/out, so there's nothing for a card to be used for). The
+     * generated password is returned once, in plain text, to the caller
+     * — it is never persisted anywhere except as a hash (User::$casts
+     * hashes it on save) and never appears in any later response.
      *
      * @param  array<string, mixed>  $data
      * @return array{staff: Staff, temporary_password: string}
@@ -54,8 +51,6 @@ class StaffService
                 // server-side defaults hydrated back without a refetch.
                 'employment_status' => 'active',
             ]);
-
-            $this->idCardService->generateForStaff($staff);
 
             return ['staff' => $staff->load('user'), 'temporary_password' => $temporaryPassword];
         });
@@ -126,7 +121,7 @@ class StaffService
 
         if ($hasAttendance) {
             throw new DeleteBlockedException(
-                'Cannot delete: this teacher has attendance history. Use the employment status menu instead.',
+                'Cannot delete: this staff member has attendance history. Use the employment status menu instead.',
             );
         }
 
@@ -134,7 +129,7 @@ class StaffService
 
         if ($isClassTeacher) {
             throw new DeleteBlockedException(
-                'Cannot delete: this teacher is assigned as a class teacher. Reassign that class first.',
+                'Cannot delete: this staff member is assigned as a class teacher. Reassign that class first.',
             );
         }
 

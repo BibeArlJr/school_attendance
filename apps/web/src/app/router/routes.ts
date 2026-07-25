@@ -7,8 +7,12 @@ export const ROUTES = {
   STUDENTS_IMPORT_BATCH: '/students/import/:batchId',
   STUDENT_DETAIL: '/students/:id',
   STUDENT_ID_CARD: '/students/:id/id-card',
-  TEACHERS: '/teachers',
-  TEACHER_DETAIL: '/teachers/:id',
+  // Renamed from /teachers (Prompt 34 Part D) — the old path still
+  // resolves, see LEGACY_TEACHERS below and its redirect in router.tsx.
+  STAFF: '/staff',
+  STAFF_DETAIL: '/staff/:id',
+  // Kept only as a redirect source, never rendered directly.
+  LEGACY_TEACHERS: '/teachers',
   PARENTS: '/parents',
   PARENT_DETAIL: '/parents/:id',
   ATTENDANCE: '/attendance',
@@ -28,7 +32,7 @@ export const ROUTES = {
   PLATFORM_SCHOOLS: '/platform/schools',
 } as const;
 
-// Students/Teachers/Parents/Classes are all route-bound by uuid now
+// Students/Staff/Parents/Classes are all route-bound by uuid now
 // (Prompt 16) — these always take the uuid string, never the internal
 // numeric id. Import batches are unaffected (out of Prompt 16's scope)
 // and stay numeric.
@@ -48,6 +52,6 @@ export function studentImportBatchPath(batchId: number | string): string {
   return `/students/import/${batchId}`;
 }
 
-export function teacherDetailPath(uuid: string): string {
-  return `/teachers/${uuid}`;
+export function staffDetailPath(uuid: string): string {
+  return `/staff/${uuid}`;
 }

@@ -1,10 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useCreateTeacher } from '../hooks/useCreateTeacher';
-import { useUpdateTeacher } from '../hooks/useUpdateTeacher';
-import { teacherSchema, type TeacherFormValues } from '../schema';
-import type { Teacher } from '../types';
+import { useCreateStaff } from '../hooks/useCreateStaff';
+import { useUpdateStaff } from '../hooks/useUpdateStaff';
+import { staffSchema, type StaffFormValues } from '../schema';
+import type { Staff } from '../types';
 import { PasswordRevealDialog } from './PasswordRevealDialog';
 import { Button } from '@/shared/components/ui/button';
 import {
@@ -31,52 +31,55 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select';
 
-interface TeacherFormDialogProps {
+interface StaffFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  teacher?: Teacher | null;
+  staff?: Staff | null;
 }
 
-function defaultsFor(teacher?: Teacher | null): TeacherFormValues {
+function defaultsFor(staff?: Staff | null): StaffFormValues {
   return {
-    name: teacher?.name ?? '',
-    email: teacher?.email ?? '',
-    role: teacher?.role ?? 'teacher',
-    designation: teacher?.designation ?? '',
+    name: staff?.name ?? '',
+    email: staff?.email ?? '',
+    // Role field is only shown (and only meaningful) on create — see
+    // below — so this default is really "the initial selection for a
+    // new staff member," not a fallback for an existing one.
+    role: 'guard',
+    designation: staff?.designation ?? '',
   };
 }
 
-export function TeacherFormDialog({ open, onOpenChange, teacher }: TeacherFormDialogProps) {
-  const isEdit = Boolean(teacher);
-  const createTeacher = useCreateTeacher();
-  const updateTeacher = useUpdateTeacher();
+export function StaffFormDialog({ open, onOpenChange, staff }: StaffFormDialogProps) {
+  const isEdit = Boolean(staff);
+  const createStaff = useCreateStaff();
+  const updateStaff = useUpdateStaff();
   const [revealPassword, setRevealPassword] = useState<string | null>(null);
 
-  const form = useForm<TeacherFormValues>({
-    resolver: zodResolver(teacherSchema),
-    defaultValues: defaultsFor(teacher),
+  const form = useForm<StaffFormValues>({
+    resolver: zodResolver(staffSchema),
+    defaultValues: defaultsFor(staff),
   });
 
   useEffect(() => {
     if (open) {
-      form.reset(defaultsFor(teacher));
+      form.reset(defaultsFor(staff));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, teacher]);
+  }, [open, staff]);
 
-  function onSubmit(values: TeacherFormValues) {
-    if (isEdit && teacher) {
-      void updateTeacher.mutateAsync({ id: teacher.uuid, values }).then(() => onOpenChange(false));
+  function onSubmit(values: StaffFormValues) {
+    if (isEdit && staff) {
+      void updateStaff.mutateAsync({ id: staff.uuid, values }).then(() => onOpenChange(false));
       return;
     }
 
-    void createTeacher.mutateAsync(values).then((result) => {
+    void createStaff.mutateAsync(values).then((result) => {
       onOpenChange(false);
       setRevealPassword(result.temporary_password);
     });
   }
 
-  const isPending = createTeacher.isPending || updateTeacher.isPending;
+  const isPending = createStaff.isPending || updateStaff.isPending;
 
   return (
     <>
@@ -127,7 +130,6 @@ export function TeacherFormDialog({ open, onOpenChange, teacher }: TeacherFormDi
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="teacher">Teacher</SelectItem>
                           <SelectItem value="guard">Guard</SelectItem>
                           <SelectItem value="admin">Admin</SelectItem>
                         </SelectContent>

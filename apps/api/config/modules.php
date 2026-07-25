@@ -12,7 +12,12 @@
 return [
     'dashboard' => ['super_admin', 'admin', 'teacher', 'guard'],
     'students' => ['super_admin', 'admin', 'teacher'],
-    'teachers' => ['super_admin', 'admin'],
+    // Module key renamed from 'teachers' (Prompt 34 Part D) — this now
+    // manages guard/admin accounts only, teacher is no longer creatable
+    // here (existing teacher accounts stay, deactivated — see
+    // StaffEmploymentStatus::Resigned). The allowed-viewer role list is
+    // unrelated and unchanged.
+    'staff' => ['super_admin', 'admin'],
     'parents' => ['super_admin', 'admin'],
     'attendance' => ['super_admin', 'admin', 'teacher', 'guard'],
     'gate-scanner' => ['super_admin', 'admin', 'guard'],

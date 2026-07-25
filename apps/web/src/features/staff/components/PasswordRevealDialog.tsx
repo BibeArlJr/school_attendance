@@ -57,8 +57,8 @@ export function PasswordRevealDialog({
         <div className="flex items-start gap-2 rounded-md border border-amber-400 bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
           <TriangleAlert className="mt-0.5 size-4 shrink-0" />
           <p>
-            Copy this now and share it with the teacher directly — it will not be shown again, and
-            there is no way to retrieve it later.
+            Copy this now and share it with the staff member directly — it will not be shown again,
+            and there is no way to retrieve it later.
           </p>
         </div>
 

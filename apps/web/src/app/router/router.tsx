@@ -1,8 +1,8 @@
 import { lazy, Suspense } from 'react';
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, useParams } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
 import { RoleGuard } from './RoleGuard';
-import { ROUTES } from './routes';
+import { ROUTES, staffDetailPath } from './routes';
 import { LoadingSkeleton } from '@/shared/components/feedback/LoadingSkeleton';
 import { AppShell } from '@/shared/components/layout/AppShell';
 import { MODULES } from '@/shared/constants/modules';
@@ -16,8 +16,8 @@ const ClassesPage = lazy(() => import('@/features/students/pages/ClassesPage'));
 const StudentDetailPage = lazy(() => import('@/features/students/pages/StudentDetailPage'));
 const ImportPage = lazy(() => import('@/features/students/pages/ImportPage'));
 const ImportReviewPage = lazy(() => import('@/features/students/pages/ImportReviewPage'));
-const TeachersPage = lazy(() => import('@/features/teachers/pages/TeachersPage'));
-const TeacherDetailPage = lazy(() => import('@/features/teachers/pages/TeacherDetailPage'));
+const StaffPage = lazy(() => import('@/features/staff/pages/StaffPage'));
+const StaffDetailPage = lazy(() => import('@/features/staff/pages/StaffDetailPage'));
 const ParentsPage = lazy(() => import('@/features/parents/pages/ParentsPage'));
 const ParentDetailPage = lazy(() => import('@/features/parents/pages/ParentDetailPage'));
 const BarcodePage = lazy(() => import('@/features/idcards/pages/BarcodePage'));
@@ -35,6 +35,14 @@ function withSuspense(element: React.ReactNode) {
   return <Suspense fallback={<LoadingSkeleton className="p-6" />}>{element}</Suspense>;
 }
 
+// /teachers/:id used the same uuid /staff/:id does — this preserves a
+// bookmarked/shared link to a specific staff member, not just a generic
+// bounce to the list (Prompt 34 Part D).
+function LegacyStaffDetailRedirect() {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={id ? staffDetailPath(id) : ROUTES.STAFF} replace />;
+}
+
 function withRoleGuard(module: (typeof MODULES)[number], element: React.ReactNode) {
   return (
     <RoleGuard allowedRoles={module.allowedRoles} pageTitle={module.label}>
@@ -45,7 +53,7 @@ function withRoleGuard(module: (typeof MODULES)[number], element: React.ReactNod
 
 const dashboardModule = MODULES.find((module) => module.key === 'dashboard')!;
 const studentsModule = MODULES.find((module) => module.key === 'students')!;
-const teachersModule = MODULES.find((module) => module.key === 'teachers')!;
+const staffModule = MODULES.find((module) => module.key === 'staff')!;
 const parentsModule = MODULES.find((module) => module.key === 'parents')!;
 const barcodeModule = MODULES.find((module) => module.key === 'barcode')!;
 const attendanceModule = MODULES.find((module) => module.key === 'attendance')!;
@@ -54,7 +62,7 @@ const smsLogModule = MODULES.find((module) => module.key === 'sms-log')!;
 const reportsModule = MODULES.find((module) => module.key === 'reports')!;
 const settingsModule = MODULES.find((module) => module.key === 'settings')!;
 
-// Students, Teachers, Parents, Barcode, Attendance, Gate Scanner, SMS Log,
+// Students, Staff, Parents, Barcode, Attendance, Gate Scanner, SMS Log,
 // Reports, and Settings now ship real content, so all nine are excluded
 // from the generic placeholder generation below (no `phase` on their
 // MODULES entries anymore).
@@ -105,12 +113,23 @@ export const router = createBrowserRouter([
             element: withSuspense(withRoleGuard(studentsModule, <ImportReviewPage />)),
           },
           {
-            path: ROUTES.TEACHERS,
-            element: withSuspense(withRoleGuard(teachersModule, <TeachersPage />)),
+            path: ROUTES.STAFF,
+            element: withSuspense(withRoleGuard(staffModule, <StaffPage />)),
           },
           {
-            path: ROUTES.TEACHER_DETAIL,
-            element: withSuspense(withRoleGuard(teachersModule, <TeacherDetailPage />)),
+            path: ROUTES.STAFF_DETAIL,
+            element: withSuspense(withRoleGuard(staffModule, <StaffDetailPage />)),
+          },
+          {
+            // Prompt 34 Part D: /teachers renamed to /staff — this keeps
+            // any existing bookmark/history entry working instead of a
+            // dead link.
+            path: ROUTES.LEGACY_TEACHERS,
+            element: <Navigate to={ROUTES.STAFF} replace />,
+          },
+          {
+            path: `${ROUTES.LEGACY_TEACHERS}/:id`,
+            element: <LegacyStaffDetailRedirect />,
           },
           {
             path: ROUTES.PARENTS,

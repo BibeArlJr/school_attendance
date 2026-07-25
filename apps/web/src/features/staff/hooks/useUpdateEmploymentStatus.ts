@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { teachersApi } from '../api/teachersApi';
+import { staffApi } from '../api/staffApi';
 import type { EmploymentStatus } from '../types';
 
 export function useUpdateEmploymentStatus() {
@@ -8,9 +8,9 @@ export function useUpdateEmploymentStatus() {
 
   return useMutation({
     mutationFn: ({ id, employmentStatus }: { id: string; employmentStatus: EmploymentStatus }) =>
-      teachersApi.updateEmploymentStatus(id, employmentStatus),
+      staffApi.updateEmploymentStatus(id, employmentStatus),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['teachers'] });
+      void queryClient.invalidateQueries({ queryKey: ['staff'] });
       toast.success('Employment status updated.');
     },
   });

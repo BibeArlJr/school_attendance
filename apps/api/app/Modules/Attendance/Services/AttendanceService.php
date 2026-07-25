@@ -8,7 +8,6 @@ use App\Modules\Attendance\Models\GateDevice;
 use App\Modules\Attendance\Models\SchoolCalendar;
 use App\Modules\Attendance\Models\SchoolConfig;
 use App\Modules\IdCard\Models\IdCard;
-use App\Modules\Staff\Models\Staff;
 use App\Modules\Student\Models\Student;
 use App\Support\Contracts\SmsServiceInterface;
 use App\Support\Enums\AttendanceEventResult;
@@ -17,7 +16,6 @@ use App\Support\Enums\AttendanceSource;
 use App\Support\Enums\CalendarDayType;
 use App\Support\Enums\IdCardStatus;
 use App\Support\Enums\RecordDayType;
-use App\Support\Enums\StaffEmploymentStatus;
 use App\Support\Enums\StudentStatus;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -27,10 +25,13 @@ use Throwable;
 /**
  * The scan-processing state machine. All business logic for a barcode
  * scan lives here, not in the controller — see Prompt 7's architecture
- * constraint. Prompt 8 generalizes identity resolution and the
- * notification step to also handle owner_type = 'staff' — the IN/OUT/
- * duplicate/late/anomaly logic itself is not forked and knows nothing
- * about which owner type it's processing.
+ * constraint. Prompt 8 generalized identity resolution and the
+ * notification step to also handle owner_type = 'staff'; Prompt 34
+ * reverses that — a scanned barcode only ever resolves against student
+ * id_cards now (any lingering staff id_cards row is historical data,
+ * treated exactly like an unrecognized barcode below). The IN/OUT/
+ * duplicate/late/anomaly logic itself was never forked on owner type and
+ * needed no further changes.
  *
  * "Outside the scheduled window" (step 3's needs_review flag on an
  * otherwise-valid IN) isn't given an exact number in the spec, so this
@@ -64,6 +65,16 @@ class AttendanceService
             return new ScanOutcome($event);
         }
 
+        // Staff attendance tracking was removed (Prompt 34 Part B) — any
+        // lingering staff id_cards row (historical data, never deleted)
+        // is treated exactly like an unrecognized barcode, not processed
+        // as a staff scan and not surfaced to the guard as a known owner.
+        if ($idCard->owner_type === 'staff') {
+            $event = $this->logEvent($schoolId, $barcodeValue, null, null, $gateDeviceId, $guardUserId, $now, AttendanceEventResult::UnknownBarcode, true);
+
+            return new ScanOutcome($event);
+        }
+
         if ($idCard->status !== IdCardStatus::Active) {
             $event = $this->logEvent($schoolId, $barcodeValue, $idCard->owner_type, $idCard->owner_id, $gateDeviceId, $guardUserId, $now, AttendanceEventResult::CardInactive, true);
 
@@ -73,7 +84,7 @@ class AttendanceService
         $ownerType = $idCard->owner_type;
         $owner = $idCard->owner;
 
-        if (! $this->isOwnerActive($owner, $ownerType)) {
+        if (! $this->isOwnerActive($owner)) {
             $event = $this->logEvent($schoolId, $barcodeValue, $ownerType, $idCard->owner_id, $gateDeviceId, $guardUserId, $now, AttendanceEventResult::OwnerInactive, true);
 
             return new ScanOutcome($event, $owner);
@@ -167,10 +178,10 @@ class AttendanceService
 
             $event = $this->logEvent($schoolId, $barcodeValue, $ownerType, $owner->id, $gateDeviceId, $guardUserId, $now, $result, $eventNeedsReview);
 
-            // Notification step: no parent-notification equivalent exists
-            // for staff — teacher scans are recorded silently, per Prompt 8.
+            // Notification step: $owner is always a Student past the
+            // staff-card rejection above (Prompt 34 Part B).
             $smsSent = false;
-            if ($ownerType === 'student' && in_array($result, [AttendanceEventResult::MatchedIn, AttendanceEventResult::MatchedOut], true)) {
+            if (in_array($result, [AttendanceEventResult::MatchedIn, AttendanceEventResult::MatchedOut], true)) {
                 $smsSent = $this->sendParentNotification($owner, $result, $now, $schoolId, $record->id);
             }
 
@@ -178,17 +189,9 @@ class AttendanceService
         });
     }
 
-    private function isOwnerActive(Student|Staff $owner, string $ownerType): bool
+    private function isOwnerActive(Student $owner): bool
     {
-        if ($ownerType === 'student') {
-            return $owner->status === StudentStatus::Active;
-        }
-
-        // staff: both the employment record and the linked login must be
-        // active — a resigned teacher's user is also flipped is_active
-        // false (StaffService), but checking both here doesn't rely on
-        // that invariant holding everywhere.
-        return $owner->employment_status === StaffEmploymentStatus::Active && $owner->user->is_active;
+        return $owner->status === StudentStatus::Active;
     }
 
     private function computeStatus(AttendanceRecord $record, CalendarDayType $calendarDayType): AttendanceRecordStatus

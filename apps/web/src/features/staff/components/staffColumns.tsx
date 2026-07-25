@@ -1,40 +1,40 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { Link } from 'react-router-dom';
-import type { Teacher } from '../types';
+import type { Staff } from '../types';
 import { EmploymentStatusMenu } from './EmploymentStatusMenu';
-import { teacherDetailPath } from '@/app/router/routes';
+import { staffDetailPath } from '@/app/router/routes';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 
-const STATUS_VARIANT: Record<Teacher['employment_status'], 'default' | 'secondary' | 'outline'> = {
+const STATUS_VARIANT: Record<Staff['employment_status'], 'default' | 'secondary' | 'outline'> = {
   active: 'default',
   on_leave: 'secondary',
   resigned: 'outline',
 };
 
-const ROLE_LABEL: Record<Teacher['role'], string> = {
+const ROLE_LABEL: Record<Staff['role'], string> = {
   teacher: 'Teacher',
   guard: 'Guard',
   admin: 'Admin',
 };
 
-interface BuildTeacherColumnsOptions {
-  onEdit: (teacher: Teacher) => void;
-  onResetPassword: (teacher: Teacher) => void;
-  onDeleteRequest: (teacher: Teacher) => void;
+interface BuildStaffColumnsOptions {
+  onEdit: (staff: Staff) => void;
+  onResetPassword: (staff: Staff) => void;
+  onDeleteRequest: (staff: Staff) => void;
 }
 
-export function buildTeacherColumns({
+export function buildStaffColumns({
   onEdit,
   onResetPassword,
   onDeleteRequest,
-}: BuildTeacherColumnsOptions): ColumnDef<Teacher>[] {
+}: BuildStaffColumnsOptions): ColumnDef<Staff>[] {
   return [
     {
       accessorKey: 'name',
       header: 'Name',
       cell: ({ row }) => (
-        <Link to={teacherDetailPath(row.original.uuid)} className="font-medium hover:underline">
+        <Link to={staffDetailPath(row.original.uuid)} className="font-medium hover:underline">
           {row.original.name}
         </Link>
       ),
@@ -70,7 +70,7 @@ export function buildTeacherColumns({
           <Button variant="ghost" size="sm" onClick={() => onResetPassword(row.original)}>
             Reset password
           </Button>
-          <EmploymentStatusMenu teacher={row.original} onDeleteRequest={onDeleteRequest} />
+          <EmploymentStatusMenu staff={row.original} onDeleteRequest={onDeleteRequest} />
         </div>
       ),
     },

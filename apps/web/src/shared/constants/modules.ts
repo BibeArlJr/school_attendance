@@ -51,16 +51,15 @@ export const MODULES: ModuleDef[] = [
     allowedRoles: ['super_admin', 'admin', 'teacher'],
   },
   {
-    key: 'teachers',
-    // Label only — Prompt 26 generalizes this page to manage both
-    // teacher and guard staff accounts (a unified list with a role
-    // column/filter, not a separate Guards page, to avoid duplicating
-    // the whole CRUD flow). key/path/allowedRoles/access-teachers Gate
-    // are all deliberately unchanged — zero risk to existing routing,
-    // permissions, or bookmarks.
+    // Prompt 26 generalized this page to manage both teacher and guard
+    // staff accounts (a unified list with a role column/filter, not a
+    // separate Guards page); Prompt 34 finishes the rename this label
+    // already anticipated — key/path/Gate are now 'staff' throughout,
+    // matching apps/api/config/modules.php.
+    key: 'staff',
     label: 'Staff',
     icon: Users,
-    path: ROUTES.TEACHERS,
+    path: ROUTES.STAFF,
     // No `phase` — this ships real content, not a placeholder.
     allowedRoles: ['super_admin', 'admin'],
   },

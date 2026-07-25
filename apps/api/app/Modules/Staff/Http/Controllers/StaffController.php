@@ -71,7 +71,7 @@ class StaffController extends Controller
         return ApiResponse::success([
             'staff' => new StaffResource($result['staff']),
             'temporary_password' => $result['temporary_password'],
-        ], 'Teacher created successfully.', 201);
+        ], 'Staff member created successfully.', 201);
     }
 
     public function show(Staff $staff): JsonResponse
@@ -83,7 +83,7 @@ class StaffController extends Controller
     {
         $staff = $this->staffService->update($staff, $request->validated());
 
-        return ApiResponse::success(new StaffResource($staff), 'Teacher updated successfully.');
+        return ApiResponse::success(new StaffResource($staff), 'Staff member updated successfully.');
     }
 
     public function updateEmploymentStatus(UpdateEmploymentStatusRequest $request, Staff $staff): JsonResponse
@@ -108,7 +108,7 @@ class StaffController extends Controller
         $card = $this->idCardService->activeCardForStaff($staff);
 
         if (! $card) {
-            return ApiResponse::error('No ID card found for this teacher.', null, 404);
+            return ApiResponse::error('No ID card found for this staff member.', null, 404);
         }
 
         return ApiResponse::success(new IdCardResource($card->load('owner.user')));
@@ -132,6 +132,6 @@ class StaffController extends Controller
             return ApiResponse::error($e->getMessage(), null, 422);
         }
 
-        return ApiResponse::success(null, 'Teacher deleted successfully.');
+        return ApiResponse::success(null, 'Staff member deleted successfully.');
     }
 }

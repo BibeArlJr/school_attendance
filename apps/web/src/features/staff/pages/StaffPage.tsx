@@ -1,13 +1,13 @@
 import { Plus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { teachersApi } from '../api/teachersApi';
+import { staffApi } from '../api/staffApi';
 import { PasswordRevealDialog } from '../components/PasswordRevealDialog';
-import { buildTeacherColumns } from '../components/teacherColumns';
-import { TeacherFormDialog } from '../components/TeacherFormDialog';
-import { useDeleteTeacher } from '../hooks/useDeleteTeacher';
+import { buildStaffColumns } from '../components/staffColumns';
+import { StaffFormDialog } from '../components/StaffFormDialog';
+import { useDeleteStaff } from '../hooks/useDeleteStaff';
 import { useResetPassword } from '../hooks/useResetPassword';
-import { useTeachers } from '../hooks/useTeachers';
-import type { Teacher } from '../types';
+import { useStaffList } from '../hooks/useStaffList';
+import type { Staff } from '../types';
 import { DataTable } from '@/shared/components/data-table/DataTable';
 import { DeleteConfirmDialog } from '@/shared/components/DeleteConfirmDialog';
 import { Button } from '@/shared/components/ui/button';
@@ -24,13 +24,13 @@ import { extractErrorMessage } from '@/shared/lib/errors';
 
 const PER_PAGE = 10;
 
-const DELETE_ENTITY_LABEL: Record<Teacher['role'], string> = {
+const DELETE_ENTITY_LABEL: Record<Staff['role'], string> = {
   teacher: 'teacher',
   guard: 'guard',
   admin: 'admin',
 };
 
-export default function TeachersPage() {
+export default function StaffPage() {
   const canManage = useCan(['super_admin', 'admin']);
 
   const [search, setSearch] = useState('');
@@ -38,18 +38,18 @@ export default function TeachersPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [roleFilter, setRoleFilter] = useState('all');
   const [pageIndex, setPageIndex] = useState(0);
-  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [revealPassword, setRevealPassword] = useState<string | null>(null);
-  const [deletingTeacher, setDeletingTeacher] = useState<Teacher | null>(null);
+  const [deletingStaff, setDeletingStaff] = useState<Staff | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const resetPassword = useResetPassword();
-  const deleteTeacher = useDeleteTeacher();
-  const { bulkDelete } = useBulkDelete<Teacher>({
-    queryKey: ['teachers'],
-    deleteFn: teachersApi.delete,
-    getLabel: (teacher) => teacher.name,
+  const deleteStaff = useDeleteStaff();
+  const { bulkDelete } = useBulkDelete<Staff>({
+    queryKey: ['staff'],
+    deleteFn: staffApi.delete,
+    getLabel: (staff) => staff.name,
   });
 
   useEffect(() => {
@@ -72,7 +72,11 @@ export default function TeachersPage() {
     setPageIndex(0);
   }
 
-  const teachersQuery = useTeachers({
+  // Role filter deliberately still offers "Teacher" (Prompt 34 Part A
+  // only removes it from the create form) — existing (now-resigned)
+  // teacher accounts stay visible/filterable in this list, per Part A's
+  // "historical records, not deleted" requirement.
+  const staffQuery = useStaffList({
     page: pageIndex + 1,
     per_page: PER_PAGE,
     search: debouncedSearch || undefined,
@@ -82,17 +86,17 @@ export default function TeachersPage() {
 
   const columns = useMemo(
     () =>
-      buildTeacherColumns({
-        onEdit: (teacher) => {
-          setEditingTeacher(teacher);
+      buildStaffColumns({
+        onEdit: (staff) => {
+          setEditingStaff(staff);
           setFormOpen(true);
         },
-        onResetPassword: (teacher) =>
-          resetPassword.mutate(teacher.uuid, {
+        onResetPassword: (staff) =>
+          resetPassword.mutate(staff.uuid, {
             onSuccess: (temporaryPassword) => setRevealPassword(temporaryPassword),
           }),
-        onDeleteRequest: (teacher) => {
-          setDeletingTeacher(teacher);
+        onDeleteRequest: (staff) => {
+          setDeletingStaff(staff);
           setDeleteDialogOpen(true);
         },
       }),
@@ -102,7 +106,7 @@ export default function TeachersPage() {
   function handleDeleteOpenChange(nextOpen: boolean) {
     setDeleteDialogOpen(nextOpen);
     if (!nextOpen) {
-      deleteTeacher.reset();
+      deleteStaff.reset();
     }
   }
 
@@ -110,27 +114,27 @@ export default function TeachersPage() {
     <div className="mt-4">
       <DataTable
         columns={columns}
-        data={teachersQuery.data?.data ?? []}
-        isLoading={teachersQuery.isLoading}
+        data={staffQuery.data?.data ?? []}
+        isLoading={staffQuery.isLoading}
         searchValue={search}
         onSearchChange={handleSearchChange}
         searchPlaceholder="Search by name or email"
         pageIndex={pageIndex}
-        pageCount={teachersQuery.data?.last_page ?? 1}
+        pageCount={staffQuery.data?.last_page ?? 1}
         onPageChange={setPageIndex}
-        totalCount={teachersQuery.data?.total}
+        totalCount={staffQuery.data?.total}
         emptyTitle="No staff found"
         selection={
           canManage
             ? {
-                onDeleteSelected: (rows) => bulkDelete(rows, (teacher) => teacher.uuid),
+                onDeleteSelected: (rows) => bulkDelete(rows, (staff) => staff.uuid),
                 entityLabelPlural: 'staff',
                 fetchAllMatching: async () => {
-                  const total = teachersQuery.data?.total ?? 0;
+                  const total = staffQuery.data?.total ?? 0;
                   if (total === 0) {
                     return [];
                   }
-                  const result = await teachersApi.list({
+                  const result = await staffApi.list({
                     per_page: total,
                     search: debouncedSearch || undefined,
                     employment_status: statusFilter !== 'all' ? statusFilter : undefined,
@@ -171,7 +175,7 @@ export default function TeachersPage() {
           canManage ? (
             <Button
               onClick={() => {
-                setEditingTeacher(null);
+                setEditingStaff(null);
                 setFormOpen(true);
               }}
             >
@@ -183,7 +187,7 @@ export default function TeachersPage() {
       />
 
       {canManage && (
-        <TeacherFormDialog open={formOpen} onOpenChange={setFormOpen} teacher={editingTeacher} />
+        <StaffFormDialog open={formOpen} onOpenChange={setFormOpen} staff={editingStaff} />
       )}
 
       <PasswordRevealDialog
@@ -197,13 +201,13 @@ export default function TeachersPage() {
         <DeleteConfirmDialog
           open={deleteDialogOpen}
           onOpenChange={handleDeleteOpenChange}
-          entityLabel={deletingTeacher ? DELETE_ENTITY_LABEL[deletingTeacher.role] : 'teacher'}
+          entityLabel={deletingStaff ? DELETE_ENTITY_LABEL[deletingStaff.role] : 'staff member'}
           alternativeActionHint="If this staff member actually left the school, use the employment status menu instead — delete is only for records added by mistake."
-          isPending={deleteTeacher.isPending}
-          errorMessage={deleteTeacher.isError ? extractErrorMessage(deleteTeacher.error) : null}
+          isPending={deleteStaff.isPending}
+          errorMessage={deleteStaff.isError ? extractErrorMessage(deleteStaff.error) : null}
           onConfirm={() => {
-            if (!deletingTeacher) return;
-            deleteTeacher.mutate(deletingTeacher.uuid, {
+            if (!deletingStaff) return;
+            deleteStaff.mutate(deletingStaff.uuid, {
               onSuccess: () => setDeleteDialogOpen(false),
             });
           }}

@@ -16,15 +16,12 @@ function formatTime(time: string): string {
 }
 
 const REJECTION_MESSAGES: Record<string, string> = {
-  unknown_barcode: "This barcode isn't registered to any student or staff member.",
+  unknown_barcode: "This barcode isn't registered to any student.",
   card_inactive: 'This ID card has been deactivated — issue a new card.',
   owner_inactive: 'This record is not active.',
 };
 
 function ownerName(scan: ScanResult): string | null {
-  if (scan.owner_type === 'staff' && scan.staff) {
-    return scan.staff.name;
-  }
   if (scan.student) {
     return `${scan.student.first_name} ${scan.student.last_name}`;
   }
@@ -32,9 +29,6 @@ function ownerName(scan: ScanResult): string | null {
 }
 
 function ownerSubtitle(scan: ScanResult): string {
-  if (scan.owner_type === 'staff' && scan.staff) {
-    return scan.staff.designation ?? '';
-  }
   if (scan.student?.school_class) {
     return `${scan.student.school_class.name}${scan.student.school_class.section ? ` - ${scan.student.school_class.section}` : ''}`;
   }
@@ -61,7 +55,6 @@ export function ScanFeedback({ scan }: ScanFeedbackProps) {
   if (scan.result === 'matched_in' || scan.result === 'matched_out') {
     const isIn = scan.result === 'matched_in';
     const time = isIn ? scan.record?.in_time : scan.record?.out_time;
-    const isStaff = scan.owner_type === 'staff';
 
     return (
       <motion.div
@@ -93,14 +86,10 @@ export function ScanFeedback({ scan }: ScanFeedbackProps) {
           {scan.record?.early_departure && <Badge variant="secondary">Early departure</Badge>}
           {scan.needs_review && <Badge variant="outline">Flagged for review</Badge>}
         </div>
-        {/* Staff scans have no parent to notify — the SMS tag only applies
-            to student scans. */}
-        {!isStaff && (
-          <Badge className="mt-1 gap-1">
-            <CheckCircle2 className="size-3" />
-            {scan.sms_sent ? 'SMS sent' : 'No guardian on file'}
-          </Badge>
-        )}
+        <Badge className="mt-1 gap-1">
+          <CheckCircle2 className="size-3" />
+          {scan.sms_sent ? 'SMS sent' : 'No guardian on file'}
+        </Badge>
       </motion.div>
     );
   }

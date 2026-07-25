@@ -5,7 +5,7 @@ import { useCreateClass } from '../hooks/useCreateClass';
 import { useUpdateClass } from '../hooks/useUpdateClass';
 import { classSchema, type ClassFormValues } from '../schema';
 import type { SchoolClass } from '../types';
-import { useTeachers } from '@/features/teachers/hooks/useTeachers';
+import { useStaffList } from '@/features/staff/hooks/useStaffList';
 import { Button } from '@/shared/components/ui/button';
 import {
   Dialog,
@@ -53,8 +53,12 @@ export function ClassFormDialog({ open, onOpenChange, schoolClass }: ClassFormDi
   // on-leave teacher shouldn't be assignable to a new class, matching the
   // spec's `employment_status=active` filter.
   // role: 'teacher' — the staff list now also includes guards (Prompt
-  // 26), who aren't valid class-teacher assignments.
-  const activeTeachersQuery = useTeachers({ employment_status: 'active', role: 'teacher', per_page: 100 });
+  // 26), who aren't valid class-teacher assignments. Since Prompt 34
+  // removed teacher as a creatable role and deactivated every existing
+  // one, this query now always returns an empty list — left as-is
+  // (out of Prompt 34's scope), not broken, just naturally empty until
+  // class-teacher assignment is revisited.
+  const activeTeachersQuery = useStaffList({ employment_status: 'active', role: 'teacher', per_page: 100 });
 
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classSchema),
