@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Middleware\EnsureLicenseActive;
+use App\Http\Middleware\EnsureSchoolActive;
 use App\Http\Middleware\RequireAccessTokenAbility;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SentryContext;
 use App\Support\Exceptions\LicenseExpiredException;
 use App\Support\Exceptions\NoActiveSchoolSelectedException;
+use App\Support\Exceptions\SchoolSuspendedException;
 use App\Support\Responses\ApiResponse;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -43,8 +45,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Applies to every API route with zero per-route changes — see
         // RequireAccessTokenAbility's docblock for why this is safe
-        // regardless of ordering relative to auth:sanctum.
-        $middleware->api(append: [RequireAccessTokenAbility::class, SecurityHeaders::class, SentryContext::class]);
+        // regardless of ordering relative to auth:sanctum. EnsureSchoolActive
+        // is global (not a per-route alias like license-active) so it also
+        // covers read routes — see its own docblock (Prompt 46).
+        $middleware->api(append: [RequireAccessTokenAbility::class, EnsureSchoolActive::class, SecurityHeaders::class, SentryContext::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
@@ -64,6 +68,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->dontReport([
             NoActiveSchoolSelectedException::class,
             LicenseExpiredException::class,
+            SchoolSuspendedException::class,
         ]);
 
         // No-op with no SENTRY_LARAVEL_DSN configured (Prompt 45) — the
@@ -119,6 +124,19 @@ return Application::configure(basePath: dirname(__DIR__))
                 return ApiResponse::error(
                     "Your school's subscription has expired. Contact your administrator.",
                     ['code' => 'license_expired'],
+                    403,
+                );
+            }
+        });
+
+        // Distinct from license expiry (403, code 'license_expired'): this
+        // blocks reads too, since a deactivated school is meant to be cut
+        // off entirely, not just barred from new writes (Prompt 46).
+        $exceptions->render(function (SchoolSuspendedException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return ApiResponse::error(
+                    "This school's access has been suspended. Contact your platform administrator.",
+                    ['code' => 'school_suspended'],
                     403,
                 );
             }

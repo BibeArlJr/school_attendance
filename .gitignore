@@ -28,6 +28,10 @@ apps/api/.phpunit.result.cache
 .env.*
 !.env.example
 !*.env.example
+# No secrets in this one — just localhost Postgres test-DB connection
+# details (Prompt 46) — needed for `php artisan test` to work at all on
+# a fresh clone, same reasoning as the .env.example exception above.
+!apps/api/.env.testing
 
 # --- Backups (real DB dumps, not for source control) ---
 /backups/
