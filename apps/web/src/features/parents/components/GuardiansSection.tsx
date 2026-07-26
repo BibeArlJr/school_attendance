@@ -1,9 +1,12 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
+import { useSetPrimaryGuardian } from '../hooks/useSetPrimaryGuardian';
 import { useStudentGuardians } from '../hooks/useStudentGuardians';
 import { useUnlinkGuardian } from '../hooks/useUnlinkGuardian';
 import type { StudentGuardianLink } from '../types';
 import { AddGuardianDialog } from './AddGuardianDialog';
+import { ParentFormDialog } from './ParentFormDialog';
 import { EmptyState } from '@/shared/components/feedback/EmptyState';
 import { LoadingSkeleton } from '@/shared/components/feedback/LoadingSkeleton';
 import { Badge } from '@/shared/components/ui/badge';
@@ -31,14 +34,17 @@ interface GuardiansSectionProps {
 }
 
 export function GuardiansSection({ studentId, licenseExpired }: GuardiansSectionProps) {
+  const queryClient = useQueryClient();
   const guardiansQuery = useStudentGuardians(studentId);
   const unlinkGuardian = useUnlinkGuardian(studentId);
+  const setPrimaryGuardian = useSetPrimaryGuardian(studentId);
   const [addOpen, setAddOpen] = useState(false);
   // Remounts AddGuardianDialog fresh on every open (rather than resetting
   // its internal phone/search/form state via an effect keyed on `open`,
   // which would call setState synchronously in an effect body).
   const [addDialogKey, setAddDialogKey] = useState(0);
   const [pendingUnlink, setPendingUnlink] = useState<StudentGuardianLink | null>(null);
+  const [editingGuardian, setEditingGuardian] = useState<StudentGuardianLink | null>(null);
 
   function confirmUnlink() {
     if (!pendingUnlink) {
@@ -47,11 +53,25 @@ export function GuardiansSection({ studentId, licenseExpired }: GuardiansSection
     void unlinkGuardian.mutateAsync(pendingUnlink.parent.uuid).then(() => setPendingUnlink(null));
   }
 
+  // ParentFormDialog (reused as-is — Prompt 47) updates parent_guardians
+  // directly via PUT /parents/{parent}, which its own useUpdateParent hook
+  // already invalidates the ['parents'] query for. It has no reason to
+  // know about this student's guardians list, so that invalidation
+  // happens here instead, on every close (cancel included — a harmless
+  // extra refetch of unchanged data).
+  function handleEditDialogOpenChange(open: boolean) {
+    if (!open) {
+      setEditingGuardian(null);
+      void queryClient.invalidateQueries({ queryKey: ['students', studentId, 'guardians'] });
+    }
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Guardians</CardTitle>
         <Button
+          type="button"
           size="sm"
           disabled={licenseExpired}
           title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
@@ -86,15 +106,40 @@ export function GuardiansSection({ studentId, licenseExpired }: GuardiansSection
                     {link.parent.email ? ` · ${link.parent.email}` : ''}
                   </p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={licenseExpired}
-                  title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
-                  onClick={() => setPendingUnlink(link)}
-                >
-                  Unlink
-                </Button>
+                <div className="flex items-center gap-1">
+                  {!link.is_primary_contact && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={licenseExpired || setPrimaryGuardian.isPending}
+                      title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+                      onClick={() => setPrimaryGuardian.mutate(link.parent.uuid)}
+                    >
+                      Make primary
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={licenseExpired}
+                    title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+                    onClick={() => setEditingGuardian(link)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={licenseExpired}
+                    title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+                    onClick={() => setPendingUnlink(link)}
+                  >
+                    Unlink
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>
@@ -102,6 +147,13 @@ export function GuardiansSection({ studentId, licenseExpired }: GuardiansSection
       </CardContent>
 
       <AddGuardianDialog key={addDialogKey} open={addOpen} onOpenChange={setAddOpen} studentId={studentId} />
+
+      <ParentFormDialog
+        open={editingGuardian !== null}
+        onOpenChange={handleEditDialogOpenChange}
+        parent={editingGuardian?.parent}
+        licenseExpired={licenseExpired}
+      />
 
       <Dialog open={pendingUnlink !== null} onOpenChange={(next) => !next && setPendingUnlink(null)}>
         <DialogContent>
@@ -113,10 +165,15 @@ export function GuardiansSection({ studentId, licenseExpired }: GuardiansSection
             record itself is not deleted, and any other linked students are unaffected.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPendingUnlink(null)}>
+            <Button type="button" variant="outline" onClick={() => setPendingUnlink(null)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={confirmUnlink} disabled={unlinkGuardian.isPending}>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmUnlink}
+              disabled={unlinkGuardian.isPending}
+            >
               {unlinkGuardian.isPending ? 'Unlinking…' : 'Unlink'}
             </Button>
           </DialogFooter>

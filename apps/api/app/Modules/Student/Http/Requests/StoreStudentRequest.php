@@ -29,7 +29,12 @@ class StoreStudentRequest extends FormRequest
             // because import (a separate path, not this request) is the
             // one existing case where dob_bs is set without dob.
             'dob_bs' => ['nullable', 'string', 'max:20'],
-            'gender' => ['required', Rule::in(['male', 'female', 'other'])],
+            // Nullable, not required (Prompt 47 Part B) — removed from the
+            // Add Student form entirely; the column itself was already
+            // nullable for bulk-imported students, who never had this
+            // collected in the first place (nearly all existing students
+            // have a null gender today for exactly that reason).
+            'gender' => ['nullable', Rule::in(['male', 'female', 'other'])],
             'admission_date' => ['required', 'date'],
             'roll_no' => ['nullable', 'string', 'max:50'],
             'address' => ['nullable', 'string', 'max:500'],

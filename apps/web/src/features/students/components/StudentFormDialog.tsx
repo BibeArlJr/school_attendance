@@ -8,6 +8,7 @@ import { useUpdateStudent } from '../hooks/useUpdateStudent';
 import { studentSchema, type StudentFormValues } from '../schema';
 import type { Student } from '../types';
 import { parentsApi, studentGuardiansApi } from '@/features/parents/api/parentsApi';
+import { GuardiansSection } from '@/features/parents/components/GuardiansSection';
 import { BsDatePicker } from '@/shared/components/BsDatePicker';
 import { Button } from '@/shared/components/ui/button';
 import {
@@ -70,15 +71,26 @@ function defaultsFor(student?: Student | null): StudentFormValues {
     first_name: student?.first_name ?? '',
     last_name: student?.last_name ?? '',
     dob: dobDefaultFor(student),
-    gender: student?.gender ?? 'male',
+    // undefined (not a silent 'male' default) for a brand-new student —
+    // Add no longer collects this at all (Prompt 47 Part B). An existing
+    // student keeps whatever it already has, including undefined for the
+    // ~99% of current students (bulk-imported, never had one recorded).
+    gender: student?.gender ?? undefined,
     // No longer a visible field (Prompt 35 Part B) — a new student
     // silently defaults to today; editing an existing one silently keeps
     // whatever admission_date it already has. Still sent to the backend
     // exactly as before (studentsApi.ts), which still requires it —
     // frontend-only removal, nothing server-side changed.
     admission_date: student?.admission_date.slice(0, 10) ?? today(),
-    roll_no: '',
+    // Prompt 47: previously always '', regardless of mode — an existing
+    // student's current roll number never had anywhere to come from
+    // since Edit didn't show this field at all.
+    roll_no: student?.current_enrollment?.roll_no ?? '',
     address: student?.address ?? '',
+    // Quick-add-on-create fields only (see the guardian section render
+    // below) — an existing student's guardians are managed via the full
+    // GuardiansSection embedded in Edit mode instead, never through
+    // these two fields.
     guardian_name: '',
     guardian_phone: '',
   };
@@ -223,65 +235,79 @@ export function StudentFormDialog({ open, onOpenChange, student, licenseExpired 
                   </FormItem>
                 )}
               />
+              {/* Add-only removal (Prompt 47 Part B) — a brand-new manual
+                  entry rarely has this on hand and it isn't required for
+                  anything downstream; nearly all existing students already
+                  have no gender recorded (bulk import never collected it
+                  either), so a null value here is the common case, not an
+                  edge case — hence the explicit placeholder below rather
+                  than silently coercing to a default choice nobody made. */}
+              {isEdit && (
+                <FormField
+                  control={form.control}
+                  name="gender"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Gender</FormLabel>
+                      <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Not recorded" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="female">Female</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="gender"
+                name="roll_no"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Gender</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Roll No. (optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address (optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
 
-            {/* Roll No./Address/Guardian only apply to a brand-new student —
-                editing an existing one manages these elsewhere (enrollment
-                isn't re-threaded on edit, and guardians have their own
-                section on the detail page). */}
-            {!isEdit && (
+            {/* Edit: the full Guardians section (list, add-with-dedupe,
+                edit contact info, change primary, unlink) — the same
+                component the student's detail page uses (Prompt 47).
+                Add: the lighter quick-link fields below, unchanged —
+                a brand-new student's own uuid doesn't exist yet, so
+                the full section (which needs one to fetch/link against)
+                can't render until after creation. */}
+            {isEdit && student ? (
+              <GuardiansSection studentId={student.uuid} licenseExpired={licenseExpired} />
+            ) : (
               <>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="roll_no"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Roll No. (optional)</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Address (optional)</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
                 <div className="space-y-3 rounded-md border p-3">
                   <div>
                     <p className="text-sm font-medium">Guardian (optional)</p>

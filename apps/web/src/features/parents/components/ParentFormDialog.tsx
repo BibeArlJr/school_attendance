@@ -24,14 +24,21 @@ import {
 import { Input } from '@/shared/components/ui/input';
 import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
 
+// Narrowed to just what this form actually reads (name/phone/email/uuid)
+// rather than the full ParentGuardian shape, so callers can pass a
+// guardian-link's embedded `parent` object directly (Prompt 47 —
+// GuardiansSection reuses this dialog for "edit contact info", and that
+// object doesn't carry every ParentGuardian field, e.g. school_id).
+type EditableParent = Pick<ParentGuardian, 'uuid' | 'name' | 'phone' | 'email'>;
+
 interface ParentFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  parent?: ParentGuardian | null;
+  parent?: EditableParent | null;
   licenseExpired: boolean;
 }
 
-function defaultsFor(parent?: ParentGuardian | null): ParentFormValues {
+function defaultsFor(parent?: EditableParent | null): ParentFormValues {
   return {
     name: parent?.name ?? '',
     phone: parent?.phone ?? '',

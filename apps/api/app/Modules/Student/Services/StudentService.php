@@ -48,18 +48,25 @@ class StudentService
     }
 
     /**
+     * `roll_no`, same as create() above, is pulled out and threaded to the
+     * enrollment row rather than the student itself. Unlike create(),
+     * enrollForCurrentYear() runs unconditionally here (Prompt 47) — not
+     * just when class_id changed — since that was the reason an edited
+     * roll_no was previously silently dropped whenever the class stayed
+     * the same. updateOrCreate() there makes this a no-op write when
+     * nothing actually changed.
+     *
      * @param  array<string, mixed>  $data
      */
     public function update(Student $student, array $data): Student
     {
         return DB::transaction(function () use ($student, $data) {
-            $classChanged = (int) $data['class_id'] !== $student->class_id;
+            $rollNo = $data['roll_no'] ?? null;
+            unset($data['roll_no']);
 
             $student->update($data);
 
-            if ($classChanged) {
-                $this->enrollForCurrentYear($student, $student->school_id, $data['class_id']);
-            }
+            $this->enrollForCurrentYear($student, $student->school_id, (int) $data['class_id'], $rollNo, overwriteRollNo: true);
 
             return $student->fresh();
         });
@@ -110,9 +117,23 @@ class StudentService
      * academic year) the single student_enrollments row for the current
      * year — the historical record across years, while students.class_id
      * stays the denormalized "current class" pointer.
+     *
+     * `$rollNo === null` is ambiguous between two different callers'
+     * intents, so `$overwriteRollNo` disambiguates: create() (Phase 9's
+     * bulk import is the only caller that ever passes a roll number
+     * there) means "null = nothing to set, leave the column's own
+     * default"; update()'s Edit form (Prompt 47) always sends a definite
+     * value, including an explicit null when the user clears the field —
+     * there, null must actually overwrite down to null, not be silently
+     * ignored.
      */
-    private function enrollForCurrentYear(Student $student, int $schoolId, int $classId, ?string $rollNo = null): void
-    {
+    private function enrollForCurrentYear(
+        Student $student,
+        int $schoolId,
+        int $classId,
+        ?string $rollNo = null,
+        bool $overwriteRollNo = false,
+    ): void {
         $academicYear = AcademicYear::query()
             ->where('school_id', $schoolId)
             ->where('is_current', true)
@@ -123,7 +144,7 @@ class StudentService
         }
 
         $attributes = ['class_id' => $classId, 'status' => 'active'];
-        if ($rollNo !== null) {
+        if ($rollNo !== null || $overwriteRollNo) {
             $attributes['roll_no'] = $rollNo;
         }
 

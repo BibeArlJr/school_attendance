@@ -50,4 +50,12 @@ class StudentGuardianController extends Controller
 
         return ApiResponse::success(message: 'Guardian unlinked successfully.');
     }
+
+    public function setPrimary(Student $student, ParentGuardian $parent): JsonResponse
+    {
+        $link = $this->linkService->setPrimary($student, $parent);
+        $link->load('parentGuardian');
+
+        return ApiResponse::success(new StudentGuardianResource($link), 'Primary contact updated.');
+    }
 }

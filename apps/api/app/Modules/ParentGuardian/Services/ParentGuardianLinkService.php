@@ -83,4 +83,30 @@ class ParentGuardianLinkService
             ->where('parent_id', $parent->id)
             ->delete();
     }
+
+    /**
+     * Changes which of a student's already-linked guardians is the
+     * primary contact (Prompt 47 — Edit Student's guardian section needs
+     * this; nothing previously exposed it past initial link creation).
+     * Same "unset any existing primary first" approach as link() above,
+     * backing up the partial unique index the same way.
+     */
+    public function setPrimary(Student $student, ParentGuardian $parent): StudentParentLink
+    {
+        return DB::transaction(function () use ($student, $parent) {
+            $link = StudentParentLink::query()
+                ->where('student_id', $student->id)
+                ->where('parent_id', $parent->id)
+                ->firstOrFail();
+
+            StudentParentLink::query()
+                ->where('student_id', $student->id)
+                ->where('is_primary_contact', true)
+                ->update(['is_primary_contact' => false]);
+
+            $link->update(['is_primary_contact' => true]);
+
+            return $link->fresh();
+        });
+    }
 }

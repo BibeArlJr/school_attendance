@@ -29,5 +29,9 @@ Route::middleware(['auth:sanctum', 'can:access-parents', 'license-active'])->gro
     Route::delete('/parents/{parent}', [ParentGuardianController::class, 'destroy']);
 
     Route::post('/students/{student}/parents', [StudentGuardianController::class, 'store']);
+    // Contact-info edits reuse PUT /parents/{parent} above directly — this
+    // is only for the one thing that's a property of the LINK, not the
+    // parent_guardian record itself (Prompt 47).
+    Route::patch('/students/{student}/parents/{parent}/primary', [StudentGuardianController::class, 'setPrimary']);
     Route::delete('/students/{student}/parents/{parent}', [StudentGuardianController::class, 'destroy']);
 });

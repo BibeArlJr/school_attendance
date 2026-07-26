@@ -46,6 +46,10 @@ export const studentsApi = {
       last_name: values.last_name,
       dob: values.dob,
       dob_bs: dobBsFor(values.dob),
+      // Not shown on Add anymore (Prompt 47 Part B) — values.gender is
+      // always undefined here, which JSON.stringify drops entirely, so
+      // this genuinely omits the field from the request rather than
+      // silently sending a default choice nobody made.
       gender: values.gender,
       admission_date: values.admission_date,
       roll_no: values.roll_no?.trim() ? values.roll_no.trim() : null,
@@ -54,11 +58,21 @@ export const studentsApi = {
     return data.data;
   },
 
+  // Same explicit-fields shape as create() above, not `...values` — Edit
+  // now also renders roll_no/address (Prompt 47), same trim-or-null
+  // normalization as create(); guardian_name/guardian_phone stay Add-only
+  // fields on the shared form schema and are never sent here.
   async update(uuid: string, values: StudentFormValues): Promise<Student> {
     const { data } = await apiClient.put<ApiSuccessResponse<Student>>(`/students/${uuid}`, {
-      ...values,
       class_id: Number(values.class_id),
+      first_name: values.first_name,
+      last_name: values.last_name,
+      dob: values.dob,
       dob_bs: dobBsFor(values.dob),
+      gender: values.gender,
+      admission_date: values.admission_date,
+      roll_no: values.roll_no?.trim() ? values.roll_no.trim() : null,
+      address: values.address?.trim() ? values.address.trim() : null,
     });
     return data.data;
   },

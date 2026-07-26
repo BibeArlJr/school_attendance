@@ -6,17 +6,23 @@ import { z } from 'zod';
 // and z.coerce/z.preprocess make the input type differ from the output
 // type, which breaks that match. The string->number conversion happens
 // at the API call boundary instead (see api/studentsApi.ts).
-// roll_no/address/guardian_* only ever render in the Add flow (never
-// Edit) — kept on this one shared schema anyway, rather than a second
-// add-only schema, so react-hook-form's generic always matches this
-// resolver's inferred type exactly (see the class_id comment above).
+// roll_no/address now render in both Add and Edit (Prompt 47);
+// guardian_name/guardian_phone stay Add-only (Edit uses the full
+// GuardiansSection instead) — kept on this one shared schema anyway,
+// rather than a second add-only schema, so react-hook-form's generic
+// always matches this resolver's inferred type exactly (see the
+// class_id comment above).
 export const studentSchema = z
   .object({
     class_id: z.string().min(1, 'Select a class'),
     first_name: z.string().min(1, 'First name is required').max(255, 'Too long'),
     last_name: z.string().min(1, 'Last name is required').max(255, 'Too long'),
     dob: z.string().min(1, 'Date of birth is required'),
-    gender: z.enum(['male', 'female', 'other']),
+    // Optional, not required (Prompt 47 Part B) — no longer collected on
+    // Add at all; Edit still shows/collects it for an existing student
+    // that already has one, but nothing here should force a choice where
+    // none was ever asked for on creation.
+    gender: z.enum(['male', 'female', 'other']).optional(),
     admission_date: z.string().min(1, 'Admission date is required'),
     roll_no: z.string().max(50, 'Too long').optional(),
     address: z.string().max(500, 'Too long').optional(),

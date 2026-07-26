@@ -72,4 +72,11 @@ export const studentGuardiansApi = {
   async unlink(studentUuid: string, parentUuid: string): Promise<void> {
     await apiClient.delete(`/students/${studentUuid}/parents/${parentUuid}`);
   },
+
+  async setPrimary(studentUuid: string, parentUuid: string): Promise<StudentGuardianLink> {
+    const { data } = await apiClient.patch<ApiSuccessResponse<StudentGuardianLink>>(
+      `/students/${studentUuid}/parents/${parentUuid}/primary`,
+    );
+    return data.data;
+  },
 };
