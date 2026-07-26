@@ -30,6 +30,10 @@ export const ROUTES = {
   // inside it, so it's reached via the Topbar's school switcher, not the
   // main Sidebar.
   PLATFORM_SCHOOLS: '/platform/schools',
+  // Same platform-admin gate as PLATFORM_SCHOOLS — accountability trail
+  // is platform-operator infrastructure, not a per-school module either
+  // (Prompt 43).
+  PLATFORM_AUDIT_LOG: '/platform/audit-log',
 } as const;
 
 // Students/Staff/Parents/Classes are all route-bound by uuid now

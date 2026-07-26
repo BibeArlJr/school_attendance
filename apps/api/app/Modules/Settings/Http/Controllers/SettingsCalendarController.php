@@ -8,6 +8,7 @@ use App\Modules\Settings\Http\Requests\StoreSchoolCalendarRangeRequest;
 use App\Modules\Settings\Http\Requests\StoreSchoolCalendarRequest;
 use App\Modules\Settings\Http\Requests\UpdateSchoolCalendarRequest;
 use App\Support\Responses\ApiResponse;
+use App\Support\Services\AuditLogger;
 use App\Support\Services\CurrentSchoolResolver;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\JsonResponse;
@@ -22,8 +23,10 @@ use Illuminate\Support\Facades\DB;
  */
 class SettingsCalendarController extends Controller
 {
-    public function __construct(private readonly CurrentSchoolResolver $schoolResolver)
-    {
+    public function __construct(
+        private readonly CurrentSchoolResolver $schoolResolver,
+        private readonly AuditLogger $auditLogger,
+    ) {
     }
 
     public function index(Request $request): JsonResponse
@@ -46,6 +49,8 @@ class SettingsCalendarController extends Controller
             ...$request->validated(),
             'school_id' => $schoolId,
         ]);
+
+        $this->auditLogger->log('settings.calendar_entry_created', 'school_calendar', $entry->id, null, $entry->toArray(), $schoolId);
 
         return ApiResponse::success($entry, 'Calendar entry added successfully.', 201);
     }
@@ -84,6 +89,21 @@ class SettingsCalendarController extends Controller
 
         $count = count($entries);
 
+        // One entry for the whole range, not one per date — a
+        // storeRange() call is a single user action ("added the whole
+        // Dashain break"), and one-log-per-date would flood the audit
+        // log for what's really one accountability-relevant event. The
+        // per-date detail is exactly what's already in school_calendars
+        // itself if anyone needs to see it.
+        $this->auditLogger->log(
+            'settings.calendar_range_created',
+            'school_calendar',
+            null,
+            null,
+            ['start_date' => $validated['start_date'], 'end_date' => $validated['end_date'], 'day_type' => $validated['day_type'], 'count' => $count],
+            $schoolId,
+        );
+
         return ApiResponse::success(
             $entries,
             $count.' calendar '.($count === 1 ? 'entry' : 'entries').' added successfully.',
@@ -93,14 +113,29 @@ class SettingsCalendarController extends Controller
 
     public function update(UpdateSchoolCalendarRequest $request, SchoolCalendar $schoolCalendar): JsonResponse
     {
+        $before = $schoolCalendar->only(array_keys($request->validated()));
         $schoolCalendar->update($request->validated());
+
+        $this->auditLogger->log(
+            'settings.calendar_entry_updated',
+            'school_calendar',
+            $schoolCalendar->id,
+            $before,
+            $request->validated(),
+            $schoolCalendar->school_id,
+        );
 
         return ApiResponse::success($schoolCalendar->fresh(), 'Calendar entry updated successfully.');
     }
 
     public function destroy(SchoolCalendar $schoolCalendar): JsonResponse
     {
+        $before = $schoolCalendar->toArray();
+        $schoolCalendarId = $schoolCalendar->id;
+        $schoolId = $schoolCalendar->school_id;
         $schoolCalendar->delete();
+
+        $this->auditLogger->log('settings.calendar_entry_deleted', 'school_calendar', $schoolCalendarId, $before, null, $schoolId);
 
         return ApiResponse::success(null, 'Calendar entry deleted successfully.');
     }

@@ -1,10 +1,12 @@
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
+import { NavLink } from 'react-router-dom';
 import { CreateSchoolFormDialog } from '../components/CreateSchoolFormDialog';
 import { SubscriptionManageDialog } from '../components/SubscriptionManageDialog';
 import { useSchools } from '../hooks/useSchools';
 import { useSetActiveSchool } from '../hooks/useSetActiveSchool';
 import type { LicenseStatusValue, PlatformSchool } from '../types';
+import { ROUTES } from '@/app/router/routes';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { ErrorState } from '@/shared/components/feedback/ErrorState';
 import { LoadingSkeleton } from '@/shared/components/feedback/LoadingSkeleton';
@@ -12,6 +14,12 @@ import { PageContainer } from '@/shared/components/layout/PageContainer';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
+import { cn } from '@/shared/lib/utils';
+
+const TABS = [
+  { to: ROUTES.PLATFORM_SCHOOLS, label: 'Schools' },
+  { to: ROUTES.PLATFORM_AUDIT_LOG, label: 'Audit Log' },
+];
 
 const LICENSE_LABEL: Record<LicenseStatusValue, string> = {
   active: 'Active',
@@ -43,7 +51,25 @@ export default function PlatformSchoolsPage() {
       title="Platform Console"
       description="Create and manage every school on this platform, and pick which one you're currently operating as."
     >
-      <div className="mb-4 flex justify-end">
+      <div className="flex gap-1 border-b">
+        {TABS.map((tab) => (
+          <NavLink
+            key={tab.to}
+            to={tab.to}
+            end
+            className={({ isActive }) =>
+              cn(
+                'border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground',
+                isActive && 'border-primary text-foreground',
+              )
+            }
+          >
+            {tab.label}
+          </NavLink>
+        ))}
+      </div>
+
+      <div className="flex justify-end">
         <Button onClick={() => setFormOpen(true)}>
           <Plus className="size-4" />
           Create School

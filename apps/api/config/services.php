@@ -35,14 +35,12 @@ return [
         ],
     ],
 
-    // Mock-service pattern (docs/architecture/service-pattern.md). Real
-    // driver requires SPARROW_SMS_TOKEN/SPARROW_SMS_SENDER_ID — see
-    // AppServiceProvider, which fails predictably (not silently) if
-    // SMS_DRIVER=real without them set.
+    // Mock-service pattern (docs/architecture/service-pattern.md).
+    // Credentials for the 'real' driver are no longer an env/config path
+    // (Prompt 43) — see sms_provider_configs (encrypted DB storage) and
+    // RealSparrowSmsService, which resolves them itself per call.
     'sms' => [
         'driver' => env('SMS_DRIVER', 'mock'),
-        'sparrow_token' => env('SPARROW_SMS_TOKEN'),
-        'sparrow_sender_id' => env('SPARROW_SMS_SENDER_ID'),
     ],
 
 ];

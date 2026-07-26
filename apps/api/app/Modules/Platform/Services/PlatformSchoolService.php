@@ -7,12 +7,17 @@ use App\Modules\Attendance\Models\SchoolConfig;
 use App\Modules\School\Models\AcademicYear;
 use App\Modules\School\Models\School;
 use App\Support\Enums\UserRole;
+use App\Support\Services\AuditLogger;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class PlatformSchoolService
 {
+    public function __construct(private readonly AuditLogger $auditLogger)
+    {
+    }
+
     /**
      * Creates the school and its first admin login (role=admin — this
      * codebase has no separate "school_admin" enum case; `admin` already
@@ -53,6 +58,15 @@ class PlatformSchoolService
                 'role' => UserRole::Admin,
                 'email_verified_at' => now(),
             ]);
+
+            $this->auditLogger->log(
+                'school.created',
+                'school',
+                $school->id,
+                null,
+                ['name' => $school->name, 'school_code' => $school->school_code, 'admin_email' => $admin->email],
+                $school->id,
+            );
 
             return ['school' => $school, 'admin' => $admin, 'temporary_password' => $temporaryPassword];
         });

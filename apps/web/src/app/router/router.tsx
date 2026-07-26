@@ -30,6 +30,7 @@ const SmsLogPage = lazy(() => import('@/features/sms/pages/SmsLogPage'));
 const ReportsPage = lazy(() => import('@/features/reports/pages/ReportsPage'));
 const SettingsPage = lazy(() => import('@/features/settings/pages/SettingsPage'));
 const PlatformSchoolsPage = lazy(() => import('@/features/platform/pages/PlatformSchoolsPage'));
+const AuditLogPage = lazy(() => import('@/features/platform/pages/AuditLogPage'));
 
 function withSuspense(element: React.ReactNode) {
   return <Suspense fallback={<LoadingSkeleton className="p-6" />}>{element}</Suspense>;
@@ -187,6 +188,14 @@ export const router = createBrowserRouter([
             element: withSuspense(
               <RoleGuard allowedRoles={['super_admin']} pageTitle="Platform Console">
                 <PlatformSchoolsPage />
+              </RoleGuard>,
+            ),
+          },
+          {
+            path: ROUTES.PLATFORM_AUDIT_LOG,
+            element: withSuspense(
+              <RoleGuard allowedRoles={['super_admin']} pageTitle="Audit Log">
+                <AuditLogPage />
               </RoleGuard>,
             ),
           },

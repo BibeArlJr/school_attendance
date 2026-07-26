@@ -10,6 +10,7 @@ import { useStaffList } from '../hooks/useStaffList';
 import type { Staff } from '../types';
 import { DataTable } from '@/shared/components/data-table/DataTable';
 import { DeleteConfirmDialog } from '@/shared/components/DeleteConfirmDialog';
+import { PageContainer } from '@/shared/components/layout/PageContainer';
 import { Button } from '@/shared/components/ui/button';
 import {
   Select,
@@ -114,7 +115,7 @@ export default function StaffPage() {
   }
 
   return (
-    <div className="mt-4">
+    <PageContainer title="Staff" description="Manage staff members, roles, and account access.">
       <DataTable
         columns={columns}
         data={staffQuery.data?.data ?? []}
@@ -223,6 +224,6 @@ export default function StaffPage() {
           }}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }

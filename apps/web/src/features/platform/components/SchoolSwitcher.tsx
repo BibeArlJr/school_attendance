@@ -1,4 +1,4 @@
-import { Building2, ChevronDown, Settings2 } from 'lucide-react';
+import { Building2, ChevronDown, ScrollText, Settings2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSchools } from '../hooks/useSchools';
 import { useSetActiveSchool } from '../hooks/useSetActiveSchool';
@@ -52,6 +52,12 @@ export function SchoolSwitcher() {
           <Link to="/platform/schools">
             <Settings2 className="size-4" />
             Manage schools
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/platform/audit-log">
+            <ScrollText className="size-4" />
+            Audit log
           </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>

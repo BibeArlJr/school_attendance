@@ -9,6 +9,7 @@ use App\Modules\ParentGuardian\Http\Requests\UpdateParentGuardianRequest;
 use App\Modules\ParentGuardian\Models\ParentGuardian;
 use App\Modules\ParentGuardian\Services\ParentGuardianLinkService;
 use App\Support\Responses\ApiResponse;
+use App\Support\Services\AuditLogger;
 use App\Support\Services\CurrentSchoolResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ class ParentGuardianController extends Controller
     public function __construct(
         private readonly CurrentSchoolResolver $schoolResolver,
         private readonly ParentGuardianLinkService $linkService,
+        private readonly AuditLogger $auditLogger,
     ) {
     }
 
@@ -96,7 +98,10 @@ class ParentGuardianController extends Controller
             );
         }
 
+        $before = $parent->toArray();
         $parent->delete();
+
+        $this->auditLogger->log('parent.deleted', 'parent', $parent->id, $before, null, $parent->school_id);
 
         return ApiResponse::success(null, 'Parent deleted successfully.');
     }

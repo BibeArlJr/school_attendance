@@ -10,6 +10,7 @@ use App\Modules\Student\Models\Student;
 use App\Support\Concerns\BelongsToSchool;
 use App\Support\Enums\LicenseStatus;
 use App\Support\Responses\ApiResponse;
+use App\Support\Services\AuditLogger;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,8 +18,10 @@ use Illuminate\Validation\Rule;
 
 class PlatformSchoolController extends Controller
 {
-    public function __construct(private readonly PlatformSchoolService $schoolService)
-    {
+    public function __construct(
+        private readonly PlatformSchoolService $schoolService,
+        private readonly AuditLogger $auditLogger,
+    ) {
     }
 
     /**
@@ -122,6 +125,7 @@ class PlatformSchoolController extends Controller
             && $school->licenseStatus() !== LicenseStatus::Expired;
 
         $base = $notYetExpired ? Carbon::parse($school->amc_expiry_date) : Carbon::today();
+        $before = ['amc_expiry_date' => $school->amc_expiry_date?->toDateString(), 'license_status' => $school->license_status->value];
 
         $school->update([
             'amc_expiry_date' => $base->copy()->addDays($days)->toDateString(),
@@ -131,6 +135,15 @@ class PlatformSchoolController extends Controller
         // reminder sends must not suppress this period's.
         $school->resetReminders();
         $school->save();
+
+        $this->auditLogger->log(
+            'license.activated',
+            'school',
+            $school->id,
+            $before,
+            ['amc_expiry_date' => $school->amc_expiry_date->toDateString(), 'license_status' => $school->license_status->value, 'days' => $days],
+            $school->id,
+        );
 
         return ApiResponse::success($this->withLicense($school->fresh()), 'Subscription extended.');
     }
@@ -148,6 +161,7 @@ class PlatformSchoolController extends Controller
         $validated = $request->validate([
             'amc_expiry_date' => ['required', 'date'],
         ]);
+        $before = ['amc_expiry_date' => $school->amc_expiry_date?->toDateString(), 'license_status' => $school->license_status->value];
 
         $school->update([
             'amc_expiry_date' => Carbon::parse($validated['amc_expiry_date'])->toDateString(),
@@ -158,6 +172,15 @@ class PlatformSchoolController extends Controller
         // view (Prompt 33 Part A).
         $school->resetReminders();
         $school->save();
+
+        $this->auditLogger->log(
+            'license.expiry_updated',
+            'school',
+            $school->id,
+            $before,
+            ['amc_expiry_date' => $school->amc_expiry_date->toDateString(), 'license_status' => $school->license_status->value],
+            $school->id,
+        );
 
         return ApiResponse::success($this->withLicense($school->fresh()), 'Subscription expiry updated.');
     }
@@ -174,10 +197,21 @@ class PlatformSchoolController extends Controller
      */
     public function cancelSubscription(School $school): JsonResponse
     {
+        $before = ['amc_expiry_date' => $school->amc_expiry_date?->toDateString(), 'license_status' => $school->license_status->value];
+
         $school->update([
             'amc_expiry_date' => Carbon::yesterday()->toDateString(),
             'license_status' => LicenseStatus::Expired,
         ]);
+
+        $this->auditLogger->log(
+            'license.cancelled',
+            'school',
+            $school->id,
+            $before,
+            ['amc_expiry_date' => $school->amc_expiry_date->toDateString(), 'license_status' => $school->license_status->value],
+            $school->id,
+        );
 
         return ApiResponse::success($this->withLicense($school->fresh()), 'Subscription canceled.');
     }
@@ -191,14 +225,18 @@ class PlatformSchoolController extends Controller
      */
     public function deactivate(School $school): JsonResponse
     {
+        $before = ['is_active' => $school->is_active];
         $school->deactivate();
+        $this->auditLogger->log('school.deactivated', 'school', $school->id, $before, ['is_active' => false], $school->id);
 
         return ApiResponse::success($this->withLicense($school->fresh()), 'School deactivated.');
     }
 
     public function reactivate(School $school): JsonResponse
     {
+        $before = ['is_active' => $school->is_active];
         $school->reactivate();
+        $this->auditLogger->log('school.reactivated', 'school', $school->id, $before, ['is_active' => true], $school->id);
 
         return ApiResponse::success($this->withLicense($school->fresh()), 'School reactivated.');
     }

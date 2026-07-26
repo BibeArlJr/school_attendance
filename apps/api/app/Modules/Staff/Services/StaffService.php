@@ -9,11 +9,16 @@ use App\Modules\Staff\Models\Staff;
 use App\Support\Enums\StaffEmploymentStatus;
 use App\Support\Enums\UserRole;
 use App\Support\Exceptions\DeleteBlockedException;
+use App\Support\Services\AuditLogger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class StaffService
 {
+    public function __construct(private readonly AuditLogger $auditLogger)
+    {
+    }
+
     /**
      * Creates the login (User, role=guard or admin — Prompt 26
      * generalized this from teacher-only, Prompt 34 removed teacher as a
@@ -77,6 +82,8 @@ class StaffService
     public function updateEmploymentStatus(Staff $staff, string $status): Staff
     {
         return DB::transaction(function () use ($staff, $status) {
+            $before = ['employment_status' => $staff->employment_status->value];
+
             $staff->update(['employment_status' => $status]);
 
             if ($status === StaffEmploymentStatus::Resigned->value) {
@@ -87,7 +94,23 @@ class StaffService
                 $staff->user->update(['is_active' => true]);
             }
 
-            return $staff->fresh('user');
+            $fresh = $staff->fresh('user');
+
+            // Resignation blocks login (User::is_active flips false
+            // above) — the single most accountability-relevant staff
+            // status change, explicitly called out by name in Prompt 43,
+            // but every status change is logged the same way, not just
+            // that one branch.
+            $this->auditLogger->log(
+                'staff.employment_status_changed',
+                'staff',
+                $staff->id,
+                $before,
+                ['employment_status' => $status],
+                $staff->school_id,
+            );
+
+            return $fresh;
         });
     }
 
@@ -100,6 +123,11 @@ class StaffService
         $temporaryPassword = Str::password(12);
 
         $staff->user->update(['password' => $temporaryPassword]);
+
+        // Who reset whose password, when — never the password itself
+        // (before/after are deliberately null, not the temporary
+        // password in either direction).
+        $this->auditLogger->log('staff.password_reset', 'staff', $staff->id, null, null, $staff->school_id);
 
         return $temporaryPassword;
     }
@@ -125,6 +153,7 @@ class StaffService
         }
 
         DB::transaction(function () use ($staff) {
+            $before = [...$staff->toArray(), 'user' => $staff->user->only(['name', 'email', 'role'])];
             IdCard::query()->where('owner_type', 'staff')->where('owner_id', $staff->id)->delete();
             $userId = $staff->user_id;
             $staff->delete();
@@ -134,6 +163,8 @@ class StaffService
             // just clearing who did it. No other FK references users.id
             // in a way that would block or need explicit handling here.
             User::query()->where('id', $userId)->delete();
+
+            $this->auditLogger->log('staff.deleted', 'staff', $staff->id, $before, null, $staff->school_id);
         });
     }
 }

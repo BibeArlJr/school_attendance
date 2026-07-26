@@ -14,7 +14,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
-use RuntimeException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,21 +27,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Credentials are no longer constructor-injected here (Prompt
+        // 43) — RealSparrowSmsService resolves them itself, per call,
+        // from sms_provider_configs (encrypted DB storage, not env/
+        // config()). "Not configured" is now a per-send outcome (logged
+        // as a failed sms_logs row, never thrown — see
+        // RealSparrowSmsService::send()), not a boot-time exception.
         $this->app->bind(SmsServiceInterface::class, function () {
             if (config('services.sms.driver') === 'real') {
-                $token = config('services.sms.sparrow_token');
-                $senderId = config('services.sms.sparrow_sender_id');
-
-                if (! $token || ! $senderId) {
-                    // Fail predictably rather than silently sending with
-                    // blank credentials — mirrors the frontend factory's
-                    // behavior (see getGateFeedService()).
-                    throw new RuntimeException(
-                        'SMS_DRIVER=real but SPARROW_SMS_TOKEN/SPARROW_SMS_SENDER_ID are not set.',
-                    );
-                }
-
-                return new RealSparrowSmsService($token, $senderId);
+                return new RealSparrowSmsService();
             }
 
             return new MockSmsService();

@@ -7,6 +7,7 @@ use App\Modules\School\Models\SchoolClass;
 use App\Modules\Student\Models\Student;
 use App\Modules\Student\Models\StudentEnrollment;
 use App\Support\Exceptions\DeleteBlockedException;
+use App\Support\Services\AuditLogger;
 use App\Support\Services\GradeLevelInference;
 
 /**
@@ -18,8 +19,10 @@ use App\Support\Services\GradeLevelInference;
  */
 class SchoolClassService
 {
-    public function __construct(private readonly GradeLevelInference $gradeLevelInference)
-    {
+    public function __construct(
+        private readonly GradeLevelInference $gradeLevelInference,
+        private readonly AuditLogger $auditLogger,
+    ) {
     }
 
     /**
@@ -58,6 +61,9 @@ class SchoolClassService
             );
         }
 
+        $before = $class->toArray();
         $class->delete();
+
+        $this->auditLogger->log('class.deleted', 'class', $class->id, $before, null, $class->school_id);
     }
 }

@@ -10,12 +10,15 @@ use App\Modules\School\Models\AcademicYear;
 use App\Modules\Student\Models\Student;
 use App\Modules\Student\Models\StudentEnrollment;
 use App\Support\Exceptions\DeleteBlockedException;
+use App\Support\Services\AuditLogger;
 use Illuminate\Support\Facades\DB;
 
 class StudentService
 {
-    public function __construct(private readonly IdCardService $idCardService)
-    {
+    public function __construct(
+        private readonly IdCardService $idCardService,
+        private readonly AuditLogger $auditLogger,
+    ) {
     }
 
     /**
@@ -92,7 +95,13 @@ class StudentService
             IdCard::query()->where('owner_type', 'student')->where('owner_id', $student->id)->delete();
             StudentEnrollment::query()->where('student_id', $student->id)->delete();
             StudentParentLink::query()->where('student_id', $student->id)->delete();
+            $before = $student->toArray();
             $student->delete();
+
+            // Inside the same transaction as the delete itself — either
+            // both commit or neither does, so a failed audit write can
+            // never silently leave an unlogged delete on record.
+            $this->auditLogger->log('student.deleted', 'student', $student->id, $before, null, $student->school_id);
         });
     }
 

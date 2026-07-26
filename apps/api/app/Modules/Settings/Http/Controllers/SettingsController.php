@@ -10,6 +10,7 @@ use App\Modules\Settings\Http\Requests\UpdateAttendanceConfigRequest;
 use App\Modules\Settings\Http\Requests\UpdateSchoolProfileRequest;
 use App\Modules\Settings\Http\Requests\UploadSchoolLogoRequest;
 use App\Support\Responses\ApiResponse;
+use App\Support\Services\AuditLogger;
 use App\Support\Services\CurrentSchoolResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,8 +18,10 @@ use Illuminate\Support\Facades\Storage;
 
 class SettingsController extends Controller
 {
-    public function __construct(private readonly CurrentSchoolResolver $schoolResolver)
-    {
+    public function __construct(
+        private readonly CurrentSchoolResolver $schoolResolver,
+        private readonly AuditLogger $auditLogger,
+    ) {
     }
 
     public function school(Request $request): JsonResponse
@@ -40,7 +43,10 @@ class SettingsController extends Controller
     {
         $schoolId = $this->schoolResolver->resolve($request->user());
         $school = School::query()->findOrFail($schoolId);
+        $before = $school->only(array_keys($request->validated()));
         $school->update($request->validated());
+
+        $this->auditLogger->log('settings.school_profile_updated', 'school', $school->id, $before, $request->validated(), $schoolId);
 
         return ApiResponse::success($school->fresh(), 'School profile updated successfully.');
     }
@@ -61,11 +67,14 @@ class SettingsController extends Controller
         $previousPath = $school->logo_url ? $this->storagePathFromUrl($school->logo_url) : null;
 
         $path = $request->file('logo')->store("logos/{$schoolId}", 'public');
+        $before = ['logo_url' => $school->logo_url];
         $school->update(['logo_url' => Storage::disk('public')->url($path)]);
 
         if ($previousPath && Storage::disk('public')->exists($previousPath)) {
             Storage::disk('public')->delete($previousPath);
         }
+
+        $this->auditLogger->log('settings.school_profile_updated', 'school', $school->id, $before, ['logo_url' => $school->logo_url], $schoolId);
 
         return ApiResponse::success($school->fresh(), 'Logo updated successfully.');
     }
@@ -95,7 +104,10 @@ class SettingsController extends Controller
     {
         $schoolId = $this->schoolResolver->resolve($request->user());
         $config = SchoolConfig::query()->findOrFail($schoolId);
+        $before = $config->only(array_keys($request->validated()));
         $config->update($request->validated());
+
+        $this->auditLogger->log('settings.attendance_rules_updated', 'school_config', $schoolId, $before, $request->validated(), $schoolId);
 
         return ApiResponse::success($config->fresh(), 'Attendance rules updated successfully.');
     }

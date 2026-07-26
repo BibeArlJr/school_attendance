@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Platform\Http\Controllers\AuditLogController;
 use App\Modules\Platform\Http\Controllers\PlatformSchoolController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,4 +18,10 @@ Route::middleware(['auth:sanctum', 'can:platform-admin'])->prefix('platform')->g
     Route::post('/schools/{school}/deactivate', [PlatformSchoolController::class, 'deactivate']);
     Route::post('/schools/{school}/reactivate', [PlatformSchoolController::class, 'reactivate']);
     Route::post('/active-school', [PlatformSchoolController::class, 'setActive']);
+    // Prompt 43 — same platform-admin gate, not a separate permission:
+    // the audit log is platform-operator infrastructure, not a
+    // per-school module.
+    Route::get('/audit-log', [AuditLogController::class, 'index']);
+    Route::get('/audit-log/actions', [AuditLogController::class, 'actions']);
+    Route::get('/audit-log/actors', [AuditLogController::class, 'actors']);
 });
