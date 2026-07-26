@@ -35,8 +35,8 @@ export function IdCardSection({ studentId }: IdCardSectionProps) {
         ) : !cardQuery.data ? (
           <EmptyState title="No ID card found" />
         ) : (
-          <div className="flex items-center gap-4">
-            <div className="rounded-md bg-white p-1">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="min-w-0 overflow-x-auto rounded-md bg-white p-1">
               <BarcodeImage value={cardQuery.data.barcode_value} className="h-10" />
             </div>
             <Badge variant={STATUS_VARIANT[cardQuery.data.status]} className="capitalize">

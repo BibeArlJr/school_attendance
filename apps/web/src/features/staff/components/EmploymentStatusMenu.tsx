@@ -32,7 +32,7 @@ export function EmploymentStatusMenu({ staff, licenseExpired, onDeleteRequest }:
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size="icon"
+          size="icon-sm"
           disabled={licenseExpired}
           title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
           aria-label={`Change employment status for ${staff.name}`}

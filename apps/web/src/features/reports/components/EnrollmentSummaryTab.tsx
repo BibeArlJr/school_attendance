@@ -1,5 +1,5 @@
 import { Download, Printer } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useEnrollmentSummary } from '../hooks/useEnrollmentSummary';
 import { exportEnrollmentSummaryCsv } from '../lib/exportEnrollmentSummaryCsv';
@@ -23,6 +23,47 @@ const STATUS_LABELS: Record<string, string> = {
   alumni: 'Alumni',
 };
 
+/** Roughly how much horizontal room one -35deg-angled short class-name
+ *  tick needs before it starts overlapping its neighbor — empirical, not
+ *  exact, but good enough to decide how many of them to skip. */
+const PX_PER_ANGLED_TICK = 30;
+
+/**
+ * The "Students per class" chart's tick count needs to track the chart's
+ * own actual rendered width, not the viewport's — it sits in a lg:2-col
+ * grid, so a wide monitor doesn't necessarily mean a wide chart card
+ * (Prompt 44). A fixed interval={0} (show every class) cramped illegibly
+ * at 375px; Recharts' own interval="preserveStartEnd" fixed that but
+ * over-corrected — it started skipping labels even on a card with
+ * visibly enough room. Measuring the card directly with a
+ * ResizeObserver and computing the skip count from that is the only way
+ * to get both ends right at once.
+ */
+function useAngledTickInterval(tickCount: number): [React.RefObject<HTMLDivElement | null>, number] {
+  const ref = useRef<HTMLDivElement>(null);
+  const [interval, setInterval_] = useState(0);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || tickCount === 0) {
+      return;
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const width = entry.contentRect.width;
+      const maxVisibleTicks = Math.max(1, Math.floor(width / PX_PER_ANGLED_TICK));
+      setInterval_(Math.max(0, Math.ceil(tickCount / maxVisibleTicks) - 1));
+    });
+    observer.observe(el);
+
+    return () => observer.disconnect();
+  }, [tickCount]);
+
+  return [ref, interval];
+}
+
 export function EnrollmentSummaryTab() {
   const [classFilter, setClassFilter] = useState('all');
 
@@ -36,6 +77,7 @@ export function EnrollmentSummaryTab() {
     name: `${schoolClass.name}${schoolClass.section ? ` - ${schoolClass.section}` : ''}`,
     Students: schoolClass.active_students_count,
   }));
+  const [classChartRef, classChartTickInterval] = useAngledTickInterval(classChartData?.length ?? 0);
   const statusChartData = summary
     ? Object.entries(summary.status_breakdown).map(([status, count]) => ({
         name: STATUS_LABELS[status] ?? status,
@@ -84,7 +126,7 @@ export function EnrollmentSummaryTab() {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <div className="rounded-lg border p-4">
+            <div ref={classChartRef} className="rounded-lg border p-4">
               <p className="mb-2 text-sm font-medium text-muted-foreground">Students per class</p>
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={classChartData} margin={{ top: 8, right: 8, left: 0, bottom: 24 }}>
@@ -96,7 +138,15 @@ export function EnrollmentSummaryTab() {
                     angle={-35}
                     textAnchor="end"
                     height={50}
-                    interval={0}
+                    // Computed from the chart card's own measured width
+                    // (useAngledTickInterval, ResizeObserver-driven) —
+                    // 0 (show every class) whenever there's room, thins
+                    // out proportionally as the card narrows. Fixes
+                    // illegible label cramping at 375px without
+                    // sacrificing full detail on a wide monitor, where a
+                    // fixed interval="preserveStartEnd" was skipping
+                    // labels even with visibly enough room to spare.
+                    interval={classChartTickInterval}
                     tick={{ fontSize: 11, fill: 'oklch(var(--muted-foreground))' }}
                   />
                   <YAxis

@@ -33,18 +33,18 @@ export function AuditLogDetailDialog({ entry, onOpenChange }: AuditLogDetailDial
         </DialogHeader>
         {entry && (
           <div className="space-y-4 text-sm">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1">
                 <p className="text-xs font-medium text-muted-foreground">When</p>
                 <p>{formatDateTime12h(entry.created_at)}</p>
               </div>
-              <div className="space-y-1">
+              <div className="min-w-0 space-y-1">
                 <p className="text-xs font-medium text-muted-foreground">Action</p>
-                <p className="font-mono text-xs">{entry.action}</p>
+                <p className="font-mono text-xs break-all">{entry.action}</p>
               </div>
-              <div className="space-y-1">
+              <div className="min-w-0 space-y-1">
                 <p className="text-xs font-medium text-muted-foreground">Actor</p>
-                <p>
+                <p className="break-words">
                   {entry.actor.name} <span className="text-muted-foreground">({entry.actor.email})</span>
                 </p>
               </div>

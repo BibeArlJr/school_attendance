@@ -33,7 +33,7 @@ export function StudentStatusMenu({ student, licenseExpired, onDeleteRequest }: 
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size="icon"
+          size="icon-sm"
           disabled={licenseExpired}
           title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
           aria-label={`Change status for ${student.first_name}`}
