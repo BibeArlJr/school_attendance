@@ -18,7 +18,11 @@ class MockSmsService implements SmsServiceInterface
 {
     public function send(string $to, string $message, int $schoolId, ?int $relatedAttendanceRecordId = null): void
     {
-        Log::info("[MOCK SMS] To: {$to} | Message: {$message}");
+        Log::info('[MOCK SMS] send', [
+            'school_id' => $schoolId,
+            'recipient' => $to,
+            'attendance_record_id' => $relatedAttendanceRecordId,
+        ]);
 
         SmsLog::create([
             'school_id' => $schoolId,

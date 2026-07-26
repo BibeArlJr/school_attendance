@@ -1,10 +1,11 @@
 import { lazy, Suspense } from 'react';
-import { createBrowserRouter, Navigate, useParams } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet, useParams } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
 import { RoleGuard } from './RoleGuard';
 import { ROUTES, staffDetailPath } from './routes';
 import { LoadingSkeleton } from '@/shared/components/feedback/LoadingSkeleton';
 import { AppShell } from '@/shared/components/layout/AppShell';
+import { RouteErrorBoundary } from '@/shared/components/RouteErrorBoundary';
 import { MODULES } from '@/shared/constants/modules';
 
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
@@ -76,133 +77,147 @@ const placeholderRoutes = MODULES.filter((module) => module.phase !== undefined)
 
 export const router = createBrowserRouter([
   {
-    path: ROUTES.LOGIN,
-    element: withSuspense(<LoginPage />),
-  },
-  {
-    element: <ProtectedRoute />,
+    // Pathless root wrapping every other route (Prompt 45) — a single
+    // shared errorElement here catches a render crash from ANY of them,
+    // including the login page and ProtectedRoute/AppShell themselves,
+    // not just routes already nested under AppShell. Without this, an
+    // uncaught render error had no ancestor errorElement at all, so
+    // react-router fell back to its own built-in default: a raw,
+    // minified stack trace dumped straight onto the page (confirmed
+    // live before this fix).
+    element: <Outlet />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       {
-        element: <AppShell />,
+        path: ROUTES.LOGIN,
+        element: withSuspense(<LoginPage />),
+      },
+      {
+        element: <ProtectedRoute />,
         children: [
-          { index: true, element: <Navigate to={ROUTES.DASHBOARD} replace /> },
           {
-            path: ROUTES.DASHBOARD,
-            element: withSuspense(withRoleGuard(dashboardModule, <DashboardPage />)),
-          },
-          {
-            path: ROUTES.STUDENTS,
-            element: withSuspense(withRoleGuard(studentsModule, <StudentsLayout />)),
+            element: <AppShell />,
             children: [
-              { index: true, element: withSuspense(<StudentsPage />) },
-              { path: 'classes', element: withSuspense(<ClassesPage />) },
+              { index: true, element: <Navigate to={ROUTES.DASHBOARD} replace /> },
+              {
+                path: ROUTES.DASHBOARD,
+                element: withSuspense(withRoleGuard(dashboardModule, <DashboardPage />)),
+              },
+              {
+                path: ROUTES.STUDENTS,
+                element: withSuspense(withRoleGuard(studentsModule, <StudentsLayout />)),
+                children: [
+                  { index: true, element: withSuspense(<StudentsPage />) },
+                  { path: 'classes', element: withSuspense(<ClassesPage />) },
+                ],
+              },
+              {
+                // Sibling to (not nested under) StudentsLayout — a single
+                // student's detail view is a drill-down, not a peer of the
+                // Students/Classes tabs, so it doesn't show that tab bar.
+                path: ROUTES.STUDENT_DETAIL,
+                element: withSuspense(withRoleGuard(studentsModule, <StudentDetailPage />)),
+              },
+              {
+                path: ROUTES.STUDENTS_IMPORT,
+                element: withSuspense(withRoleGuard(studentsModule, <ImportPage />)),
+              },
+              {
+                path: ROUTES.STUDENTS_IMPORT_BATCH,
+                element: withSuspense(withRoleGuard(studentsModule, <ImportReviewPage />)),
+              },
+              {
+                path: ROUTES.STAFF,
+                element: withSuspense(withRoleGuard(staffModule, <StaffPage />)),
+              },
+              {
+                path: ROUTES.STAFF_DETAIL,
+                element: withSuspense(withRoleGuard(staffModule, <StaffDetailPage />)),
+              },
+              {
+                // Prompt 34 Part D: /teachers renamed to /staff — this keeps
+                // any existing bookmark/history entry working instead of a
+                // dead link.
+                path: ROUTES.LEGACY_TEACHERS,
+                element: <Navigate to={ROUTES.STAFF} replace />,
+              },
+              {
+                path: `${ROUTES.LEGACY_TEACHERS}/:id`,
+                element: <LegacyStaffDetailRedirect />,
+              },
+              {
+                path: ROUTES.PARENTS,
+                element: withSuspense(withRoleGuard(parentsModule, <ParentsPage />)),
+              },
+              {
+                path: ROUTES.PARENT_DETAIL,
+                element: withSuspense(withRoleGuard(parentsModule, <ParentDetailPage />)),
+              },
+              {
+                path: ROUTES.BARCODE,
+                element: withSuspense(withRoleGuard(barcodeModule, <BarcodePage />)),
+              },
+              {
+                path: ROUTES.BARCODE_PRINT,
+                element: withSuspense(withRoleGuard(barcodeModule, <BarcodePrintPage />)),
+              },
+              {
+                path: ROUTES.STUDENT_ID_CARD,
+                element: withSuspense(withRoleGuard(barcodeModule, <IdCardPage />)),
+              },
+              {
+                path: ROUTES.ATTENDANCE,
+                element: withSuspense(withRoleGuard(attendanceModule, <AttendancePage />)),
+              },
+              {
+                path: ROUTES.GATE_SCANNER,
+                element: withSuspense(withRoleGuard(gateScannerModule, <GateScannerPage />)),
+              },
+              {
+                // Same gate-scanner module/roles as above (super_admin/admin/
+                // guard) — read-only calendar, reachable by guard without
+                // giving guard any access to /settings (Prompt 25 Part D).
+                path: ROUTES.GATE_CALENDAR,
+                element: withSuspense(withRoleGuard(gateScannerModule, <GateCalendarPage />)),
+              },
+              {
+                path: ROUTES.SMS_LOG,
+                element: withSuspense(withRoleGuard(smsLogModule, <SmsLogPage />)),
+              },
+              {
+                path: ROUTES.REPORTS,
+                element: withSuspense(withRoleGuard(reportsModule, <ReportsPage />)),
+              },
+              {
+                path: ROUTES.SETTINGS,
+                element: withSuspense(withRoleGuard(settingsModule, <SettingsPage />)),
+              },
+              {
+                // Platform Console (Prompt 24) — deliberately NOT driven by
+                // MODULES.ts/config('modules.php'): it sits above the
+                // per-school module matrix, not inside it, so allowedRoles
+                // is passed directly rather than looked up from a module def.
+                path: ROUTES.PLATFORM_SCHOOLS,
+                element: withSuspense(
+                  <RoleGuard allowedRoles={['super_admin']} pageTitle="Platform Console">
+                    <PlatformSchoolsPage />
+                  </RoleGuard>,
+                ),
+              },
+              {
+                path: ROUTES.PLATFORM_AUDIT_LOG,
+                element: withSuspense(
+                  <RoleGuard allowedRoles={['super_admin']} pageTitle="Audit Log">
+                    <AuditLogPage />
+                  </RoleGuard>,
+                ),
+              },
+              ...placeholderRoutes,
             ],
           },
-          {
-            // Sibling to (not nested under) StudentsLayout — a single
-            // student's detail view is a drill-down, not a peer of the
-            // Students/Classes tabs, so it doesn't show that tab bar.
-            path: ROUTES.STUDENT_DETAIL,
-            element: withSuspense(withRoleGuard(studentsModule, <StudentDetailPage />)),
-          },
-          {
-            path: ROUTES.STUDENTS_IMPORT,
-            element: withSuspense(withRoleGuard(studentsModule, <ImportPage />)),
-          },
-          {
-            path: ROUTES.STUDENTS_IMPORT_BATCH,
-            element: withSuspense(withRoleGuard(studentsModule, <ImportReviewPage />)),
-          },
-          {
-            path: ROUTES.STAFF,
-            element: withSuspense(withRoleGuard(staffModule, <StaffPage />)),
-          },
-          {
-            path: ROUTES.STAFF_DETAIL,
-            element: withSuspense(withRoleGuard(staffModule, <StaffDetailPage />)),
-          },
-          {
-            // Prompt 34 Part D: /teachers renamed to /staff — this keeps
-            // any existing bookmark/history entry working instead of a
-            // dead link.
-            path: ROUTES.LEGACY_TEACHERS,
-            element: <Navigate to={ROUTES.STAFF} replace />,
-          },
-          {
-            path: `${ROUTES.LEGACY_TEACHERS}/:id`,
-            element: <LegacyStaffDetailRedirect />,
-          },
-          {
-            path: ROUTES.PARENTS,
-            element: withSuspense(withRoleGuard(parentsModule, <ParentsPage />)),
-          },
-          {
-            path: ROUTES.PARENT_DETAIL,
-            element: withSuspense(withRoleGuard(parentsModule, <ParentDetailPage />)),
-          },
-          {
-            path: ROUTES.BARCODE,
-            element: withSuspense(withRoleGuard(barcodeModule, <BarcodePage />)),
-          },
-          {
-            path: ROUTES.BARCODE_PRINT,
-            element: withSuspense(withRoleGuard(barcodeModule, <BarcodePrintPage />)),
-          },
-          {
-            path: ROUTES.STUDENT_ID_CARD,
-            element: withSuspense(withRoleGuard(barcodeModule, <IdCardPage />)),
-          },
-          {
-            path: ROUTES.ATTENDANCE,
-            element: withSuspense(withRoleGuard(attendanceModule, <AttendancePage />)),
-          },
-          {
-            path: ROUTES.GATE_SCANNER,
-            element: withSuspense(withRoleGuard(gateScannerModule, <GateScannerPage />)),
-          },
-          {
-            // Same gate-scanner module/roles as above (super_admin/admin/
-            // guard) — read-only calendar, reachable by guard without
-            // giving guard any access to /settings (Prompt 25 Part D).
-            path: ROUTES.GATE_CALENDAR,
-            element: withSuspense(withRoleGuard(gateScannerModule, <GateCalendarPage />)),
-          },
-          {
-            path: ROUTES.SMS_LOG,
-            element: withSuspense(withRoleGuard(smsLogModule, <SmsLogPage />)),
-          },
-          {
-            path: ROUTES.REPORTS,
-            element: withSuspense(withRoleGuard(reportsModule, <ReportsPage />)),
-          },
-          {
-            path: ROUTES.SETTINGS,
-            element: withSuspense(withRoleGuard(settingsModule, <SettingsPage />)),
-          },
-          {
-            // Platform Console (Prompt 24) — deliberately NOT driven by
-            // MODULES.ts/config('modules.php'): it sits above the
-            // per-school module matrix, not inside it, so allowedRoles
-            // is passed directly rather than looked up from a module def.
-            path: ROUTES.PLATFORM_SCHOOLS,
-            element: withSuspense(
-              <RoleGuard allowedRoles={['super_admin']} pageTitle="Platform Console">
-                <PlatformSchoolsPage />
-              </RoleGuard>,
-            ),
-          },
-          {
-            path: ROUTES.PLATFORM_AUDIT_LOG,
-            element: withSuspense(
-              <RoleGuard allowedRoles={['super_admin']} pageTitle="Audit Log">
-                <AuditLogPage />
-              </RoleGuard>,
-            ),
-          },
-          ...placeholderRoutes,
         ],
       },
+      { path: '*', element: <Navigate to={ROUTES.DASHBOARD} replace /> },
     ],
   },
-  { path: '*', element: <Navigate to={ROUTES.DASHBOARD} replace /> },
 ]);

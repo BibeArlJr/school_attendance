@@ -300,7 +300,11 @@ class AttendanceService
         try {
             $this->smsService->send($primaryLink->parentGuardian->phone, $message, $schoolId, $recordId);
         } catch (Throwable $e) {
-            Log::error("SMS notification threw unexpectedly: {$e->getMessage()}");
+            Log::error('SMS notification threw unexpectedly', [
+                'school_id' => $schoolId,
+                'attendance_record_id' => $recordId,
+                'error' => $e->getMessage(),
+            ]);
 
             return false;
         }

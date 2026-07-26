@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsureLicenseActive;
 use App\Http\Middleware\RequireAccessTokenAbility;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\SentryContext;
 use App\Support\Exceptions\LicenseExpiredException;
 use App\Support\Exceptions\NoActiveSchoolSelectedException;
 use App\Support\Responses\ApiResponse;
@@ -12,6 +13,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
+use Sentry\Laravel\Integration;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -42,12 +44,36 @@ return Application::configure(basePath: dirname(__DIR__))
         // Applies to every API route with zero per-route changes — see
         // RequireAccessTokenAbility's docblock for why this is safe
         // regardless of ordering relative to auth:sanctum.
-        $middleware->api(append: [RequireAccessTokenAbility::class, SecurityHeaders::class]);
+        $middleware->api(append: [RequireAccessTokenAbility::class, SecurityHeaders::class, SentryContext::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+
+        // These are deliberately-thrown, expected, already-handled
+        // business-flow signals (see their own render() callbacks below)
+        // — not framework HttpException subclasses, so Laravel's default
+        // $internalDontReport list doesn't already cover them the way it
+        // covers AuthenticationException/AccessDeniedHttpException/
+        // ThrottleRequestsException. Without this, Sentry (once
+        // SENTRY_LARAVEL_DSN is set — Integration::handles() below hooks
+        // into this same report pipeline) would capture every license
+        // expiry and every "no active school selected" as if it were a
+        // genuine unhandled error (Prompt 45).
+        $exceptions->dontReport([
+            NoActiveSchoolSelectedException::class,
+            LicenseExpiredException::class,
+        ]);
+
+        // No-op with no SENTRY_LARAVEL_DSN configured (Prompt 45) — the
+        // SDK simply never initializes, so this has nothing to report
+        // to and never throws. Genuinely unhandled exceptions and 500s
+        // flow through here; the dontReport() list above is what keeps
+        // routine 401/403/409/422/429s (all already rendered via
+        // ApiResponse::error() by the callbacks below) from also
+        // showing up as Sentry issues.
+        Integration::handles($exceptions);
 
         $exceptions->render(function (AuthenticationException $e, Request $request) {
             if ($request->is('api/*')) {

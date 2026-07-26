@@ -29,6 +29,9 @@ apps/api/.phpunit.result.cache
 !.env.example
 !*.env.example
 
+# --- Backups (real DB dumps, not for source control) ---
+/backups/
+
 # --- Editors / OS ---
 .DS_Store
 .idea/

@@ -59,7 +59,11 @@ class RealSparrowSmsService implements SmsServiceInterface
             // response at all. Never rethrow: a school with SMS trouble
             // must still be able to record attendance (Phase 10's core
             // constraint), so this is caught and logged, not propagated.
-            Log::error("Sparrow SMS send failed: {$e->getMessage()}");
+            Log::error('Sparrow SMS send failed', [
+                'school_id' => $schoolId,
+                'attendance_record_id' => $relatedAttendanceRecordId,
+                'error' => $e->getMessage(),
+            ]);
             $this->log($schoolId, $recipient, $message, false, null, $e->getMessage(), $relatedAttendanceRecordId);
         }
     }
@@ -88,7 +92,10 @@ class RealSparrowSmsService implements SmsServiceInterface
                 'credits_consumed' => (int) ($body['credits_consumed'] ?? 0),
             ];
         } catch (Throwable $e) {
-            Log::error("Sparrow SMS credit check failed: {$e->getMessage()}");
+            // No school_id here — getCredits() is always the platform-
+            // wide check (see the docblock above), not tied to one
+            // school's activity.
+            Log::error('Sparrow SMS credit check failed', ['error' => $e->getMessage()]);
 
             return ['credits_available' => 0, 'credits_consumed' => 0];
         }

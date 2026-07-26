@@ -66,7 +66,10 @@ class LicenseReminderService
             ->get();
 
         if ($admins->isEmpty()) {
-            Log::warning("License reminder ({$thresholdDays}-day) for school #{$school->id} ({$school->name}): no admin with a phone on file, SMS skipped.");
+            Log::warning('License reminder skipped: no admin with a phone on file', [
+                'school_id' => $school->id,
+                'threshold_days' => $thresholdDays,
+            ]);
 
             return 0;
         }
