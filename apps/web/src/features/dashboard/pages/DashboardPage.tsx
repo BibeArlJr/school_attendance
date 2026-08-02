@@ -99,7 +99,7 @@ export default function DashboardPage() {
               />
             </motion.div>
             <motion.div variants={cardItemVariants}>
-              <SummaryCard label="Total Teachers" value={data.total_teachers} icon={Users} />
+              <SummaryCard label="Total Staff" value={data.total_staff} icon={Users} />
             </motion.div>
             <motion.div variants={cardItemVariants}>
               <SummaryCard

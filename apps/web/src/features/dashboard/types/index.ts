@@ -1,6 +1,6 @@
 export interface DashboardSummary {
   total_students: number;
-  total_teachers: number;
+  total_staff: number;
   present_today: number;
   absent_today: number;
   late_today: number;

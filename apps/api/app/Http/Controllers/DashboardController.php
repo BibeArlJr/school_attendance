@@ -32,7 +32,12 @@ class DashboardController extends Controller
 
         return ApiResponse::success([
             'total_students' => Student::query()->where('school_id', $schoolId)->where('status', StudentStatus::Active)->count(),
-            'total_teachers' => Staff::query()->where('school_id', $schoolId)->where('employment_status', StaffEmploymentStatus::Active)->count(),
+            // Renamed from total_teachers — the teacher role/staff-attendance
+            // concept was removed when Staff Management consolidated to
+            // Guard/Admin only (Prompt 34); this count itself was already
+            // correct (all active Staff, not filtered to any nonexistent
+            // role), only the key/label were stale leftovers.
+            'total_staff' => Staff::query()->where('school_id', $schoolId)->where('employment_status', StaffEmploymentStatus::Active)->count(),
             'present_today' => $counts['present'],
             'absent_today' => $counts['absent'],
             'late_today' => $counts['late'],
