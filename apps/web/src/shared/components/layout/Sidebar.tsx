@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { GraduationCap, ChevronLeft, X } from 'lucide-react';
+import { ChevronLeft, X } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { Button } from '@/shared/components/ui/button';
@@ -27,10 +27,20 @@ function SidebarContent({
   return (
     <>
       <div className={cn('flex h-14 items-center gap-2 px-4', collapsed && 'justify-center px-0')}>
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <GraduationCap className="size-4.5" />
-        </div>
-        {!collapsed && <span className="flex-1 truncate text-sm font-semibold">School ERP</span>}
+        {/* Platform-level branding (Prompt 53) — deliberately NOT inside
+            a bg-primary chip like the old GraduationCap icon was: primary
+            is the per-school accent color (SchoolThemeProvider), which
+            would clash with the logo's own fixed blue/dark-blue palette
+            depending on which school's color happens to be active. This
+            is the one app-name/icon area that must look the same for
+            every school, unlike the Topbar's per-school logo (Prompt 26,
+            untouched). */}
+        <img src="/branding/favicon-192.png" alt="" className="size-8 shrink-0 object-contain" />
+        {!collapsed && (
+          <span className="flex-1 truncate text-xs font-semibold leading-tight">
+            School Attendance System
+          </span>
+        )}
         {headerExtra}
       </div>
 

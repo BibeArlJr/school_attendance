@@ -48,7 +48,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     // example usage — see docs/architecture/service-pattern.md
-    void getNotificationService().notify('Welcome back to School ERP.');
+    void getNotificationService().notify('Welcome back to School Attendance System.');
   }, []);
 
   // Additive only — the summary query above is untouched (same queryKey,

@@ -1,5 +1,4 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { GraduationCap } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useLogin } from '../hooks/useLogin';
 import { loginSchema, type LoginFormValues } from '../schema';
@@ -41,11 +40,16 @@ export default function LoginPage() {
           {logoUrl ? (
             <img src={logoUrl} alt="" className="size-12 rounded-xl object-contain" />
           ) : (
-            <div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <GraduationCap className="size-6" />
-            </div>
+            // Platform-level branding (Prompt 53) — shown only when no
+            // specific school's own logo is already known for this
+            // browser (the logoUrl branch above, untouched).
+            <img
+              src="/branding/icon-512.png"
+              alt=""
+              className="size-12 rounded-xl object-contain"
+            />
           )}
-          <CardTitle className="text-xl">School ERP</CardTitle>
+          <CardTitle className="text-xl">School Attendance System</CardTitle>
           <p className="text-sm text-muted-foreground">Sign in to your school's dashboard</p>
         </CardHeader>
         <CardContent>
