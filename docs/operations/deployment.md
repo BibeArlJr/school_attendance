@@ -22,6 +22,29 @@ This prompts for a name/email/password and creates exactly one row (a
 a second time once a super_admin already exists, so it's safe to leave
 in the deploy pipeline rather than needing to remember to remove it.
 
+## Security incident (Prompt 55 pre-deployment audit): rotated APP_KEY
+
+A pre-deployment git-history audit found that `apps/api/.env.testing`
+(intentionally git-tracked — see its own `.gitignore` exception) had, by
+mistake, the exact same `APP_KEY` as the real local dev `.env`
+(gitignored, never itself committed) — meaning the actual key
+encrypting real Sparrow SMS credentials in `sms_provider_configs` was
+sitting in git history on a public GitHub repo. Both keys have been
+rotated to fresh, distinct values, and the real credentials re-encrypted
+under the new dev key (verified: still decrypts, and a real Sparrow
+credit-balance check still succeeds). **This is exactly why**
+`apps/api/.env.production.example`'s `APP_KEY` guidance says to generate
+a brand-new key for production rather than reuse dev's — do not copy
+dev's `.env` wholesale when setting up Render.
+
+The old key value still exists in this repo's git history (rotating it
+going forward doesn't erase that) — a full history rewrite
+(`git filter-repo` or BFG) would remove it entirely but requires a
+force-push and isn't done here; it's a deliberate call for whoever owns
+this repo to make, given the disruption (breaks any existing
+clones/forks). Rotating the actual Sparrow API token via Sparrow's own
+dashboard is a cheap additional precaution worth taking regardless.
+
 ## Part C — Render (backend)
 
 **PHP is not a Render native runtime.** Render's native runtimes are
@@ -58,6 +81,18 @@ to work):
   the Render dashboard's Environment tab using
   `apps/api/.env.production.example` as the reference, not by editing
   `render.yaml` itself.
+
+**Performance caching (Prompt 55 audit Part E):** `apps/api/docker/entrypoint.sh`
+runs `php artisan config:cache`, `route:cache`, and `view:cache` —
+standard Laravel production practice. Deliberately **not** run at Docker
+build time: Render only injects real env vars into the running
+container, not the build step, so a build-time `config:cache` would bake
+in build-time nulls instead of real production values. Runs at container
+*start* instead, once per container, verified locally: rebuilt the image
+with this change, confirmed all three cache commands succeed, and
+re-ran the same `/api/health` (200) and planted-`.php`-file (403) checks
+against the cached, running container to confirm caching didn't
+silently break routing or config resolution.
 
 ### Hardening: does Prompt 41's concern carry over?
 

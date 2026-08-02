@@ -45,23 +45,28 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function attendanceTrend(): JsonResponse
+    /**
+     * Real per-day counts via AttendanceAnalyticsService::dailyCounts()
+     * (Prompt 55 audit) — this previously returned hardcoded demo
+     * numbers (a Phase 12 TODO that outlived every phase since,
+     * unnoticed because it looked plausible on the dashboard). 0/0 on a
+     * non-working day generalizes the old "Saturday forced to 0"
+     * special case to any real holiday/exam day via
+     * SchoolCalendar, not just the weekday assumption.
+     */
+    public function attendanceTrend(Request $request): JsonResponse
     {
-        // TODO(Phase 12): replace with real aggregation query.
-        // Hardcoded demo shape only — no students exist in this phase, so
-        // this can't be derived from real data yet. Saturday is forced to
-        // 0/0 since Nepali schools run Sunday-Friday and are closed Saturday.
-        $today = now()->startOfDay();
-        $presentByWeekday = [96, 118, 112, 104, 90, 101, 0]; // Sun..Sat
+        $schoolId = $this->schoolResolver->resolve($request->user());
+        $today = Carbon::today();
 
-        $trend = collect(range(6, 0))->map(function (int $daysAgo) use ($today, $presentByWeekday) {
+        $trend = collect(range(6, 0))->map(function (int $daysAgo) use ($schoolId, $today) {
             $date = $today->copy()->subDays($daysAgo);
-            $isSaturday = $date->dayOfWeek === 6;
+            $counts = $this->analytics->dailyCounts($schoolId, $date, 'student');
 
             return [
                 'date' => $date->toDateString(),
-                'presentCount' => $isSaturday ? 0 : $presentByWeekday[$date->dayOfWeek],
-                'totalCount' => $isSaturday ? 0 : 120,
+                'presentCount' => $counts['is_working_day'] ? $counts['present'] : 0,
+                'totalCount' => $counts['is_working_day'] ? $counts['total'] : 0,
             ];
         })->values()->all();
 
