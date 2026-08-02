@@ -278,4 +278,37 @@ class AttendanceStateMachineTest extends TestCase
         $this->assertSame('2026-08-11', $outcome->record->date->toDateString(), 'must be the Nepal calendar date, not the UTC one');
         $this->assertSame('00:30:00', $outcome->record->in_time, 'must be the Nepal wall-clock time, not the UTC one');
     }
+
+    /**
+     * Case-insensitivity regression test (Prompt 51) — barcode scanners
+     * commonly desync their internal Caps Lock/Shift state and emit the
+     * wrong case for a typed-out barcode value. id_cards.barcode_value
+     * stays stored exactly as generated (uppercase); this only covers how
+     * an incoming scanned value gets compared against it.
+     */
+    public function test_scan_with_lowercase_barcode_resolves_to_the_same_card(): void
+    {
+        $outcome = $this->scanAt('2026-08-10 08:05:00', strtolower($this->barcode));
+
+        $this->assertSame(AttendanceEventResult::MatchedIn, $outcome->event->result);
+        $this->assertNotNull($outcome->record, 'a lowercase scan of a real barcode must still match its card');
+    }
+
+    public function test_scan_with_mixed_case_barcode_resolves_to_the_same_card(): void
+    {
+        // Alternating upper/lower per character — derived from the real
+        // stored value rather than a hand-typed literal, so this stays
+        // correct if $barcode is ever changed.
+        $mixedCase = implode('', array_map(
+            fn (string $char, int $i) => $i % 2 === 0 ? strtolower($char) : $char,
+            str_split($this->barcode),
+            array_keys(str_split($this->barcode)),
+        ));
+        $this->assertNotSame($this->barcode, $mixedCase, 'sanity check: this really is a different string than the stored value');
+
+        $outcome = $this->scanAt('2026-08-10 08:05:00', $mixedCase);
+
+        $this->assertSame(AttendanceEventResult::MatchedIn, $outcome->event->result);
+        $this->assertNotNull($outcome->record);
+    }
 }

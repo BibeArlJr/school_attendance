@@ -58,6 +58,19 @@ class AttendanceService
         ?int $gateDeviceId,
         ?int $guardUserId,
     ): ScanOutcome {
+        // Normalized immediately on receipt, before anything downstream
+        // ever compares it (Prompt 51) — barcode scanners commonly desync
+        // their internal Caps Lock/Shift state and emit the wrong case
+        // for a typed-out barcode value. Case carries no actual meaning
+        // in these generated codes (id_cards.barcode_value is always
+        // stored uppercase, per SequenceGeneratorService's format — this
+        // is purely about how an incoming value gets compared against
+        // that stored value, never about changing storage). Every
+        // downstream use of $barcodeValue in this method — the identity
+        // lookup, the duplicate-scan check, and the logged
+        // attendance_events row — reads this same normalized value.
+        $barcodeValue = strtoupper(trim($barcodeValue));
+
         // $now is the true UTC instant — used only for scanned_at (the
         // honest record of when this happened) and for diffing against
         // other scanned_at instants. Every NPT-semantic wall-clock field

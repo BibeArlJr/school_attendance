@@ -32,11 +32,19 @@ class StudentController extends Controller
             ->with(['schoolClass', 'currentEnrollment', 'primaryParentLink.parentGuardian', 'idCard']);
 
         if ($search = trim((string) $request->query('search', ''))) {
-            $query->where(function ($inner) use ($search) {
+            // ILIKE already case-folds, so this doesn't change matching
+            // behavior — explicit normalization for the barcode_value
+            // clause specifically documents the same policy
+            // AttendanceService's scan-entry normalization does (Prompt
+            // 51): barcode comparisons are never case-sensitive by
+            // design, regardless of which operator is doing the
+            // comparing.
+            $normalizedSearch = strtoupper($search);
+            $query->where(function ($inner) use ($search, $normalizedSearch) {
                 $inner->where('first_name', 'ilike', "%{$search}%")
                     ->orWhere('last_name', 'ilike', "%{$search}%")
-                    ->orWhereHas('idCard', function ($card) use ($search) {
-                        $card->where('barcode_value', 'ilike', "%{$search}%");
+                    ->orWhereHas('idCard', function ($card) use ($normalizedSearch) {
+                        $card->where('barcode_value', 'ilike', "%{$normalizedSearch}%");
                     })
                     ->orWhereHas('parentLinks.parentGuardian', function ($guardian) use ($search) {
                         $guardian->where('name', 'ilike', "%{$search}%")
