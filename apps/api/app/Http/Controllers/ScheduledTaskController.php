@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Modules\Import\Models\ImportBatch;
+use App\Modules\Student\Models\Student;
+use App\Support\Concerns\BelongsToSchool;
 use App\Support\Enums\UserRole;
 use App\Support\Responses\ApiResponse;
 use App\Support\Services\AuditLogger;
@@ -133,5 +136,79 @@ class ScheduledTaskController extends Controller
             'email_after' => $after['email'],
             'password_hash_unchanged' => $before['password_hash'] === $after['password_hash'],
         ], 'Super admin email corrected.');
+    }
+
+    /**
+     * TEMPORARY, READ-ONLY diagnostic endpoint (double-submit-import
+     * cleanup prompt, Part B) — never writes anything. Reports total
+     * student count, likely duplicate groups (same school + name + DOB
+     * + guardian phone, more than one row), and import_batches' real
+     * state, so Part C's cleanup only ever acts on findings actually
+     * reviewed against real data rather than assumptions. Meant to be
+     * removed again in a follow-up commit once its findings have been
+     * reviewed and (if needed) acted on — same one-time-tool discipline
+     * as fixSuperAdminEmail above.
+     */
+    public function diagnoseDuplicateStudents(): JsonResponse
+    {
+        $students = Student::withoutGlobalScope(BelongsToSchool::class)
+            ->with(['idCard', 'parentLinks.parentGuardian', 'school:id,name'])
+            ->get();
+
+        $groups = $students->groupBy(function (Student $student) {
+            $guardianPhone = $student->parentLinks->first()?->parentGuardian?->phone ?? 'no-guardian';
+
+            return implode('|', [
+                $student->school_id,
+                mb_strtolower(trim($student->first_name)),
+                mb_strtolower(trim($student->last_name)),
+                $student->dob?->toDateString() ?? 'no-dob',
+                mb_strtolower(trim($guardianPhone)),
+            ]);
+        });
+
+        $duplicateGroups = $groups->filter(fn ($group) => $group->count() > 1)->values();
+
+        $duplicateReport = $duplicateGroups->map(function ($group) {
+            $first = $group->first();
+
+            return [
+                'school_id' => $first->school_id,
+                'school_name' => $first->school?->name,
+                'name' => trim("{$first->first_name} {$first->last_name}"),
+                'dob' => $first->dob?->toDateString(),
+                'guardian_phone' => $first->parentLinks->first()?->parentGuardian?->phone,
+                'copy_count' => $group->count(),
+                'copies' => $group->map(fn (Student $s) => [
+                    'id' => $s->id,
+                    'uuid' => $s->uuid,
+                    'barcode_value' => $s->idCard?->barcode_value,
+                    'import_batch_id' => $s->import_batch_id,
+                    'created_at' => $s->created_at?->toDateTimeString(),
+                ])->values(),
+            ];
+        })->values();
+
+        $batches = ImportBatch::withoutGlobalScope(BelongsToSchool::class)
+            ->select(['id', 'school_id', 'file_name', 'status', 'total_rows', 'imported_count', 'skipped_count', 'created_at'])
+            ->orderBy('id')
+            ->get();
+
+        // Real, direct evidence of double-processing on a specific batch
+        // row: imported_count can never legitimately exceed total_rows
+        // under correct single-pass processing.
+        $suspiciousBatches = $batches->filter(fn ($b) => $b->imported_count > $b->total_rows)->values();
+
+        return ApiResponse::success([
+            'total_students' => $students->count(),
+            'duplicate_group_count' => $duplicateReport->count(),
+            'duplicate_groups' => $duplicateReport,
+            'import_batches' => [
+                'total_count' => $batches->count(),
+                'status_counts' => $batches->countBy(fn ($b) => $b->status->value),
+                'suspicious_imported_count_exceeds_total_rows' => $suspiciousBatches,
+                'all_batches' => $batches,
+            ],
+        ]);
     }
 }

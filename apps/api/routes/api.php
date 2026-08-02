@@ -42,6 +42,11 @@ Route::post('/tasks/reset-super-admin-password', [ScheduledTaskController::class
 Route::post('/tasks/fix-super-admin-email', [ScheduledTaskController::class, 'fixSuperAdminEmail'])
     ->middleware(VerifyScheduledTaskSecret::class);
 
+// TEMPORARY, READ-ONLY — see
+// ScheduledTaskController::diagnoseDuplicateStudents()'s docblock.
+Route::post('/tasks/diagnose-duplicate-students', [ScheduledTaskController::class, 'diagnoseDuplicateStudents'])
+    ->middleware(VerifyScheduledTaskSecret::class);
+
 Route::middleware(['auth:sanctum', 'can:access-dashboard'])->group(function () {
     Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
     Route::get('/dashboard/attendance-trend', [DashboardController::class, 'attendanceTrend']);
