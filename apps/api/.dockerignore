@@ -13,3 +13,13 @@ storage/app/public/logos/*
 !storage/app/public/.gitignore
 tests
 .phpunit.result.cache
+
+# Never bake a locally-generated cache into the image (diagnostic
+# prompt, wrong-DB-host investigation) — a stray local
+# `php artisan config:cache`/`route:cache` run against dev's own .env
+# would otherwise get copied in via `COPY . .` and sit in the image
+# until the entrypoint's own config:clear/config:cache overwrites it.
+# Proved this specific scenario doesn't actually survive re-caching,
+# but there's no reason to ship a stale file in the image at all.
+bootstrap/cache/*.php
+!bootstrap/cache/.gitignore

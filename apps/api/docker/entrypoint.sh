@@ -12,9 +12,17 @@ envsubst '${PORT}' < /etc/nginx/http.d/default.conf.template > /etc/nginx/http.d
 # env vars (DB_URL, APP_KEY, etc.) into the running container, not the
 # build step, so a build-time config:cache would bake in build-time
 # nulls/defaults instead of the real production values. Runs here, at
-# container start, once per container — the ephemeral filesystem means
-# there's never a stale cache left over from a previous run to clear
-# first.
+# container start, once per container.
+#
+# config:clear runs first explicitly (diagnostic prompt, wrong-DB-host
+# investigation): `config:cache` alone already self-clears internally
+# before rebuilding — verified empirically by deliberately baking a
+# stale config.php with wrong DB values into a test image and
+# confirming `config:cache` still produced fresh, correct values from
+# the real environment — so this wasn't the actual bug. Kept explicit
+# anyway as cheap, unambiguous defense-in-depth against relying on that
+# internal behavior.
+php artisan config:clear
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
