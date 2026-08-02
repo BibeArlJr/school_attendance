@@ -45,6 +45,13 @@ interface AuthState {
    * driving `branding` (see brandingFromUser below).
    */
   updateOwnSchoolBranding: (patch: Partial<SchoolBranding>) => void;
+  /**
+   * Keeps the Topbar's displayed name in sync immediately after a
+   * self-service profile edit (Part D, double-submit/duplicates prompt),
+   * same reasoning as setActiveSchool/updateOwnSchoolBranding above — no
+   * automatic /auth/me refetch elsewhere in the app.
+   */
+  updateOwnName: (name: string) => void;
 }
 
 // Phase 13 hardening TODO (resolved by Prompt 31): the token still lives in
@@ -159,6 +166,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       const branding = { logo_url: updatedSchool.logo_url, primary_color: updatedSchool.primary_color };
       persistBranding(branding);
       return { user, branding };
+    });
+  },
+  updateOwnName: (name) => {
+    set((state) => {
+      if (!state.user) return state;
+      const user = { ...state.user, name };
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+      return { user };
     });
   },
 }));

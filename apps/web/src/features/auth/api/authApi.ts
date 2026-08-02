@@ -40,4 +40,9 @@ export const authApi = {
   async changePassword(values: { current_password: string; new_password: string }): Promise<void> {
     await apiClient.post('/auth/change-password', values);
   },
+
+  async updateProfile(values: { name: string }): Promise<AuthUser> {
+    const { data } = await apiClient.patch<ApiSuccessResponse<AuthUser>>('/auth/profile', values);
+    return data.data;
+  },
 };

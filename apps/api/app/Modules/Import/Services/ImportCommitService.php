@@ -10,6 +10,7 @@ use App\Modules\School\Services\SchoolClassService;
 use App\Modules\Student\Services\StudentService;
 use App\Support\Enums\ImportBatchStatus;
 use App\Support\Enums\ImportRowResolution;
+use App\Support\Exceptions\ImportBatchAlreadyCommittedException;
 use App\Support\Services\GradeLevelInference;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -39,6 +40,29 @@ class ImportCommitService
      */
     public function commit(ImportBatch $batch, array $rowDecisions, int $schoolId): array
     {
+        // Double-submit fix, real cause of the production duplication:
+        // this used to never check status at all, so a second commit
+        // request (network retry, double-click that slipped past the
+        // frontend's disabled state, or two tabs) would silently
+        // re-create a student for every already-accepted row again.
+        // An atomic claim — a single UPDATE ... WHERE status != committed
+        // — is what actually closes the race: two near-simultaneous
+        // requests both reading "not yet committed" and both proceeding
+        // is exactly the failure mode a plain if ($batch->status ===
+        // ...) check wouldn't prevent, since Postgres serializes
+        // concurrent UPDATEs to the same row and only one of them can
+        // affect a row when the WHERE clause requires the OLD status.
+        $claimed = ImportBatch::query()
+            ->where('id', $batch->id)
+            ->where('status', '!=', ImportBatchStatus::Committed->value)
+            ->update(['status' => ImportBatchStatus::Committed]);
+
+        if ($claimed === 0) {
+            throw new ImportBatchAlreadyCommittedException(
+                'This import has already been committed and cannot be committed again.',
+            );
+        }
+
         $created = 0;
         $skipped = 0;
         $errors = [];
@@ -74,8 +98,9 @@ class ImportCommitService
             }
         }
 
+        // status is already Committed — set atomically by the claim
+        // above, before any row was processed, not here.
         $batch->update([
-            'status' => ImportBatchStatus::Committed,
             'imported_count' => $created,
             'skipped_count' => $skipped,
         ]);

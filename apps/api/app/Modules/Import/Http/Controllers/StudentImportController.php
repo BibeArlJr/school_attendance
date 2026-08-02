@@ -9,6 +9,7 @@ use App\Modules\Import\Http\Requests\StoreImportRequest;
 use App\Modules\Import\Models\ImportBatch;
 use App\Modules\Import\Services\ImportCommitService;
 use App\Modules\Import\Services\ImportParsingService;
+use App\Support\Exceptions\ImportBatchAlreadyCommittedException;
 use App\Support\Responses\ApiResponse;
 use App\Support\Services\CurrentSchoolResolver;
 use Illuminate\Http\JsonResponse;
@@ -45,7 +46,12 @@ class StudentImportController extends Controller
         $schoolId = $this->schoolResolver->resolve($request->user());
 
         $decisions = collect($request->validated('rows'))->keyBy('id')->toArray();
-        $results = $this->commitService->commit($batch, $decisions, $schoolId);
+
+        try {
+            $results = $this->commitService->commit($batch, $decisions, $schoolId);
+        } catch (ImportBatchAlreadyCommittedException $e) {
+            return ApiResponse::error($e->getMessage(), null, 409);
+        }
 
         return ApiResponse::success($results, 'Import committed.');
     }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Modules\Auth\Http\Requests\ChangePasswordRequest;
 use App\Modules\Auth\Http\Requests\LoginRequest;
+use App\Modules\Auth\Http\Requests\UpdateProfileRequest;
 use App\Modules\Auth\Services\AuthService;
 use App\Support\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -84,5 +85,23 @@ class AuthController extends Controller
         $request->user()->update(['password' => $request->validated('new_password')]);
 
         return ApiResponse::success(message: 'Password changed successfully.');
+    }
+
+    /**
+     * Self-service, any role — same "any role" reasoning as
+     * changePassword() above (Part D of the double-submit/duplicates
+     * prompt: this didn't exist at all before, only password-change did).
+     * Name only; email/role/school changes go through the existing
+     * Staff Management edit flow (or, for a school's own admin/guard
+     * accounts, aren't self-service at all by design).
+     */
+    public function updateProfile(UpdateProfileRequest $request): JsonResponse
+    {
+        $request->user()->update(['name' => $request->validated('name')]);
+
+        return ApiResponse::success(
+            new UserResource($request->user()->fresh()->load(['school', 'activeSchool'])),
+            'Profile updated successfully.',
+        );
     }
 }

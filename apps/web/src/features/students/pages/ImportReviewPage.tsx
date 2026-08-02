@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { GradeGroupCard, suggestClassName } from '../components/GradeGroupCard';
 import { ImportRowsTable } from '../components/ImportRowsTable';
 import { ImportSummaryCards } from '../components/ImportSummaryCards';
@@ -24,6 +25,7 @@ import {
 } from '@/shared/components/ui/dialog';
 import { useCan } from '@/shared/hooks/useCan';
 import { LICENSE_EXPIRED_MESSAGE, useLicenseExpired } from '@/shared/hooks/useLicenseExpired';
+import { extractErrorMessage } from '@/shared/lib/errors';
 
 type FilterTab = 'all' | 'clean' | 'needs_review' | 'duplicates';
 
@@ -186,8 +188,19 @@ export default function ImportReviewPage() {
   }
 
   function handleConfirmCommit() {
+    // Extra guard on top of the button's own `disabled` (real fix is
+    // backend idempotency — see ImportCommitService — this only closes
+    // the UI-layer gap, not the actual duplicate-creation risk).
+    if (commitImport.isPending) {
+      return;
+    }
+
     commitImport.mutate(buildPayload(), {
       onSuccess: () => setConfirmOpen(false),
+      // Previously silent — a rejected double-submit (e.g. the backend's
+      // new already-committed guard) left the dialog just reverting to
+      // its normal state with no explanation at all.
+      onError: (error) => toast.error(extractErrorMessage(error)),
     });
   }
 
@@ -330,7 +343,7 @@ export default function ImportReviewPage() {
           </span>
           <Button
             onClick={() => setConfirmOpen(true)}
-            disabled={acceptCount === 0 || licenseExpired}
+            disabled={acceptCount === 0 || licenseExpired || commitImport.isPending}
             title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
           >
             Commit import

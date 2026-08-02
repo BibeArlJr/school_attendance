@@ -19,3 +19,9 @@ export const changePasswordSchema = z
   });
 
 export type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
+
+export const updateProfileSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255, 'Too long'),
+});
+
+export type UpdateProfileFormValues = z.infer<typeof updateProfileSchema>;
