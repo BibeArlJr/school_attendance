@@ -10,17 +10,29 @@ guide; every recommendation below is scoped to this exact stack.
 Never run `DemoSeeder` against a real production database — it creates
 a demo school, demo students, and other throwaway data alongside the
 super_admin account, which is fine for local dev but wrong for
-production. Instead, once migrations have run against the real
-database:
+production.
 
-```
-php artisan app:create-super-admin
-```
+**Fully automatic as of the wrong-DB-host-diagnostic follow-up prompt:**
+Render's free tier has no Shell access, so `docker/entrypoint.sh` runs
+both `php artisan migrate --force` and
+`php artisan app:create-super-admin --no-interaction` on every single
+container boot, before the config/route/view caching steps. Both are
+safe to run repeatedly — migrations track what's already applied and
+skip it; the super-admin command skips (not errors) once a super_admin
+already exists, so redeploys after the first never fail or create a
+duplicate. Verified locally: first boot against an empty database ran
+all migrations and created the account; a second boot against the same
+database cleanly no-opped both steps with no errors.
 
-This prompts for a name/email/password and creates exactly one row (a
-`super_admin` User, `school_id` null) — nothing else. It refuses to run
-a second time once a super_admin already exists, so it's safe to leave
-in the deploy pipeline rather than needing to remember to remove it.
+**Retrieving the generated credentials:** since there's no Shell to run
+this by hand and check the result, the one-time email + password print
+to STDOUT in a clearly bannered block — check Render's **Logs** tab
+(the free tier's alternative to Shell) right after the very first
+deploy. They are never stored in plain text anywhere and are not shown
+again after that first boot. Optionally set `SUPER_ADMIN_EMAIL` (and/or
+pass `--name=`/`--email=` if invoking manually) to control the email
+instead of the generated default
+(`superadmin@<APP_URL's host>`).
 
 ## Security incident (Prompt 55 pre-deployment audit): rotated APP_KEY
 
