@@ -1,0 +1,43 @@
+server {
+    listen ${PORT} default_server;
+    server_name _;
+    root /var/www/html/public;
+    index index.php;
+
+    client_max_body_size 20M;
+
+    # Hardening note (Prompt 55 Part C): Prompt 41's protection (an
+    # .htaccess under storage/app/public denying PHP execution) is
+    # Apache-specific and inert here — nginx never reads .htaccess files
+    # at all. The equivalent, and actually stronger, guarantee on nginx
+    # is below: only the front controller (public/index.php) is ever
+    # routed to php-fpm. Every other .php location — including a
+    # hypothetical malicious upload under /storage/ — matches the
+    # catch-all `location ~ \.php$` block further down and is denied,
+    # regardless of extension or path.
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location = /index.php {
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root/index.php;
+        include fastcgi_params;
+    }
+
+    # Catch-all: any other .php request (there should never legitimately
+    # be one) is rejected outright rather than executed.
+    location ~ \.php$ {
+        deny all;
+    }
+
+    location ~* \.(?:jpg|jpeg|png|gif|webp|svg|ico|css|js|woff2?)$ {
+        expires 30d;
+        access_log off;
+    }
+
+    location ~ /\. {
+        deny all;
+    }
+}

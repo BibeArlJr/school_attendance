@@ -28,6 +28,10 @@ apps/api/.phpunit.result.cache
 .env.*
 !.env.example
 !*.env.example
+# Templates only, no real values — same reasoning as .env.example above
+# (Prompt 55).
+!.env.production.example
+!*.env.production.example
 # No secrets in this one — just localhost Postgres test-DB connection
 # details (Prompt 46) — needed for `php artisan test` to work at all on
 # a fresh clone, same reasoning as the .env.example exception above.

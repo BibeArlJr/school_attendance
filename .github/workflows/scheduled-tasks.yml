@@ -1,0 +1,37 @@
+# Fallback for Render's Cron Jobs feature, which isn't free-tier
+# eligible (Prompt 55 Part E) — this repo is public, so GitHub Actions
+# minutes are unlimited/free regardless. Hits the shared-secret-guarded
+# POST /api/tasks/send-license-reminders endpoint (VerifyScheduledTaskSecret)
+# once daily, standing in for a real server-side `artisan schedule:run`
+# cron that Render's free tier can't run.
+#
+# Setup (one-time, via the GitHub repo's Settings → Secrets and
+# variables → Actions):
+#   - Repository variable RENDER_API_URL: the backend's public Render
+#     URL, e.g. https://school-attendance-api.onrender.com (no trailing
+#     slash, no /api suffix — added below).
+#   - Repository secret SCHEDULED_TASK_SECRET: must match the
+#     SCHEDULED_TASK_SECRET env var configured on the Render service.
+name: Scheduled Tasks
+
+on:
+  schedule:
+    # 02:00 UTC daily — outside Nepal's typical school hours (UTC+5:45),
+    # so a slow reminder run never competes with real daytime traffic.
+    - cron: '0 2 * * *'
+  workflow_dispatch: {} # manual trigger from the Actions tab, for testing
+
+jobs:
+  send-license-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger license reminder check
+        run: |
+          status=$(curl -s -o /tmp/response.json -w "%{http_code}" -X POST \
+            -H "X-Scheduled-Task-Secret: ${{ secrets.SCHEDULED_TASK_SECRET }}" \
+            "${{ vars.RENDER_API_URL }}/api/tasks/send-license-reminders")
+          cat /tmp/response.json
+          if [ "$status" -ge 400 ]; then
+            echo "Request failed with HTTP $status"
+            exit 1
+          fi

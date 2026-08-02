@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\ScheduledTaskController;
+use App\Http\Middleware\VerifyScheduledTaskSecret;
 use Illuminate\Support\Facades\Route;
 
 // Module routes (app/Modules/*/routes.php) are autoloaded by
@@ -21,6 +23,13 @@ use Illuminate\Support\Facades\Route;
 // a false "down" reading.
 Route::get('/health', [HealthController::class, 'index'])
     ->withoutMiddleware('throttle:api');
+
+// External cron-ping / GitHub Actions trigger (Prompt 55 Part E) —
+// stands in for Render's Cron Jobs, which aren't free-tier eligible.
+// Shared-secret guarded (VerifyScheduledTaskSecret), not session/token
+// auth — the caller is an external scheduler, not a logged-in user.
+Route::post('/tasks/send-license-reminders', [ScheduledTaskController::class, 'sendLicenseReminders'])
+    ->middleware(VerifyScheduledTaskSecret::class);
 
 Route::middleware(['auth:sanctum', 'can:access-dashboard'])->group(function () {
     Route::get('/dashboard/summary', [DashboardController::class, 'summary']);

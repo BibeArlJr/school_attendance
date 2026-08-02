@@ -43,4 +43,15 @@ return [
         'driver' => env('SMS_DRIVER', 'mock'),
     ],
 
+    // Shared secret for POST /api/tasks/* (Prompt 55 Part E) — Render's
+    // Cron Jobs aren't free-tier eligible, so scheduled commands run via
+    // an external cron-ping service (or a GitHub Actions scheduled
+    // workflow) hitting these endpoints instead. Deliberately null by
+    // default: VerifyScheduledTaskSecret rejects every request, secret
+    // configured or not, unless this is explicitly set — never silently
+    // open by omission.
+    'scheduled_tasks' => [
+        'secret' => env('SCHEDULED_TASK_SECRET'),
+    ],
+
 ];

@@ -1,0 +1,70 @@
+# Render Blueprint (Prompt 55 Part C) — backend only. The database is
+# Neon (external, not Render Postgres), and the frontend is Vercel (see
+# vercel.json) — this Blueprint intentionally defines just the one
+# Docker web service for apps/api.
+#
+# Render has no native PHP runtime (only Node/Bun, Python, Ruby, Go,
+# Rust, Elixir — confirmed via Render's own docs) — `runtime: docker`
+# below is required, not a stylistic choice. apps/api/Dockerfile
+# (nginx + php-fpm under supervisord) has been built and run locally
+# against this project's real Postgres database to confirm it actually
+# works: extensions load, /api/health returns 200, and a planted .php
+# file under the public storage path is denied with 403 (see
+# apps/api/docker/nginx.conf.template's docblock for why the original
+# Apache .htaccess hardening from Prompt 41 doesn't carry over as-is).
+#
+# `sync: false` env vars are deliberately NOT set here — fill them in
+# via the Render dashboard (Environment tab) using
+# apps/api/.env.production.example as the reference. Nothing secret
+# belongs in this committed file.
+services:
+  - name: school-attendance-api
+    type: web
+    runtime: docker
+    plan: free # upgrade to `starter` ($7/mo) to remove the 15-minute
+      # free-tier spin-down entirely — see docs/operations/deployment.md
+      # Part G for the free-tier keep-alive-ping workaround instead.
+    region: singapore # closest Render region to Nepal at time of writing;
+      # change if a closer one becomes available.
+    rootDir: apps/api
+    dockerfilePath: apps/api/Dockerfile
+    dockerContext: apps/api
+    healthCheckPath: /api/health
+    # Runs once per deploy, after the image builds and before the new
+    # instance takes traffic — never `migrate:fresh`, which would drop
+    # every table in the real production database.
+    preDeployCommand: php artisan migrate --force
+    autoDeployTrigger: commit
+    envVars:
+      - key: APP_NAME
+        value: "School Attendance System"
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_URL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: LOG_CHANNEL
+        value: stack
+      - key: LOG_LEVEL
+        value: warning
+      - key: SMS_DRIVER
+        value: real
+      - key: SENTRY_LARAVEL_DSN
+        sync: false
+      - key: SCHEDULED_TASK_SECRET
+        sync: false
