@@ -100,9 +100,24 @@ export function IdCardView({ card, schoolName, schoolLogoUrl }: IdCardViewProps)
       </div>
 
       {/* Fixed white, not theme-aware: a barcode needs light background +
-          dark bars to stay scannable, both on paper and in dark mode. */}
-      <div className="mt-4 flex justify-center rounded-md bg-white p-2">
-        <BarcodeImage value={card.barcode_value} />
+          dark bars to stay scannable, both on paper and in dark mode.
+          -mx-5 cancels the card's own p-5 side padding so this section
+          alone extends to the card's edge (Prompt 52) — the card's
+          overall outer size is unchanged, but the barcode gets the most
+          width the card can possibly offer it, rather than rendering at
+          its default (wider) intended size and having the browser
+          silently scale it down to fit. width/margin below are tuned
+          (and live-verified) to generate at that available width with
+          zero post-hoc compression — see BarcodeImage's width prop. */}
+      <div className="-mx-5 mt-4 flex justify-center rounded-md bg-white py-2">
+        <BarcodeImage
+          value={card.barcode_value}
+          width={1.5}
+          height={50}
+          margin={8}
+          marginLeft={40}
+          marginRight={40}
+        />
       </div>
     </div>
   );

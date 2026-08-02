@@ -49,6 +49,40 @@ export default function GateScannerPage() {
     };
   }, []);
 
+  // Page-scoped focus recovery (Prompt 52) — a real bug, confirmed live
+  // by the prior diagnostic: clicking anywhere else on this page (the
+  // title, the empty feedback area, anywhere) moved focus to <body> with
+  // no recovery, so the next physical scan went nowhere until someone
+  // manually re-clicked the input. A document listener, not one attached
+  // to this component's own JSX, is required to actually cover the page
+  // title/description — those render as PageContainer's own siblings of
+  // `children`, outside this component's DOM subtree, so a listener
+  // scoped to a wrapper div here would never see clicks on them. This
+  // still isn't app-wide: it's added on mount and removed on unmount,
+  // so it only ever does anything while this page is the one on screen
+  // — explicitly NOT an attempt to capture scans from other pages or
+  // other browser tabs (confirmed unsolvable by any web app).
+  //
+  // Genuine interactive elements (the Calendar link, any button, the
+  // input itself) are left alone entirely — this only recovers focus
+  // when the click landed on plain, non-interactive page content that
+  // was never going anywhere anyway.
+  useEffect(() => {
+    function handleDocumentClick(event: MouseEvent) {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+      if (target.closest('a, button, input, textarea, select, [role="button"], [role="link"], [role="dialog"]')) {
+        return;
+      }
+      inputRef.current?.focus();
+    }
+
+    document.addEventListener('click', handleDocumentClick);
+    return () => document.removeEventListener('click', handleDocumentClick);
+  }, []);
+
   function refocusSoon() {
     requestAnimationFrame(() => inputRef.current?.focus());
   }

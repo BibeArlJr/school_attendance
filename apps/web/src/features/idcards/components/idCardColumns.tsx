@@ -68,6 +68,13 @@ export function buildIdCardColumns(): ColumnDef<IdCard>[] {
             height={28}
             fontSize={10}
             margin={4}
+            // Quiet zone only, not a size change (Prompt 52) — this
+            // column was never compressed (the table scrolls
+            // horizontally rather than squeezing its columns), so
+            // widening the side margins doesn't risk introducing the
+            // compression bug the card view had.
+            marginLeft={40}
+            marginRight={40}
           />
         </div>
       ),

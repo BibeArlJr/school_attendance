@@ -42,7 +42,7 @@ export default function BarcodePrintPage() {
 
   return (
     <PageContainer title={`Print ID Cards (${cards.length})`}>
-      <div className="mb-4 flex justify-center gap-2 print:hidden">
+      <div className="mb-2 flex justify-center gap-2 print:hidden">
         <Button variant="outline" onClick={() => navigate(ROUTES.BARCODE)}>
           <ArrowLeft className="size-4" />
           Back
@@ -52,6 +52,12 @@ export default function BarcodePrintPage() {
           Print
         </Button>
       </div>
+      {/* print:hidden — same reasoning as IdCardPage's identical note
+          (Prompt 52): guidance for the print dialog, not the card itself. */}
+      <p className="mb-4 text-center text-xs text-muted-foreground print:hidden">
+        For best barcode scan reliability, set your print dialog to{' '}
+        <strong>100% / Actual Size</strong> — do not use &quot;Fit to Page&quot;.
+      </p>
 
       {/* Each card keeps break-inside-avoid so printing never cuts one in
           half across a page boundary — the grid itself reflows onto as
