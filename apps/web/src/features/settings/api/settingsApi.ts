@@ -4,6 +4,9 @@ import type {
   License,
   SchoolCalendarEntry,
   SchoolProfile,
+  SmsTemplateDescription,
+  SmsTemplates,
+  SmsTemplateType,
 } from '../types';
 import { apiClient } from '@/shared/lib/apiClient';
 import type { ApiSuccessResponse } from '@/shared/types';
@@ -123,6 +126,38 @@ export const settingsApi = {
 
   async getLicense(): Promise<License> {
     const { data } = await apiClient.get<ApiSuccessResponse<License>>('/settings/license');
+    return data.data;
+  },
+
+  async getSmsTemplates(): Promise<SmsTemplates> {
+    const { data } = await apiClient.get<ApiSuccessResponse<SmsTemplates>>(
+      '/settings/sms-templates',
+    );
+    return data.data;
+  },
+
+  // Empty/blank templateText removes this school's override (falls back
+  // to the platform default) — see UpdateSmsTemplateRequest's docblock.
+  async updateSmsTemplate(
+    type: SmsTemplateType,
+    templateText: string,
+  ): Promise<SmsTemplateDescription> {
+    const { data } = await apiClient.put<ApiSuccessResponse<SmsTemplateDescription>>(
+      `/settings/sms-templates/${type}`,
+      { template_text: templateText },
+    );
+    return data.data;
+  },
+
+  // super_admin only (403 otherwise) — the platform-wide fallback every
+  // other school without an override relies on.
+  async updatePlatformSmsTemplate(
+    type: SmsTemplateType,
+    templateText: string,
+  ): Promise<{ type: SmsTemplateType; platform_default_text: string }> {
+    const { data } = await apiClient.put<
+      ApiSuccessResponse<{ type: SmsTemplateType; platform_default_text: string }>
+    >(`/settings/sms-templates/platform/${type}`, { template_text: templateText });
     return data.data;
   },
 };

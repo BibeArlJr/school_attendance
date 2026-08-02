@@ -23,3 +23,7 @@ export function useCalendarEntries() {
 export function useLicense(enabled = true) {
   return useQuery({ queryKey: ['settings', 'license'], queryFn: settingsApi.getLicense, enabled });
 }
+
+export function useSmsTemplates() {
+  return useQuery({ queryKey: ['settings', 'sms-templates'], queryFn: settingsApi.getSmsTemplates });
+}

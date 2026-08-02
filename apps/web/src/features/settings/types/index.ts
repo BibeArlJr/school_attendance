@@ -45,3 +45,17 @@ export interface License {
   days_until_expiry: number | null;
   grace_days: number;
 }
+
+export type SmsTemplateType = 'attendance_in' | 'attendance_out';
+
+export interface SmsTemplateDescription {
+  school_override_text: string | null;
+  platform_default_text: string | null;
+  effective_text: string | null;
+  is_overridden: boolean;
+}
+
+export interface SmsTemplates {
+  school_id: number;
+  templates: Record<SmsTemplateType, SmsTemplateDescription>;
+}

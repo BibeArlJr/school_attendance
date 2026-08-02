@@ -11,6 +11,18 @@ export const schoolProfileSchema = z.object({
 
 export type SchoolProfileFormValues = z.infer<typeof schoolProfileSchema>;
 
+// Both template types live on one schema/form (Prompt 50) — they're
+// edited and previewed together on the page even though each has its
+// own independent Save button (see SmsTemplatesSection's onSave
+// handlers, which read one field at a time via form.getValues() rather
+// than a single whole-form submit).
+export const smsTemplatesSchema = z.object({
+  attendance_in: z.string().max(1000, 'Too long'),
+  attendance_out: z.string().max(1000, 'Too long'),
+});
+
+export type SmsTemplatesFormValues = z.infer<typeof smsTemplatesSchema>;
+
 // Threshold fields stay plain strings here (matching what the number
 // Input actually holds) rather than z.coerce.number() — react-hook-form's
 // generic form-values type must match the schema's input type exactly,

@@ -8,6 +8,7 @@ use App\Modules\Attendance\Models\GateDevice;
 use App\Modules\Attendance\Models\SchoolCalendar;
 use App\Modules\Attendance\Models\SchoolConfig;
 use App\Modules\IdCard\Models\IdCard;
+use App\Modules\Sms\Services\SmsTemplateResolver;
 use App\Modules\Student\Models\Student;
 use App\Support\Contracts\SmsServiceInterface;
 use App\Support\Enums\AttendanceEventResult;
@@ -16,6 +17,7 @@ use App\Support\Enums\AttendanceSource;
 use App\Support\Enums\CalendarDayType;
 use App\Support\Enums\IdCardStatus;
 use App\Support\Enums\RecordDayType;
+use App\Support\Enums\SmsTemplateType;
 use App\Support\Enums\StudentStatus;
 use App\Support\Services\NepalTime;
 use Carbon\Carbon;
@@ -44,8 +46,10 @@ class AttendanceService
 {
     private const OUT_OF_WINDOW_BUFFER_MINUTES = 60;
 
-    public function __construct(private readonly SmsServiceInterface $smsService)
-    {
+    public function __construct(
+        private readonly SmsServiceInterface $smsService,
+        private readonly SmsTemplateResolver $templateResolver,
+    ) {
     }
 
     public function processScan(
@@ -287,10 +291,31 @@ class AttendanceService
         }
 
         $school = $student->school;
-        $action = $result === AttendanceEventResult::MatchedIn ? 'entered' : 'left';
-        $time = $nepalNow->format('g:i A');
-        $message = "Dear Parent, your child {$student->first_name} {$student->last_name} "
-            . "{$action} {$school->name} at {$time}.";
+        $templateType = $result === AttendanceEventResult::MatchedIn
+            ? SmsTemplateType::AttendanceIn
+            : SmsTemplateType::AttendanceOut;
+
+        $message = $this->templateResolver->render($schoolId, $templateType, [
+            'student_name' => "{$student->first_name} {$student->last_name}",
+            'school_name' => $school->name,
+            'time' => $nepalNow->format('g:i A'),
+        ]);
+
+        if ($message === null) {
+            // Shouldn't happen — the platform default row for both types
+            // is seeded by migration and is never deletable (Prompt 50) —
+            // but a scan must never silently send an empty/broken message
+            // if this invariant is ever somehow violated. Fail loudly in
+            // logs, skip the notification, and still let the scan itself
+            // succeed (Phase 10's core constraint, same as every other
+            // notification failure path here).
+            Log::error('No SMS template resolved for attendance notification', [
+                'school_id' => $schoolId,
+                'type' => $templateType->value,
+            ]);
+
+            return false;
+        }
 
         // Defense in depth: SmsServiceInterface::send() is contractually
         // never supposed to throw (each implementation catches its own
