@@ -228,23 +228,43 @@ export default function ImportReviewPage() {
     );
   }
 
-  if (commitImport.isSuccess) {
+  // Two distinct terminal-state sources, deliberately both checked:
+  // commitImport.isSuccess only reflects this component instance's own
+  // ephemeral mutation state (true immediately after a commit made
+  // through THIS page load) — it resets to false on every fresh mount,
+  // so reloading the page, navigating away and back, or the browser
+  // back button all lose it even though the batch is still genuinely
+  // committed server-side. batch.status is the real, persisted source
+  // of truth and is what makes a revisit correctly show the committed
+  // state too, instead of re-offering "Commit" for an already-committed
+  // batch (the actual bug this fixes — the confirm dialog reappearing).
+  if (commitImport.isSuccess || batch.status === 'committed') {
     const results = commitImport.data;
     return (
       <PageContainer title="Import Committed">
         <Card className="mx-auto max-w-lg">
           <CardHeader>
-            <CardTitle>Results</CardTitle>
+            <CardTitle>{results ? 'Results' : 'Already committed'}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <p>
-              <span className="font-semibold text-emerald-600">{results.created}</span> student
-              {results.created === 1 ? '' : 's'} created out of {batch.rows.length} row
-              {batch.rows.length === 1 ? '' : 's'} in the file,{' '}
-              <span className="font-semibold text-muted-foreground">{results.skipped}</span> skipped
-              (marked skip, or left unresolved while flagged for review).
-            </p>
-            {results.errors.length > 0 && (
+            {results ? (
+              <p>
+                <span className="font-semibold text-emerald-600">{results.created}</span> student
+                {results.created === 1 ? '' : 's'} created out of {batch.rows.length} row
+                {batch.rows.length === 1 ? '' : 's'} in the file,{' '}
+                <span className="font-semibold text-muted-foreground">{results.skipped}</span> skipped
+                (marked skip, or left unresolved while flagged for review).
+              </p>
+            ) : (
+              // Revisited after the fact — the original created/skipped
+              // breakdown only ever existed in that one commit response
+              // and isn't persisted anywhere to re-fetch.
+              <p>
+                This import (<span className="font-medium">{batch.imported_count}</span> of{' '}
+                {batch.total_rows} rows) was already committed and cannot be committed again.
+              </p>
+            )}
+            {results && results.errors.length > 0 && (
               <div className="space-y-1 rounded-md border border-destructive/50 bg-destructive/5 p-3 text-sm">
                 <p className="font-medium text-destructive">{results.errors.length} row(s) failed:</p>
                 <ul className="list-inside list-disc text-destructive">
