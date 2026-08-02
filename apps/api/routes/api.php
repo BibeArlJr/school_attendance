@@ -31,6 +31,12 @@ Route::get('/health', [HealthController::class, 'index'])
 Route::post('/tasks/send-license-reminders', [ScheduledTaskController::class, 'sendLicenseReminders'])
     ->middleware(VerifyScheduledTaskSecret::class);
 
+// Standing recovery path for a locked-out super_admin on a Shell-less
+// tier — same secret, same middleware, not a one-time script (see the
+// controller method's own docblock for why this isn't run at boot).
+Route::post('/tasks/reset-super-admin-password', [ScheduledTaskController::class, 'resetSuperAdminPassword'])
+    ->middleware(VerifyScheduledTaskSecret::class);
+
 Route::middleware(['auth:sanctum', 'can:access-dashboard'])->group(function () {
     Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
     Route::get('/dashboard/attendance-trend', [DashboardController::class, 'attendanceTrend']);
