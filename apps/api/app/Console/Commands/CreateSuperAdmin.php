@@ -108,7 +108,7 @@ class CreateSuperAdmin extends Command
     private function createUnattended(): int
     {
         $name = $this->option('name') ?: 'Super Admin';
-        $email = $this->option('email') ?: $this->defaultEmail();
+        $email = $this->resolveEmail($this->option('email'));
         $password = Str::password(20);
 
         $this->createSuperAdmin($name, $email, $password);
@@ -144,15 +144,41 @@ class CreateSuperAdmin extends Command
     }
 
     /**
-     * SUPER_ADMIN_EMAIL is optional — most operators will just let this
-     * default kick in, derived from APP_URL's host so it's at least
-     * recognizable as "this deployment's" super admin rather than a
-     * meaningless placeholder.
+     * Real incident: this used to return `superadmin@{$host}` unvalidated,
+     * trusting parse_url()'s output blindly. When APP_URL was never set
+     * on Render, config('app.url') silently fell back to Laravel's own
+     * default (config/app.php: env('APP_URL', 'http://localhost')),
+     * parse_url() extracted the bare host "localhost", and the result —
+     * superadmin@localhost — has no TLD and is syntactically invalid.
+     * Nothing caught it at creation time because this path never
+     * validated its own output at all (unlike createInteractive()'s
+     * Validator call above). Laravel's default 'email' rule is ALSO not
+     * strict enough to have caught this even if it had been checked —
+     * it uses RFC validation, which accepts a bare single-label host as
+     * technically valid — so this explicitly uses 'email:filter'
+     * (PHP's filter_var, confirmed empirically to reject
+     * "superadmin@localhost" and accept a real domain) rather than
+     * Laravel's default.
+     *
+     * @param  string|null  $option  --email=, if explicitly passed
      */
-    private function defaultEmail(): string
+    private function resolveEmail(?string $option): string
     {
-        $host = parse_url((string) config('app.url'), PHP_URL_HOST);
+        $candidate = $option ?: env('SUPER_ADMIN_EMAIL');
 
-        return env('SUPER_ADMIN_EMAIL', 'superadmin@' . ($host ?: 'change-me.local'));
+        if (! $candidate) {
+            $host = parse_url((string) config('app.url'), PHP_URL_HOST);
+            $candidate = 'superadmin@' . ($host ?: 'change-me.example');
+        }
+
+        $isValid = Validator::make(['email' => $candidate], ['email' => ['email:filter']])->passes();
+
+        // change-me.example (RFC 2606 — a TLD reserved specifically for
+        // documentation/placeholder use, guaranteed not to belong to
+        // anyone) rather than silently using an invalid address: an
+        // operator who sees this in the boot logs immediately knows to
+        // set SUPER_ADMIN_EMAIL/--email explicitly, instead of getting
+        // an account they can't actually log into.
+        return $isValid ? $candidate : 'superadmin@change-me.example';
     }
 }

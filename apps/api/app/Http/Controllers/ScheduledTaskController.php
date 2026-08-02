@@ -82,4 +82,56 @@ class ScheduledTaskController extends Controller
             'password' => $newPassword,
         ], 'Super admin password reset. Store this password now — it will not be shown again.');
     }
+
+    /**
+     * TEMPORARY one-off data-correction endpoint — fixes the real
+     * production super_admin account's email, which was auto-generated
+     * as the syntactically-invalid `superadmin@localhost` (see
+     * CreateSuperAdmin::resolveEmail()'s fix, same prompt). Not a
+     * standing feature like resetSuperAdminPassword: this is meant to
+     * be removed again in a follow-up commit immediately after it's
+     * run once against the real database, since Render's free tier
+     * gives no other way to reach that database directly (no Shell).
+     * Never touches the password — only the email column — and proves
+     * that server-side rather than trusting the caller to notice.
+     */
+    public function fixSuperAdminEmail(): JsonResponse
+    {
+        $superAdmins = User::query()->where('role', UserRole::SuperAdmin)->get();
+
+        if ($superAdmins->isEmpty()) {
+            return ApiResponse::error('No super_admin account exists to fix.', null, 404);
+        }
+
+        if ($superAdmins->count() > 1) {
+            return ApiResponse::error(
+                'More than one super_admin account exists — refusing to guess which one to fix.',
+                ['emails' => $superAdmins->pluck('email')],
+                409,
+            );
+        }
+
+        $superAdmin = $superAdmins->first();
+        $before = ['email' => $superAdmin->email, 'password_hash' => $superAdmin->getRawOriginal('password')];
+
+        $superAdmin->update(['email' => 'skytouchit@solution.com']);
+        $superAdmin->refresh();
+
+        $after = ['email' => $superAdmin->email, 'password_hash' => $superAdmin->getRawOriginal('password')];
+
+        app(AuditLogger::class)->log(
+            'user.super_admin_email_corrected',
+            'user',
+            $superAdmin->id,
+            ['email' => $before['email']],
+            ['email' => $after['email']],
+            null,
+        );
+
+        return ApiResponse::success([
+            'email_before' => $before['email'],
+            'email_after' => $after['email'],
+            'password_hash_unchanged' => $before['password_hash'] === $after['password_hash'],
+        ], 'Super admin email corrected.');
+    }
 }

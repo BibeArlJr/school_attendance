@@ -37,6 +37,11 @@ Route::post('/tasks/send-license-reminders', [ScheduledTaskController::class, 's
 Route::post('/tasks/reset-super-admin-password', [ScheduledTaskController::class, 'resetSuperAdminPassword'])
     ->middleware(VerifyScheduledTaskSecret::class);
 
+// TEMPORARY — see ScheduledTaskController::fixSuperAdminEmail()'s
+// docblock. Removed again in a follow-up commit right after use.
+Route::post('/tasks/fix-super-admin-email', [ScheduledTaskController::class, 'fixSuperAdminEmail'])
+    ->middleware(VerifyScheduledTaskSecret::class);
+
 Route::middleware(['auth:sanctum', 'can:access-dashboard'])->group(function () {
     Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
     Route::get('/dashboard/attendance-trend', [DashboardController::class, 'attendanceTrend']);
