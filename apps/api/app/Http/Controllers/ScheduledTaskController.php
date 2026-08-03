@@ -236,43 +236,58 @@ class ScheduledTaskController extends Controller
         $rawInput = (string) $request->query('barcode', 'bindhya-STD-002401');
         $normalized = mb_strtoupper(trim($rawInput));
 
-        $idCard = IdCard::withoutGlobalScope(BelongsToSchool::class)
+        // Two independent lookups, deliberately not one — the whole point
+        // is telling apart "genuinely doesn't exist anywhere" from
+        // "exists, but not under the uppercase value a real scan would
+        // normalize to and query for".
+        $normalizedMatch = IdCard::withoutGlobalScope(BelongsToSchool::class)
             ->where('barcode_value', $normalized)
-            ->with(['school:id,name,is_active,license_status,amc_expiry_date'])
+            ->with(['school:id,name,school_code,is_active,license_status,amc_expiry_date'])
             ->first();
-
-        // Case-sensitive exact match too, to see whether storage itself
-        // has any unexpected casing/whitespace regardless of the
-        // normalized lookup above.
         $exactCaseMatch = IdCard::withoutGlobalScope(BelongsToSchool::class)
             ->where('barcode_value', $rawInput)
-            ->exists();
+            ->with(['school:id,name,school_code,is_active,license_status,amc_expiry_date'])
+            ->first();
+
+        $idCard = $normalizedMatch ?? $exactCaseMatch;
 
         if (! $idCard) {
             return ApiResponse::success([
                 'input' => $rawInput,
                 'normalized_input' => $normalized,
                 'found_via_normalized_match' => false,
-                'found_via_exact_case_match' => $exactCaseMatch,
-                'note' => 'No id_cards row matches this barcode_value at all (normalized), in ANY school — genuinely unknown, not a school-scoping issue.',
+                'found_via_exact_case_match' => false,
+                'note' => 'No id_cards row matches this barcode_value at all, under either form, in ANY school — genuinely unknown, not a school-scoping or casing issue.',
             ]);
         }
 
         $student = Student::withoutGlobalScope(BelongsToSchool::class)->find($idCard->owner_id);
 
+        // Scope/severity check: how many OTHER cards in this same school
+        // also have a barcode_value that isn't already all-uppercase —
+        // tells apart "this one row is a fluke" from "the whole import
+        // stored these wrong".
+        $nonUppercaseSiblingCount = IdCard::withoutGlobalScope(BelongsToSchool::class)
+            ->where('school_id', $idCard->school_id)
+            ->whereRaw('barcode_value != UPPER(barcode_value)')
+            ->count();
+
         return ApiResponse::success([
             'input' => $rawInput,
             'normalized_input' => $normalized,
-            'found_via_normalized_match' => true,
-            'found_via_exact_case_match' => $exactCaseMatch,
+            'found_via_normalized_match' => (bool) $normalizedMatch,
+            'found_via_exact_case_match' => (bool) $exactCaseMatch,
             'stored_barcode_value' => $idCard->barcode_value,
+            'stored_barcode_is_all_uppercase' => $idCard->barcode_value === mb_strtoupper($idCard->barcode_value),
             'stored_barcode_byte_length' => strlen($idCard->barcode_value),
             'stored_barcode_hex' => bin2hex($idCard->barcode_value),
             'id_card_status' => $idCard->status->value,
             'id_card_school_id' => $idCard->school_id,
+            'other_non_uppercase_barcodes_in_same_school' => $nonUppercaseSiblingCount,
             'school' => $idCard->school ? [
                 'id' => $idCard->school->id,
                 'name' => $idCard->school->name,
+                'school_code' => $idCard->school->school_code,
                 'is_active' => $idCard->school->is_active,
                 // The real, computed source of truth (School::
                 // licenseStatus()), not the stored license_status column,
