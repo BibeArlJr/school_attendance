@@ -24,7 +24,9 @@ use App\Support\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 /**
  * POST /api/tasks/* (Prompt 55 Part E) — triggered by an external
@@ -391,6 +393,121 @@ class ScheduledTaskController extends Controller
                 'academic_years' => AcademicYear::query()->where('school_id', $schoolId)->count(),
             ],
             'other_school_baseline' => $baseline,
+        ]);
+    }
+
+    /**
+     * TEMPORARY, ONE-OFF write endpoint (diagnose-then-wipe-demo-school
+     * prompt, PART B) — only ever runs after diagnoseDemoSchoolWipe()'s
+     * report was reviewed and explicitly confirmed. Scoped ONLY to
+     * whichever school is named "Demo School" (refuses to guess if that
+     * name doesn't match exactly one school, same as Part A). Deletes
+     * students and everything cascading from them, attendance history,
+     * sms_logs, and import_batches for this one school_id — then
+     * reactivates the school (is_active = true) per explicit follow-up
+     * instruction, so it's left in a clean, genuinely usable state
+     * rather than a wiped-but-still-suspended one.
+     *
+     * Deliberately bypasses StudentService::destroy()'s per-student
+     * "cannot delete a student with attendance history" guard — that
+     * guard still protects every other single-student delete everywhere
+     * else in the app; this is a separate, one-off bulk operation, not a
+     * change to that service. Explicitly preserves: the School row
+     * itself, school_configs/school_calendars/academic_years, and every
+     * staff/User login for this school (none of those models are
+     * touched here at all).
+     *
+     * Wrapped in one DB transaction — either everything below commits or
+     * none of it does. The parent_guardians delete is additionally
+     * guarded by a fresh re-check (not just Part A's earlier snapshot)
+     * that zero student_parent_links remain for this school's guardians
+     * after the student cascade — if that's ever non-zero, the whole
+     * transaction throws and rolls back rather than deleting a guardian
+     * that (somehow) still has a real link.
+     */
+    public function executeDemoSchoolWipe(): JsonResponse
+    {
+        $matches = School::query()->where('name', 'Demo School')->get();
+
+        if ($matches->count() !== 1) {
+            return ApiResponse::error(
+                'Expected exactly one school named "Demo School" — refusing to guess which one.',
+                ['matches' => $matches],
+                409,
+            );
+        }
+
+        $school = $matches->first();
+        $schoolId = $school->id;
+
+        $deletedCounts = DB::transaction(function () use ($school, $schoolId) {
+            $studentIds = Student::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $schoolId)->pluck('id');
+            $guardianIds = ParentGuardian::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $schoolId)->pluck('id');
+
+            $counts = [];
+
+            $counts['id_cards'] = IdCard::withoutGlobalScope(BelongsToSchool::class)
+                ->where('school_id', $schoolId)->where('owner_type', 'student')->delete();
+            $counts['student_parent_links'] = StudentParentLink::query()->whereIn('student_id', $studentIds)->delete();
+            $counts['student_enrollments'] = StudentEnrollment::query()->whereIn('student_id', $studentIds)->delete();
+            $counts['attendance_events'] = AttendanceEvent::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $schoolId)->delete();
+            $counts['attendance_records'] = AttendanceRecord::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $schoolId)->delete();
+            $counts['sms_logs'] = SmsLog::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $schoolId)->delete();
+            $counts['import_batches'] = ImportBatch::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $schoolId)->delete();
+            $counts['students'] = Student::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $schoolId)->delete();
+
+            // Defensive re-check, not just trusting Part A's earlier
+            // snapshot — the student cascade above should have already
+            // removed every link touching these guardians.
+            $remainingLinks = StudentParentLink::query()->whereIn('parent_id', $guardianIds)->count();
+            if ($remainingLinks > 0) {
+                throw new RuntimeException(
+                    "Refusing to delete parent_guardians: {$remainingLinks} student_parent_link row(s) still reference them after the student cascade.",
+                );
+            }
+            $counts['parent_guardians'] = ParentGuardian::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $schoolId)->delete();
+
+            // is_active is deliberately not in School::$fillable
+            // (School.php's own doc: only ever set via reactivate()/
+            // deactivate()) — a plain update() would silently no-op.
+            $school->reactivate();
+
+            app(AuditLogger::class)->log(
+                'school.operational_data_wiped',
+                'school',
+                $schoolId,
+                null,
+                ['deleted_counts' => $counts, 'reactivated' => true],
+                $schoolId,
+            );
+
+            return $counts;
+        });
+
+        $otherSchool = School::query()->where('id', '!=', $schoolId)->orderBy('id')->first(['id', 'name']);
+        $otherSchoolAfter = null;
+        if ($otherSchool) {
+            $otherSchoolAfter = [
+                'school_id' => $otherSchool->id,
+                'school_name' => $otherSchool->name,
+                'students' => Student::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $otherSchool->id)->count(),
+                'attendance_records' => AttendanceRecord::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $otherSchool->id)->count(),
+                'sms_logs' => SmsLog::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $otherSchool->id)->count(),
+                'staff' => Staff::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $otherSchool->id)->count(),
+            ];
+        }
+
+        return ApiResponse::success([
+            'deleted_counts' => $deletedCounts,
+            'school_after' => School::query()->find($schoolId, ['id', 'name', 'is_active']),
+            'preserved_after' => [
+                'staff' => Staff::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $schoolId)->count(),
+                'admin_and_guard_users' => User::query()->where('school_id', $schoolId)->whereIn('role', [UserRole::Admin, UserRole::Guard])->count(),
+                'school_configs' => SchoolConfig::query()->where('school_id', $schoolId)->count(),
+                'school_calendars' => SchoolCalendar::query()->where('school_id', $schoolId)->count(),
+                'academic_years' => AcademicYear::query()->where('school_id', $schoolId)->count(),
+            ],
+            'other_school_after' => $otherSchoolAfter,
         ]);
     }
 }
