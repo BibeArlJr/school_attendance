@@ -41,8 +41,14 @@ class PlatformSchoolService
             // school_code is deliberately never mass-assignable (not in
             // School::$fillable) — set directly here, the one place a
             // school is ever created, so there is no other path that
-            // could set or change it later.
-            $school->school_code = $data['school_code'];
+            // could set or change it later. Normalized to uppercase here
+            // too, independently of StorePlatformSchoolRequest's own
+            // prepareForValidation() — defense in depth, same reasoning
+            // as everywhere else in this app (e.g. AttendanceService
+            // normalizing barcode input): this service method must be
+            // correct on its own, not merely lucky because its one
+            // current caller already normalized upstream.
+            $school->school_code = mb_strtoupper(trim($data['school_code']));
             $school->save();
 
             $this->seedDefaults($school);

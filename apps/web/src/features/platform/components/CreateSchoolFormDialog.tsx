@@ -103,7 +103,20 @@ export function CreateSchoolFormDialog({ open, onOpenChange }: CreateSchoolFormD
                   <FormItem>
                     <FormLabel>School code</FormLabel>
                     <FormControl>
-                      <Input placeholder="SCH002" {...field} />
+                      {/* Uppercases as typed — this is embedded in every
+                          barcode issued for the school, permanently,
+                          and a real production incident traced back to
+                          one entered in lowercase. What's shown here
+                          must already match what gets stored, not
+                          silently change after submit. Backend
+                          independently normalizes too (defense in
+                          depth) in case this endpoint is ever called
+                          directly. */}
+                      <Input
+                        placeholder="SCH002"
+                        {...field}
+                        onChange={(event) => field.onChange(event.target.value.toUpperCase())}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

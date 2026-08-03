@@ -12,6 +12,26 @@ class StorePlatformSchoolRequest extends FormRequest
     }
 
     /**
+     * Normalizes school_code BEFORE validation runs, not just before
+     * save — a real production incident traced back to a school_code
+     * entered in lowercase ("bindhya"), which then got embedded verbatim
+     * into every barcode issued for that school and broke the
+     * case-insensitive scan matching that assumes storage is always
+     * uppercase. Doing this here (not only in PlatformSchoolService,
+     * which also normalizes independently as defense in depth) means the
+     * `unique:schools,school_code` rule below checks the actual
+     * to-be-stored value, so "bindhya" and "BINDHYA" collide as
+     * duplicates at validation time instead of silently both slipping
+     * through as if they were different codes.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('school_code')) {
+            $this->merge(['school_code' => mb_strtoupper(trim((string) $this->input('school_code')))]);
+        }
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function rules(): array
