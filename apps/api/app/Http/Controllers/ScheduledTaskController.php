@@ -7,6 +7,7 @@ use App\Modules\IdCard\Models\IdCard;
 use App\Modules\Import\Models\ImportBatch;
 use App\Modules\School\Models\School;
 use App\Modules\Sms\Models\SmsLog;
+use App\Modules\Sms\Models\SmsProviderConfig;
 use App\Modules\Student\Models\Student;
 use App\Support\Concerns\BelongsToSchool;
 use App\Support\Enums\UserRole;
@@ -16,6 +17,7 @@ use App\Support\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 /**
@@ -350,11 +352,25 @@ class ScheduledTaskController extends Controller
             ->orderBy('created_at')
             ->get(['id', 'created_at', 'entity_id']);
 
+        $config = SmsProviderConfig::withoutGlobalScope(BelongsToSchool::class)
+            ->where('provider_name', 'sparrow')
+            ->where('is_active', true)
+            ->whereNull('school_id')
+            ->first();
+
+        $liveSparrowBalance = null;
+
+        if ($config && ! empty($config->credentials['token'])) {
+            $response = Http::get('https://api.sparrowsms.com/v2/credit/', ['token' => $config->credentials['token']]);
+            $liveSparrowBalance = $response->json();
+        }
+
         return ApiResponse::success([
             'failed_no_credentials_entries' => $failedNoCredentials,
             'real_non_mock_sends' => $realSends,
             'real_non_mock_sends_count' => $realSends->count(),
             'credentials_set_audit_events' => $credentialsSetEvents,
+            'live_sparrow_balance' => $liveSparrowBalance,
         ]);
     }
 }
