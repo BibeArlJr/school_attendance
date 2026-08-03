@@ -69,3 +69,20 @@ export function useReactivateSchool() {
     },
   });
 }
+
+// Real delete, not another status action — only for undoing a mistaken
+// school creation. The backend enforces its own two gates (already
+// deactivated, zero real students/staff) regardless of what the UI
+// allows clicking; a blocked attempt surfaces here as a normal mutation
+// error, shown verbatim via DeleteConfirmDialog's errorMessage prop.
+export function useDeleteSchool() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: platformApi.deleteSchool,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['platform', 'schools'] });
+      toast.success('School deleted.');
+    },
+  });
+}

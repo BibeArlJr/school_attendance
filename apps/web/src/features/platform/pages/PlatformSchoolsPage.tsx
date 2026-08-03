@@ -5,15 +5,18 @@ import { CreateSchoolFormDialog } from '../components/CreateSchoolFormDialog';
 import { SubscriptionManageDialog } from '../components/SubscriptionManageDialog';
 import { useSchools } from '../hooks/useSchools';
 import { useSetActiveSchool } from '../hooks/useSetActiveSchool';
+import { useDeactivateSchool, useDeleteSchool, useReactivateSchool } from '../hooks/useSubscriptionMutations';
 import type { LicenseStatusValue, PlatformSchool } from '../types';
 import { ROUTES } from '@/app/router/routes';
 import { useAuthStore } from '@/features/auth/store/authStore';
+import { DeleteConfirmDialog } from '@/shared/components/DeleteConfirmDialog';
 import { ErrorState } from '@/shared/components/feedback/ErrorState';
 import { LoadingSkeleton } from '@/shared/components/feedback/LoadingSkeleton';
 import { PageContainer } from '@/shared/components/layout/PageContainer';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
+import { extractErrorMessage } from '@/shared/lib/errors';
 import { cn } from '@/shared/lib/utils';
 
 const TABS = [
@@ -36,15 +39,29 @@ const LICENSE_VARIANT: Record<LicenseStatusValue, 'default' | 'secondary' | 'out
 export default function PlatformSchoolsPage() {
   const schoolsQuery = useSchools();
   const setActiveSchool = useSetActiveSchool();
+  const deactivateSchool = useDeactivateSchool();
+  const reactivateSchool = useReactivateSchool();
+  const deleteSchool = useDeleteSchool();
   const activeSchoolId = useAuthStore((state) => state.user?.active_school?.id);
   const [formOpen, setFormOpen] = useState(false);
   const [managingSchoolId, setManagingSchoolId] = useState<number | null>(null);
   const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
+  const [deletingSchoolId, setDeletingSchoolId] = useState<number | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   // Derived from live query data (not a stale snapshot) so the dialog's
   // status/expiry display refreshes automatically after each mutation —
   // every subscription mutation invalidates ['platform', 'schools'].
   const managingSchool: PlatformSchool | null =
     schoolsQuery.data?.find((s) => s.id === managingSchoolId) ?? null;
+  const deletingSchool: PlatformSchool | null =
+    schoolsQuery.data?.find((s) => s.id === deletingSchoolId) ?? null;
+
+  function handleDeleteOpenChange(nextOpen: boolean) {
+    setDeleteDialogOpen(nextOpen);
+    if (!nextOpen) {
+      deleteSchool.reset();
+    }
+  }
 
   return (
     <PageContainer
@@ -148,6 +165,41 @@ export default function PlatformSchoolsPage() {
                     >
                       {activeSchoolId === school.id ? 'Managing this school' : 'Manage this school'}
                     </Button>
+                    {school.is_active ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={deactivateSchool.isPending}
+                        onClick={() => deactivateSchool.mutate(school.id)}
+                      >
+                        Deactivate
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={reactivateSchool.isPending}
+                          onClick={() => reactivateSchool.mutate(school.id)}
+                        >
+                          Reactivate
+                        </Button>
+                        {/* Only reachable once already deactivated — the
+                            backend independently enforces this same gate
+                            (plus zero real students/staff) regardless of
+                            what this button's disabled state allows. */}
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            setDeletingSchoolId(school.id);
+                            setDeleteDialogOpen(true);
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
@@ -161,6 +213,20 @@ export default function PlatformSchoolsPage() {
         school={managingSchool}
         open={subscriptionDialogOpen}
         onOpenChange={setSubscriptionDialogOpen}
+      />
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={handleDeleteOpenChange}
+        entityLabel={deletingSchool ? `school "${deletingSchool.name}"` : 'school'}
+        alternativeActionHint="This only works for a school with zero real students or staff — it's for undoing a mistaken creation, not removing an active school."
+        isPending={deleteSchool.isPending}
+        errorMessage={deleteSchool.isError ? extractErrorMessage(deleteSchool.error) : null}
+        onConfirm={() => {
+          if (!deletingSchool) return;
+          deleteSchool.mutate(deletingSchool.id, {
+            onSuccess: () => setDeleteDialogOpen(false),
+          });
+        }}
       />
     </PageContainer>
   );

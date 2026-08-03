@@ -9,6 +9,7 @@ use App\Modules\School\Models\School;
 use App\Modules\Student\Models\Student;
 use App\Support\Concerns\BelongsToSchool;
 use App\Support\Enums\LicenseStatus;
+use App\Support\Exceptions\DeleteBlockedException;
 use App\Support\Responses\ApiResponse;
 use App\Support\Services\AuditLogger;
 use Carbon\Carbon;
@@ -239,6 +240,23 @@ class PlatformSchoolController extends Controller
         $this->auditLogger->log('school.reactivated', 'school', $school->id, $before, ['is_active' => true], $school->id);
 
         return ApiResponse::success($this->withLicense($school->fresh()), 'School reactivated.');
+    }
+
+    /**
+     * See PlatformSchoolService::destroy() for the two gates this
+     * enforces (must already be deactivated, must have zero real
+     * students/staff) — this action only exists to undo a mistaken
+     * school creation, not to remove a real school's data.
+     */
+    public function destroy(School $school): JsonResponse
+    {
+        try {
+            $this->schoolService->destroy($school);
+        } catch (DeleteBlockedException $e) {
+            return ApiResponse::error($e->getMessage(), null, 422);
+        }
+
+        return ApiResponse::success(null, 'School deleted.');
     }
 
     /**

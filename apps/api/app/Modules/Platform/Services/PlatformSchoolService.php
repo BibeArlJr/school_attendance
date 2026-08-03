@@ -6,7 +6,11 @@ use App\Models\User;
 use App\Modules\Attendance\Models\SchoolConfig;
 use App\Modules\School\Models\AcademicYear;
 use App\Modules\School\Models\School;
+use App\Modules\Staff\Models\Staff;
+use App\Modules\Student\Models\Student;
+use App\Support\Concerns\BelongsToSchool;
 use App\Support\Enums\UserRole;
+use App\Support\Exceptions\DeleteBlockedException;
 use App\Support\Services\AuditLogger;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -75,6 +79,65 @@ class PlatformSchoolService
             );
 
             return ['school' => $school, 'admin' => $admin, 'temporary_password' => $temporaryPassword];
+        });
+    }
+
+    /**
+     * Real delete, not a status change — for undoing a mistaken creation
+     * (wrong name, typo'd school_code caught too late, a duplicate),
+     * never for removing an active school's real data. Two gates, both
+     * required, checked in this order:
+     *
+     * 1. The school must already be deactivated — a deliberate two-step
+     *    confirmation (deactivate, THEN delete) rather than one action
+     *    that both suspends and destroys at once.
+     * 2. Zero real students or staff on record — checked directly
+     *    against the Student/Staff tables, NOT the `staff_count` figure
+     *    PlatformSchoolController::index() returns for display (that
+     *    counts every User row with role admin/teacher/guard, which
+     *    always includes the one admin account auto-created at creation
+     *    time — using that here would make every school permanently
+     *    undeletable from the moment it's created, even one created by
+     *    pure accident seconds ago).
+     *
+     * If both gates pass, the school row is deleted and every table with
+     * a real FK to schools.id cascades at the database level (verified
+     * cascadeOnDelete() on all of them: students, classes, academic_years,
+     * id_cards, attendance_records/events, import_batches, sms_logs/
+     * templates/provider_configs, school_configs/calendars,
+     * sequence_counters, parent_guardians) — except `users.school_id`,
+     * which is deliberately nullOnDelete at the DB level (so deleting
+     * some OTHER school can never touch a super_admin's own account by
+     * accident) and so is handled explicitly here instead, and
+     * `audit_logs`, which has no FK to schools at all by design (Prompt
+     * 43 — an audit trail must survive the entity it describes).
+     */
+    public function destroy(School $school): void
+    {
+        if ($school->is_active) {
+            throw new DeleteBlockedException('Deactivate this school before deleting it.');
+        }
+
+        $hasStudents = Student::withoutGlobalScope(BelongsToSchool::class)
+            ->where('school_id', $school->id)
+            ->exists();
+        $hasStaff = Staff::withoutGlobalScope(BelongsToSchool::class)
+            ->where('school_id', $school->id)
+            ->exists();
+
+        if ($hasStudents || $hasStaff) {
+            throw new DeleteBlockedException(
+                'Cannot delete: this school has real students or staff on record. Deletion is only for undoing a mistaken creation, not removing an active school.',
+            );
+        }
+
+        DB::transaction(function () use ($school) {
+            $before = $school->toArray();
+
+            User::query()->where('school_id', $school->id)->delete();
+            $school->delete();
+
+            $this->auditLogger->log('school.deleted', 'school', $school->id, $before, null, $school->id);
         });
     }
 

@@ -80,4 +80,11 @@ export const platformApi = {
     );
     return data.data;
   },
+
+  /** Real delete — only succeeds server-side when the school is already
+   *  deactivated and has zero real students/staff on record (see
+   *  PlatformSchoolService::destroy()). */
+  async deleteSchool(schoolId: number): Promise<void> {
+    await apiClient.delete(`/platform/schools/${schoolId}`);
+  },
 };
