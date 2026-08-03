@@ -92,9 +92,9 @@ export function GuardiansSection({ studentId, licenseExpired }: GuardiansSection
         ) : (
           <ul className="divide-y">
             {guardiansQuery.data.map((link) => (
-              <li key={link.link_id} className="flex items-center justify-between py-3">
-                <div>
-                  <div className="flex items-center gap-2">
+              <li key={link.link_id} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 py-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{link.parent.name}</span>
                     <Badge variant="outline" className="capitalize">
                       {RELATION_LABEL[link.relation]}
@@ -106,7 +106,7 @@ export function GuardiansSection({ studentId, licenseExpired }: GuardiansSection
                     {link.parent.email ? ` · ${link.parent.email}` : ''}
                   </p>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-1">
                   {!link.is_primary_contact && (
                     <Button
                       type="button"

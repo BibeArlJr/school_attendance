@@ -50,7 +50,20 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          'data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 fixed left-1/2 top-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground outline-none ring-1 ring-foreground/10 duration-100 sm:max-w-sm',
+          // overflow-x-hidden is the systemic fix (not per-dialog):
+          // DialogContent is a `grid` container, and a grid item (the
+          // form each dialog renders) defaults to min-width: auto — it
+          // won't shrink below its content's intrinsic width, so any
+          // descendant with unwrapped inline content (e.g. a row of
+          // badges + several buttons that don't fit) silently stretches
+          // the whole dialog wider than this box's own rounded
+          // boundary, with content visibly spilling past the right
+          // edge. Every dialog in the app renders through this one
+          // component, so the fix belongs here, not duplicated per
+          // dialog — root-cause wrapping/truncation fixes still belong
+          // in whichever specific content actually overflows (e.g.
+          // GuardiansSection's guardian row), this is the backstop.
+          'data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 fixed left-1/2 top-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-x-hidden rounded-xl bg-popover p-4 text-sm text-popover-foreground outline-none ring-1 ring-foreground/10 duration-100 sm:max-w-sm',
           className,
         )}
         {...props}

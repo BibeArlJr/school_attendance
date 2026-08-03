@@ -38,6 +38,14 @@ export const BS_MONTH_NAMES = [
 
 export const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+/** bikram-sambat-js's real, hard supported range — confirmed empirically
+ *  (BSToAD throws "BS year should be in range of 1970 to 2100" outside
+ *  this), not documented anywhere in its README. The year-picker grid
+ *  (BsCalendarGrid) must never offer a year outside this — it's not a
+ *  stylistic choice, offering one would throw at conversion time. */
+export const MIN_BS_YEAR = 1970;
+export const MAX_BS_YEAR = 2100;
+
 export interface BsDate {
   year: number;
   month: number; // 1-12

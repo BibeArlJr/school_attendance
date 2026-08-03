@@ -1,6 +1,15 @@
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from './ui/button';
-import { BS_MONTH_NAMES, bsMonthStartWeekday, daysInBsMonth, todayBs, WEEKDAY_NAMES } from '@/shared/lib/bikramSambat';
+import {
+  BS_MONTH_NAMES,
+  bsMonthStartWeekday,
+  daysInBsMonth,
+  MAX_BS_YEAR,
+  MIN_BS_YEAR,
+  todayBs,
+  WEEKDAY_NAMES,
+} from '@/shared/lib/bikramSambat';
 import { cn } from '@/shared/lib/utils';
 
 interface BsCalendarGridProps {
@@ -15,6 +24,18 @@ interface BsCalendarGridProps {
   dayClassName?: (day: number) => string | undefined;
 }
 
+/** 'days' is the normal calendar; 'years'/'months' are the fast-nav
+ *  views this component switches through — clicking the day-grid's
+ *  header enters 'years', picking a year enters 'months' for it,
+ *  picking a month returns to 'days' on that month (fast-year/month-nav
+ *  prompt). Local, not lifted to the parent picker: it's pure UI-flow
+ *  state, unrelated to which date is actually selected/viewed, and
+ *  naturally resets to 'days' every time this unmounts (Radix Popover
+ *  unmounts its content on close by default, no forceMount here) — so a
+ *  picker reopened later never strands the user mid-navigation.
+ */
+type ViewMode = 'days' | 'months' | 'years';
+
 /**
  * The month/year-nav header + day grid shared by BsDatePicker and
  * BsDateRangePicker (Prompt 27) — this is the one place month-length/
@@ -22,6 +43,8 @@ interface BsCalendarGridProps {
  * neither reimplements calendar math.
  */
 export function BsCalendarGrid({ year, month, onNavigate, onSelectDay, dayClassName }: BsCalendarGridProps) {
+  const [mode, setMode] = useState<ViewMode>('days');
+
   function shiftMonth(delta: number) {
     let nextMonth = month + delta;
     let nextYear = year;
@@ -33,6 +56,24 @@ export function BsCalendarGrid({ year, month, onNavigate, onSelectDay, dayClassN
       nextYear -= 1;
     }
     onNavigate(nextYear, nextMonth);
+  }
+
+  function selectYear(selectedYear: number) {
+    onNavigate(selectedYear, month);
+    setMode('months');
+  }
+
+  function selectMonth(selectedMonth: number) {
+    onNavigate(year, selectedMonth);
+    setMode('days');
+  }
+
+  if (mode === 'years') {
+    return <BsYearGrid currentYear={year} onSelect={selectYear} />;
+  }
+
+  if (mode === 'months') {
+    return <BsMonthGrid year={year} currentMonth={month} onSelect={selectMonth} onBack={() => setMode('years')} />;
   }
 
   const startWeekday = bsMonthStartWeekday(year, month);
@@ -60,9 +101,13 @@ export function BsCalendarGrid({ year, month, onNavigate, onSelectDay, dayClassN
             <ChevronLeft className="size-4" />
           </Button>
         </div>
-        <span className="text-sm font-medium">
+        <button
+          type="button"
+          onClick={() => setMode('years')}
+          className="rounded-md px-2 py-1 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+        >
           {BS_MONTH_NAMES[month - 1]} {year}
-        </span>
+        </button>
         <div className="flex items-center">
           <Button type="button" variant="ghost" size="icon-sm" onClick={() => shiftMonth(1)} aria-label="Next month">
             <ChevronRight className="size-4" />
@@ -106,6 +151,93 @@ export function BsCalendarGrid({ year, month, onNavigate, onSelectDay, dayClassN
               )}
             >
               {day}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** Full MIN_BS_YEAR..MAX_BS_YEAR range in one scrollable grid, rather
+ *  than a ±100 window around today — bikram-sambat-js's own hard bounds
+ *  are already narrower than ±100 would be on the high end (see
+ *  MAX_BS_YEAR's docblock), so clamping to them directly is simpler
+ *  than computing a window and clamping it anyway. */
+function BsYearGrid({ currentYear, onSelect }: { currentYear: number; onSelect: (year: number) => void }) {
+  const today = todayBs();
+  const years = Array.from({ length: MAX_BS_YEAR - MIN_BS_YEAR + 1 }, (_, i) => MIN_BS_YEAR + i);
+
+  return (
+    <div>
+      <p className="mb-2 px-1 text-sm font-medium">Select year</p>
+      <div className="grid max-h-64 grid-cols-4 gap-1 overflow-y-auto">
+        {years.map((y) => {
+          const isSelected = y === currentYear;
+          const isThisYear = y === today.year;
+
+          return (
+            <button
+              key={y}
+              type="button"
+              onClick={() => onSelect(y)}
+              className={cn(
+                'rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground',
+                isSelected && 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground',
+                !isSelected && isThisYear && 'font-semibold text-primary',
+              )}
+            >
+              {y}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function BsMonthGrid({
+  year,
+  currentMonth,
+  onSelect,
+  onBack,
+}: {
+  year: number;
+  currentMonth: number;
+  onSelect: (month: number) => void;
+  onBack: () => void;
+}) {
+  const today = todayBs();
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-center gap-1">
+        <button
+          type="button"
+          onClick={onBack}
+          className="rounded-md px-2 py-1 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+        >
+          {year}
+        </button>
+      </div>
+      <div className="grid grid-cols-3 gap-1">
+        {BS_MONTH_NAMES.map((name, index) => {
+          const monthNumber = index + 1;
+          const isSelected = monthNumber === currentMonth;
+          const isThisMonth = monthNumber === today.month && year === today.year;
+
+          return (
+            <button
+              key={name}
+              type="button"
+              onClick={() => onSelect(monthNumber)}
+              className={cn(
+                'rounded-md px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground',
+                isSelected && 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground',
+                !isSelected && isThisMonth && 'font-semibold text-primary',
+              )}
+            >
+              {name}
             </button>
           );
         })}
