@@ -305,4 +305,25 @@ class ScheduledTaskController extends Controller
             ] : null,
         ]);
     }
+
+    /**
+     * TEMPORARY wrapper around the permanent app:backfill-admin-staff-rows
+     * command (missing-Staff-row-for-platform-console-admin prompt) —
+     * Render's free tier has no Shell, so this is the only way to run it
+     * against the real production database. The command itself stays;
+     * only this HTTP entry point is meant to be removed again once used,
+     * same discipline as the other one-off /api/tasks/* endpoints. Pass
+     * ?dry_run=1 to audit without creating anything.
+     */
+    public function backfillAdminStaffRows(Request $request): JsonResponse
+    {
+        $dryRun = $request->boolean('dry_run');
+        $exitCode = Artisan::call('app:backfill-admin-staff-rows', $dryRun ? ['--dry-run' => true] : []);
+
+        return ApiResponse::success(
+            ['output' => trim(Artisan::output())],
+            'Command executed.',
+            $exitCode === 0 ? 200 : 500,
+        );
+    }
 }

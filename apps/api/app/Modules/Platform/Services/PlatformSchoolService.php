@@ -69,6 +69,21 @@ class PlatformSchoolService
                 'email_verified_at' => now(),
             ]);
 
+            // Real bug found in production: this method predates Staff
+            // Management (Prompt 8) and never created a matching `staff`
+            // row for the admin it creates — StaffController::index()
+            // queries the `staff` table directly, so every school's
+            // original platform-console-created admin was a real,
+            // logged-in-capable account that silently never appeared in
+            // its own Staff Management list. Same shape as
+            // StaffService::create()'s own Staff::create() call.
+            Staff::create([
+                'school_id' => $school->id,
+                'user_id' => $admin->id,
+                'designation' => null,
+                'employment_status' => 'active',
+            ]);
+
             $this->auditLogger->log(
                 'school.created',
                 'school',
