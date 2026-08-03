@@ -336,6 +336,8 @@ class ScheduledTaskController extends Controller
                 'is_active' => $c->is_active,
                 'has_token' => ! empty($c->credentials['token'] ?? null),
                 'has_sender_id' => ! empty($c->credentials['sender_id'] ?? null),
+                'created_at' => $c->created_at?->toDateTimeString(),
+                'updated_at' => $c->updated_at?->toDateTimeString(),
             ]);
 
         $config = SmsProviderConfig::withoutGlobalScope(BelongsToSchool::class)
