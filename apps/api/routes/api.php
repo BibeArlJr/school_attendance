@@ -52,12 +52,6 @@ Route::post('/tasks/diagnose-duplicate-students', [ScheduledTaskController::clas
 Route::get('/tasks/lookup-barcode', [ScheduledTaskController::class, 'lookupBarcode'])
     ->middleware(VerifyScheduledTaskSecret::class);
 
-// TEMPORARY, READ-ONLY — see
-// ScheduledTaskController::diagnoseSmsCredits()'s docblock. GET: no
-// destructive side effects (a real credit CHECK, not a send).
-Route::get('/tasks/diagnose-sms-credits', [ScheduledTaskController::class, 'diagnoseSmsCredits'])
-    ->middleware(VerifyScheduledTaskSecret::class);
-
 Route::middleware(['auth:sanctum', 'can:access-dashboard'])->group(function () {
     Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
     Route::get('/dashboard/attendance-trend', [DashboardController::class, 'attendanceTrend']);

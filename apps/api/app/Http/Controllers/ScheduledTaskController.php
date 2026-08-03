@@ -6,10 +6,8 @@ use App\Models\User;
 use App\Modules\IdCard\Models\IdCard;
 use App\Modules\Import\Models\ImportBatch;
 use App\Modules\School\Models\School;
-use App\Modules\Sms\Models\SmsProviderConfig;
 use App\Modules\Student\Models\Student;
 use App\Support\Concerns\BelongsToSchool;
-use App\Support\Contracts\SmsServiceInterface;
 use App\Support\Enums\UserRole;
 use App\Support\Responses\ApiResponse;
 use App\Support\Services\AuditLogger;
@@ -305,38 +303,6 @@ class ScheduledTaskController extends Controller
                 'status' => $student->status->value,
                 'school_id' => $student->school_id,
             ] : null,
-        ]);
-    }
-
-    /**
-     * TEMPORARY, READ-ONLY diagnostic (SMS-credits-showing-0/0 prompt) —
-     * reports the real sms_provider_configs table state, the driver
-     * config, which concrete class the container resolves
-     * SmsServiceInterface to, and the result of calling ->getCredits()
-     * through that EXACT interface — the same call
-     * SmsController::credits() makes, not a re-implementation of it.
-     * Real, non-costing GET to Sparrow's own /credit/ endpoint if the
-     * driver is real. No school context passed anywhere (there is none
-     * to pass — see the investigation this reports on).
-     */
-    public function diagnoseSmsCredits(): JsonResponse
-    {
-        $configs = SmsProviderConfig::query()
-            ->get(['id', 'school_id', 'provider_name', 'is_active'])
-            ->map(fn ($c) => [
-                'id' => $c->id,
-                'school_id' => $c->school_id,
-                'provider_name' => $c->provider_name,
-                'is_active' => $c->is_active,
-            ]);
-
-        $smsService = app(SmsServiceInterface::class);
-
-        return ApiResponse::success([
-            'sms_provider_configs' => $configs,
-            'driver_config' => config('services.sms.driver'),
-            'resolved_service_class' => get_class($smsService),
-            'get_credits_result' => $smsService->getCredits(),
         ]);
     }
 }
