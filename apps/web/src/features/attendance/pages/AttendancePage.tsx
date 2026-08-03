@@ -21,6 +21,8 @@ import { useLicenseExpired } from '@/shared/hooks/useLicenseExpired';
 
 const PER_PAGE = 15;
 
+const STATUS_VALUES = new Set(['present', 'late', 'absent', 'half_day', 'out_without_in']);
+
 function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -35,14 +37,15 @@ export default function AttendancePage() {
   const [searchParams] = useSearchParams();
   const [date, setDate] = useState(searchParams.get('date') ?? today());
   const [classFilter, setClassFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') ?? 'all');
-  // Separate from statusFilter deliberately — presence (in/out) is who's
-  // currently on campus vs already left, orthogonal to the present/late/
-  // absent/half_day daily classification (a late student who hasn't left
-  // yet is both `late` and `in` at once, so merging this into one
-  // dropdown would force a false either/or choice between two facts that
-  // can both be true simultaneously).
-  const [presenceFilter, setPresenceFilter] = useState('all');
+  // Single flat filter merging status (present/late/absent/half_day/
+  // out_without_in) and presence (in/out) into one true single-select —
+  // only one of the 7 real options (plus "all") is ever active at once.
+  // This intentionally trades away combining the two as independent
+  // facts (e.g. "late AND in" as one query); accepted tradeoff, not an
+  // oversight.
+  const [filterValue, setFilterValue] = useState(searchParams.get('status') ?? 'all');
+  const status = STATUS_VALUES.has(filterValue) ? filterValue : undefined;
+  const presence = filterValue === 'in' || filterValue === 'out' ? filterValue : undefined;
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [pageIndex, setPageIndex] = useState(0);
@@ -65,8 +68,8 @@ export default function AttendancePage() {
     page: pageIndex + 1,
     per_page: PER_PAGE,
     class_id: classFilter !== 'all' ? Number(classFilter) : undefined,
-    status: statusFilter !== 'all' ? statusFilter : undefined,
-    presence: presenceFilter !== 'all' ? (presenceFilter as 'in' | 'out') : undefined,
+    status,
+    presence,
     search: debouncedSearch || undefined,
   });
 
@@ -133,9 +136,9 @@ export default function AttendancePage() {
               </SelectContent>
             </Select>
             <Select
-              value={statusFilter}
+              value={filterValue}
               onValueChange={(value) => {
-                setStatusFilter(value);
+                setFilterValue(value);
                 setPageIndex(0);
               }}
             >
@@ -147,24 +150,10 @@ export default function AttendancePage() {
                 <SelectItem value="present">Present</SelectItem>
                 <SelectItem value="late">Late</SelectItem>
                 <SelectItem value="absent">Absent</SelectItem>
-                <SelectItem value="half_day">Half day</SelectItem>
                 <SelectItem value="out_without_in">Out without in</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={presenceFilter}
-              onValueChange={(value) => {
-                setPresenceFilter(value);
-                setPageIndex(0);
-              }}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Currently" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">In or out</SelectItem>
-                <SelectItem value="in">In (on campus)</SelectItem>
-                <SelectItem value="out">Out (left)</SelectItem>
+                <SelectItem value="half_day">Half day</SelectItem>
+                <SelectItem value="in">In</SelectItem>
+                <SelectItem value="out">Out</SelectItem>
               </SelectContent>
             </Select>
           </>
