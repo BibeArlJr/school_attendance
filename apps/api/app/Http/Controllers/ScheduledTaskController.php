@@ -3,13 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Modules\IdCard\Models\IdCard;
 use App\Modules\Import\Models\ImportBatch;
+use App\Modules\School\Models\School;
 use App\Modules\Student\Models\Student;
 use App\Support\Concerns\BelongsToSchool;
 use App\Support\Enums\UserRole;
 use App\Support\Responses\ApiResponse;
 use App\Support\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
 
@@ -209,6 +212,82 @@ class ScheduledTaskController extends Controller
                 'suspicious_imported_count_exceeds_total_rows' => $suspiciousBatches,
                 'all_batches' => $batches,
             ],
+        ]);
+    }
+
+    /**
+     * TEMPORARY, READ-ONLY diagnostic (re-diagnose-real-rejection prompt)
+     * — a real production scan was rejected, contradicting an earlier
+     * "verified working" report. Reports the EXACT stored barcode_value
+     * for a given student (byte length + hex dump, to catch invisible
+     * whitespace a visual check would miss), whether AttendanceService::
+     * processScan()'s own normalization (strtoupper+trim) would find it,
+     * and — critically — the id_card's own status and the owning
+     * school's active/license state, since IdCard::query()->where(
+     * 'school_id', $schoolId)->where('barcode_value', $barcodeValue) in
+     * that method fails silently (returns UnknownBarcode) for reasons
+     * that have nothing to do with case: a school_id mismatch, a
+     * deactivated card, or a suspended school are all real, distinct,
+     * unrelated failure modes this checks for directly rather than
+     * assuming it's the same case-sensitivity issue as before.
+     */
+    public function lookupBarcode(Request $request): JsonResponse
+    {
+        $rawInput = (string) $request->query('barcode', 'bindhya-STD-002401');
+        $normalized = mb_strtoupper(trim($rawInput));
+
+        $idCard = IdCard::withoutGlobalScope(BelongsToSchool::class)
+            ->where('barcode_value', $normalized)
+            ->with(['school:id,name,is_active,license_status,amc_expiry_date'])
+            ->first();
+
+        // Case-sensitive exact match too, to see whether storage itself
+        // has any unexpected casing/whitespace regardless of the
+        // normalized lookup above.
+        $exactCaseMatch = IdCard::withoutGlobalScope(BelongsToSchool::class)
+            ->where('barcode_value', $rawInput)
+            ->exists();
+
+        if (! $idCard) {
+            return ApiResponse::success([
+                'input' => $rawInput,
+                'normalized_input' => $normalized,
+                'found_via_normalized_match' => false,
+                'found_via_exact_case_match' => $exactCaseMatch,
+                'note' => 'No id_cards row matches this barcode_value at all (normalized), in ANY school — genuinely unknown, not a school-scoping issue.',
+            ]);
+        }
+
+        $student = Student::withoutGlobalScope(BelongsToSchool::class)->find($idCard->owner_id);
+
+        return ApiResponse::success([
+            'input' => $rawInput,
+            'normalized_input' => $normalized,
+            'found_via_normalized_match' => true,
+            'found_via_exact_case_match' => $exactCaseMatch,
+            'stored_barcode_value' => $idCard->barcode_value,
+            'stored_barcode_byte_length' => strlen($idCard->barcode_value),
+            'stored_barcode_hex' => bin2hex($idCard->barcode_value),
+            'id_card_status' => $idCard->status->value,
+            'id_card_school_id' => $idCard->school_id,
+            'school' => $idCard->school ? [
+                'id' => $idCard->school->id,
+                'name' => $idCard->school->name,
+                'is_active' => $idCard->school->is_active,
+                // The real, computed source of truth (School::
+                // licenseStatus()), not the stored license_status column,
+                // which only records the last explicit activation and can
+                // drift stale (see that method's own docblock).
+                'license_status' => $idCard->school->licenseStatus()->value,
+                'amc_expiry_date' => $idCard->school->amc_expiry_date?->toDateString(),
+            ] : null,
+            'student' => $student ? [
+                'id' => $student->id,
+                'uuid' => $student->uuid,
+                'name' => trim("{$student->first_name} {$student->last_name}"),
+                'status' => $student->status->value,
+                'school_id' => $student->school_id,
+            ] : null,
         ]);
     }
 }

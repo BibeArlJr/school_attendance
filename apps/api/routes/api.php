@@ -47,6 +47,11 @@ Route::post('/tasks/fix-super-admin-email', [ScheduledTaskController::class, 'fi
 Route::post('/tasks/diagnose-duplicate-students', [ScheduledTaskController::class, 'diagnoseDuplicateStudents'])
     ->middleware(VerifyScheduledTaskSecret::class);
 
+// TEMPORARY, READ-ONLY — see ScheduledTaskController::lookupBarcode()'s
+// docblock. GET, not POST: no side effects, just a query param.
+Route::get('/tasks/lookup-barcode', [ScheduledTaskController::class, 'lookupBarcode'])
+    ->middleware(VerifyScheduledTaskSecret::class);
+
 Route::middleware(['auth:sanctum', 'can:access-dashboard'])->group(function () {
     Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
     Route::get('/dashboard/attendance-trend', [DashboardController::class, 'attendanceTrend']);
