@@ -52,12 +52,6 @@ Route::post('/tasks/diagnose-duplicate-students', [ScheduledTaskController::clas
 Route::get('/tasks/lookup-barcode', [ScheduledTaskController::class, 'lookupBarcode'])
     ->middleware(VerifyScheduledTaskSecret::class);
 
-// TEMPORARY — see ScheduledTaskController::backfillAdminStaffRows()'s
-// docblock. The underlying artisan command is permanent; this HTTP
-// wrapper is removed again once used against production.
-Route::post('/tasks/backfill-admin-staff-rows', [ScheduledTaskController::class, 'backfillAdminStaffRows'])
-    ->middleware(VerifyScheduledTaskSecret::class);
-
 Route::middleware(['auth:sanctum', 'can:access-dashboard'])->group(function () {
     Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
     Route::get('/dashboard/attendance-trend', [DashboardController::class, 'attendanceTrend']);
