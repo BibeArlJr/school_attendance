@@ -9,12 +9,14 @@ use App\Modules\School\Models\School;
 use App\Modules\Sms\Models\SmsProviderConfig;
 use App\Modules\Student\Models\Student;
 use App\Support\Concerns\BelongsToSchool;
+use App\Support\Contracts\SmsServiceInterface;
 use App\Support\Enums\UserRole;
 use App\Support\Responses\ApiResponse;
 use App\Support\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -367,5 +369,44 @@ class ScheduledTaskController extends Controller
             'has_token' => ! empty($config->credentials['token'] ?? null),
             'has_sender_id' => ! empty($config->credentials['sender_id'] ?? null),
         ], 'Sparrow credentials set.');
+    }
+
+    /**
+     * TEMPORARY, READ-ONLY verification (set-real-sparrow-credentials
+     * prompt, step 3) — calls the exact same SmsServiceInterface::
+     * getCredits() the real GET /sms/credits endpoint uses (not a
+     * reimplementation), immediately after setSparrowCredentials() wrote
+     * a real token into production. Also makes the same raw HTTP call
+     * directly (same reasoning as the now-removed diagnoseSmsCreditsRaw
+     * — getCredits() swallows any non-2xx response down to a bare 0/0,
+     * so a genuinely different failure, e.g. the IP whitelist now being
+     * reachable at all, would otherwise be indistinguishable from
+     * success or from the old "no credentials" state).
+     */
+    public function verifySparrowCredits(): JsonResponse
+    {
+        $smsService = app(SmsServiceInterface::class);
+
+        $config = SmsProviderConfig::withoutGlobalScope(BelongsToSchool::class)
+            ->where('provider_name', 'sparrow')
+            ->where('is_active', true)
+            ->whereNull('school_id')
+            ->first();
+
+        $raw = null;
+
+        if ($config && ! empty($config->credentials['token'])) {
+            $response = Http::get('https://api.sparrowsms.com/v2/credit/', ['token' => $config->credentials['token']]);
+            $raw = [
+                'http_status' => $response->status(),
+                'raw_body' => $response->body(),
+            ];
+        }
+
+        return ApiResponse::success([
+            'resolved_service_class' => get_class($smsService),
+            'get_credits_result' => $smsService->getCredits(),
+            'raw_sparrow_response' => $raw,
+        ]);
     }
 }
