@@ -6,18 +6,14 @@ use App\Models\User;
 use App\Modules\IdCard\Models\IdCard;
 use App\Modules\Import\Models\ImportBatch;
 use App\Modules\School\Models\School;
-use App\Modules\Sms\Models\SmsProviderConfig;
 use App\Modules\Student\Models\Student;
 use App\Support\Concerns\BelongsToSchool;
-use App\Support\Contracts\SmsServiceInterface;
 use App\Support\Enums\UserRole;
 use App\Support\Responses\ApiResponse;
 use App\Support\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 /**
@@ -310,103 +306,4 @@ class ScheduledTaskController extends Controller
         ]);
     }
 
-    /**
-     * TEMPORARY, ONE-OFF write endpoint (set-real-sparrow-credentials
-     * prompt) — production's sms_provider_configs platform-wide row
-     * (school_id null, provider_name sparrow) has never held a real
-     * token/sender_id (confirmed via the now-removed
-     * diagnoseSmsCreditsRaw: created_at === updated_at, never written to
-     * since creation). There is no UI anywhere in this app for editing
-     * SMS provider credentials — the only prior write path was the
-     * create-table migration's one-time firstOrCreate, which can never
-     * run again. POST, not GET: the token/sender_id are read from the
-     * request BODY, never a query string, so they never land in a
-     * server access log. Meant to be removed again in a follow-up commit
-     * immediately after use, same discipline as fixSuperAdminEmail.
-     */
-    public function setSparrowCredentials(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'token' => ['required', 'string'],
-            'sender_id' => ['required', 'string'],
-        ]);
-
-        if ($validator->fails()) {
-            return ApiResponse::error('Validation failed.', $validator->errors(), 422);
-        }
-
-        $config = SmsProviderConfig::withoutGlobalScope(BelongsToSchool::class)
-            ->where('provider_name', 'sparrow')
-            ->whereNull('school_id')
-            ->first();
-
-        if (! $config) {
-            return ApiResponse::error('No platform-wide sparrow config row exists to update.', null, 404);
-        }
-
-        $config->update([
-            'credentials' => [
-                'token' => $request->string('token')->toString(),
-                'sender_id' => $request->string('sender_id')->toString(),
-            ],
-            'is_active' => true,
-        ]);
-        $config->refresh();
-
-        app(AuditLogger::class)->log(
-            'sms_provider_config.credentials_set',
-            'sms_provider_config',
-            $config->id,
-            null,
-            null,
-            null,
-        );
-
-        return ApiResponse::success([
-            'id' => $config->id,
-            'school_id' => $config->school_id,
-            'is_active' => $config->is_active,
-            'has_token' => ! empty($config->credentials['token'] ?? null),
-            'has_sender_id' => ! empty($config->credentials['sender_id'] ?? null),
-        ], 'Sparrow credentials set.');
-    }
-
-    /**
-     * TEMPORARY, READ-ONLY verification (set-real-sparrow-credentials
-     * prompt, step 3) — calls the exact same SmsServiceInterface::
-     * getCredits() the real GET /sms/credits endpoint uses (not a
-     * reimplementation), immediately after setSparrowCredentials() wrote
-     * a real token into production. Also makes the same raw HTTP call
-     * directly (same reasoning as the now-removed diagnoseSmsCreditsRaw
-     * — getCredits() swallows any non-2xx response down to a bare 0/0,
-     * so a genuinely different failure, e.g. the IP whitelist now being
-     * reachable at all, would otherwise be indistinguishable from
-     * success or from the old "no credentials" state).
-     */
-    public function verifySparrowCredits(): JsonResponse
-    {
-        $smsService = app(SmsServiceInterface::class);
-
-        $config = SmsProviderConfig::withoutGlobalScope(BelongsToSchool::class)
-            ->where('provider_name', 'sparrow')
-            ->where('is_active', true)
-            ->whereNull('school_id')
-            ->first();
-
-        $raw = null;
-
-        if ($config && ! empty($config->credentials['token'])) {
-            $response = Http::get('https://api.sparrowsms.com/v2/credit/', ['token' => $config->credentials['token']]);
-            $raw = [
-                'http_status' => $response->status(),
-                'raw_body' => $response->body(),
-            ];
-        }
-
-        return ApiResponse::success([
-            'resolved_service_class' => get_class($smsService),
-            'get_credits_result' => $smsService->getCredits(),
-            'raw_sparrow_response' => $raw,
-        ]);
-    }
 }

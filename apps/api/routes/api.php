@@ -52,17 +52,6 @@ Route::post('/tasks/diagnose-duplicate-students', [ScheduledTaskController::clas
 Route::get('/tasks/lookup-barcode', [ScheduledTaskController::class, 'lookupBarcode'])
     ->middleware(VerifyScheduledTaskSecret::class);
 
-// TEMPORARY, ONE-OFF — see
-// ScheduledTaskController::setSparrowCredentials()'s docblock. POST so
-// the token/sender_id come from the body, never a query string.
-Route::post('/tasks/set-sparrow-credentials', [ScheduledTaskController::class, 'setSparrowCredentials'])
-    ->middleware(VerifyScheduledTaskSecret::class);
-
-// TEMPORARY, READ-ONLY — see
-// ScheduledTaskController::verifySparrowCredits()'s docblock.
-Route::get('/tasks/verify-sparrow-credits', [ScheduledTaskController::class, 'verifySparrowCredits'])
-    ->middleware(VerifyScheduledTaskSecret::class);
-
 Route::middleware(['auth:sanctum', 'can:access-dashboard'])->group(function () {
     Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
     Route::get('/dashboard/attendance-trend', [DashboardController::class, 'attendanceTrend']);
