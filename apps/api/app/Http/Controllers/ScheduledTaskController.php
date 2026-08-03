@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\IdCard\Models\IdCard;
 use App\Modules\Import\Models\ImportBatch;
 use App\Modules\School\Models\School;
+use App\Modules\Sms\Models\SmsProviderConfig;
 use App\Modules\Student\Models\Student;
 use App\Support\Concerns\BelongsToSchool;
 use App\Support\Enums\UserRole;
@@ -14,6 +15,7 @@ use App\Support\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 /**
@@ -303,6 +305,40 @@ class ScheduledTaskController extends Controller
                 'status' => $student->status->value,
                 'school_id' => $student->school_id,
             ] : null,
+        ]);
+    }
+
+    /**
+     * TEMPORARY, READ-ONLY diagnostic (re-check-sparrow-response-after-ip-
+     * whitelist prompt) — the user added Render's two documented outbound
+     * CIDR ranges to Sparrow's IP whitelist; credits still show 0/0.
+     * getCredits() itself can't answer whether the whitelist fix worked,
+     * since it swallows the raw provider response down to just
+     * credits_available/credits_consumed (both default to 0 on ANY
+     * failure, not only an IP rejection) — so this makes the exact same
+     * raw HTTP call directly and returns Sparrow's real response body
+     * verbatim, uninterpreted, so a genuinely different failure (or a
+     * genuine success masked by some other bug) isn't misread as "still
+     * the same IP problem".
+     */
+    public function diagnoseSmsCreditsRaw(): JsonResponse
+    {
+        $config = SmsProviderConfig::query()
+            ->where('provider_name', 'sparrow')
+            ->where('is_active', true)
+            ->whereNull('school_id')
+            ->first();
+
+        if (! $config || empty($config->credentials['token'])) {
+            return ApiResponse::error('No active platform-wide sparrow config with a token found.', null, 404);
+        }
+
+        $response = Http::get('https://api.sparrowsms.com/v2/credit/', ['token' => $config->credentials['token']]);
+
+        return ApiResponse::success([
+            'http_status' => $response->status(),
+            'raw_body' => $response->body(),
+            'parsed_body' => $response->json(),
         ]);
     }
 }
