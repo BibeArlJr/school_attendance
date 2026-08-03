@@ -9,6 +9,15 @@ use Illuminate\Support\Facades\Route;
 // architecture constraint.
 Route::middleware(['auth:sanctum', 'can:access-sms-log'])->group(function () {
     Route::get('/sms-logs', [SmsController::class, 'index']);
+});
+
+// Credit balance is a platform-wide resource — one shared Sparrow
+// account across every school, not per-school data like the log rows
+// above. Reuses platform-admin (super_admin-only) rather than
+// access-sms-log (super_admin/admin): a school admin has no reason to
+// see a balance that isn't theirs and doesn't describe their own
+// school's usage.
+Route::middleware(['auth:sanctum', 'can:platform-admin'])->group(function () {
     Route::get('/sms/credits', [SmsController::class, 'credits']);
 });
 

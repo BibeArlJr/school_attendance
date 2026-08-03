@@ -13,10 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
+import { useCan } from '@/shared/hooks/useCan';
 
 const PER_PAGE = 15;
 
 export default function SmsLogPage() {
+  const isSuperAdmin = useCan(['super_admin']);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -39,9 +41,11 @@ export default function SmsLogPage() {
 
   return (
     <PageContainer title="SMS Log" description="Every SMS attempt sent to parents, real or mock.">
-      <div className="mb-4">
-        <CreditsCard />
-      </div>
+      {isSuperAdmin && (
+        <div className="mb-4">
+          <CreditsCard />
+        </div>
+      )}
 
       <DataTable
         columns={columns}
