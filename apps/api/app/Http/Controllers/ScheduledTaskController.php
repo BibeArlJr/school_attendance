@@ -323,19 +323,38 @@ class ScheduledTaskController extends Controller
      */
     public function diagnoseSmsCreditsRaw(): JsonResponse
     {
-        $config = SmsProviderConfig::query()
+        // Report every row's real current state first — do not assume the
+        // shape found earlier today (one active, school_id-null row)
+        // still holds. Never dump the raw token; only report whether one
+        // is present.
+        $allConfigs = SmsProviderConfig::withoutGlobalScope(BelongsToSchool::class)
+            ->get()
+            ->map(fn (SmsProviderConfig $c) => [
+                'id' => $c->id,
+                'school_id' => $c->school_id,
+                'provider_name' => $c->provider_name,
+                'is_active' => $c->is_active,
+                'has_token' => ! empty($c->credentials['token'] ?? null),
+                'has_sender_id' => ! empty($c->credentials['sender_id'] ?? null),
+            ]);
+
+        $config = SmsProviderConfig::withoutGlobalScope(BelongsToSchool::class)
             ->where('provider_name', 'sparrow')
             ->where('is_active', true)
             ->whereNull('school_id')
             ->first();
 
         if (! $config || empty($config->credentials['token'])) {
-            return ApiResponse::error('No active platform-wide sparrow config with a token found.', null, 404);
+            return ApiResponse::success([
+                'sms_provider_configs' => $allConfigs,
+                'note' => 'No active, school_id-null sparrow config with a token found — see sms_provider_configs above for the real current state.',
+            ]);
         }
 
         $response = Http::get('https://api.sparrowsms.com/v2/credit/', ['token' => $config->credentials['token']]);
 
         return ApiResponse::success([
+            'sms_provider_configs' => $allConfigs,
             'http_status' => $response->status(),
             'raw_body' => $response->body(),
             'parsed_body' => $response->json(),
