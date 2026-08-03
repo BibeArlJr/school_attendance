@@ -36,6 +36,13 @@ export default function AttendancePage() {
   const [date, setDate] = useState(searchParams.get('date') ?? today());
   const [classFilter, setClassFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') ?? 'all');
+  // Separate from statusFilter deliberately — presence (in/out) is who's
+  // currently on campus vs already left, orthogonal to the present/late/
+  // absent/half_day daily classification (a late student who hasn't left
+  // yet is both `late` and `in` at once, so merging this into one
+  // dropdown would force a false either/or choice between two facts that
+  // can both be true simultaneously).
+  const [presenceFilter, setPresenceFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [pageIndex, setPageIndex] = useState(0);
@@ -59,6 +66,7 @@ export default function AttendancePage() {
     per_page: PER_PAGE,
     class_id: classFilter !== 'all' ? Number(classFilter) : undefined,
     status: statusFilter !== 'all' ? statusFilter : undefined,
+    presence: presenceFilter !== 'all' ? (presenceFilter as 'in' | 'out') : undefined,
     search: debouncedSearch || undefined,
   });
 
@@ -141,6 +149,22 @@ export default function AttendancePage() {
                 <SelectItem value="absent">Absent</SelectItem>
                 <SelectItem value="half_day">Half day</SelectItem>
                 <SelectItem value="out_without_in">Out without in</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={presenceFilter}
+              onValueChange={(value) => {
+                setPresenceFilter(value);
+                setPageIndex(0);
+              }}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Currently" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">In or out</SelectItem>
+                <SelectItem value="in">In (on campus)</SelectItem>
+                <SelectItem value="out">Out (left)</SelectItem>
               </SelectContent>
             </Select>
           </>

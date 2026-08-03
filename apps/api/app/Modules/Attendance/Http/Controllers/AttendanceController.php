@@ -52,6 +52,13 @@ class AttendanceController extends Controller
         // — it must be resolved against the owner table (active students/staff
         // minus those with a record), not filtered out of attendance_records.
         if ($request->query('status') === 'absent') {
+            // Presence (in/out) describes a real scan's in_time/out_time —
+            // an absent owner never scanned at all, so combining the two
+            // is a logically empty intersection, not a query to run.
+            if ($request->query('presence')) {
+                return ApiResponse::success(new LengthAwarePaginator([], 0, (int) $request->query('per_page', 15), 1));
+            }
+
             return $this->absentIndex($request, $schoolId, $date, $ownerType);
         }
 
@@ -63,6 +70,19 @@ class AttendanceController extends Controller
 
         if ($status = $request->query('status')) {
             $query->where('status', $status);
+        }
+
+        // Presence is a separate, orthogonal dimension from status — "who's
+        // currently on campus" (in_time set, out_time not) vs "who's
+        // already left" (both set), independent of present/late/half_day
+        // classification. A late-but-still-on-campus student is real and
+        // valid: status=late AND presence=in can both apply to one row.
+        if ($presence = $request->query('presence')) {
+            if ($presence === 'in') {
+                $query->whereNotNull('in_time')->whereNull('out_time');
+            } elseif ($presence === 'out') {
+                $query->whereNotNull('in_time')->whereNotNull('out_time');
+            }
         }
 
         // class_id only applies to students — Staff has no class concept.

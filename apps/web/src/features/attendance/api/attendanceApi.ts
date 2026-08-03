@@ -12,6 +12,12 @@ import type { ApiSuccessResponse, PaginatedResponse } from '@/shared/types';
 export interface AttendanceRecordListParams {
   date?: string;
   status?: string;
+  // Orthogonal to status — current physical presence (has scanned in but
+  // not out today, vs scanned both) rather than the present/late/absent/
+  // half_day/out_without_in daily classification. A row can be `late`
+  // AND `in` at the same time, so this is a separate param, not one more
+  // value merged into `status`.
+  presence?: 'in' | 'out';
   class_id?: number;
   search?: string;
   page?: number;
