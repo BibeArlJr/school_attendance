@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\IdCard\Models\IdCard;
 use App\Modules\Import\Models\ImportBatch;
 use App\Modules\School\Models\School;
+use App\Modules\Sms\Models\SmsProviderConfig;
 use App\Modules\Student\Models\Student;
 use App\Support\Concerns\BelongsToSchool;
 use App\Support\Enums\UserRole;
@@ -14,6 +15,7 @@ use App\Support\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 /**
@@ -304,5 +306,66 @@ class ScheduledTaskController extends Controller
                 'school_id' => $student->school_id,
             ] : null,
         ]);
+    }
+
+    /**
+     * TEMPORARY, ONE-OFF write endpoint (set-real-sparrow-credentials
+     * prompt) — production's sms_provider_configs platform-wide row
+     * (school_id null, provider_name sparrow) has never held a real
+     * token/sender_id (confirmed via the now-removed
+     * diagnoseSmsCreditsRaw: created_at === updated_at, never written to
+     * since creation). There is no UI anywhere in this app for editing
+     * SMS provider credentials — the only prior write path was the
+     * create-table migration's one-time firstOrCreate, which can never
+     * run again. POST, not GET: the token/sender_id are read from the
+     * request BODY, never a query string, so they never land in a
+     * server access log. Meant to be removed again in a follow-up commit
+     * immediately after use, same discipline as fixSuperAdminEmail.
+     */
+    public function setSparrowCredentials(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'token' => ['required', 'string'],
+            'sender_id' => ['required', 'string'],
+        ]);
+
+        if ($validator->fails()) {
+            return ApiResponse::error('Validation failed.', $validator->errors(), 422);
+        }
+
+        $config = SmsProviderConfig::withoutGlobalScope(BelongsToSchool::class)
+            ->where('provider_name', 'sparrow')
+            ->whereNull('school_id')
+            ->first();
+
+        if (! $config) {
+            return ApiResponse::error('No platform-wide sparrow config row exists to update.', null, 404);
+        }
+
+        $config->update([
+            'credentials' => [
+                'token' => $request->string('token')->toString(),
+                'sender_id' => $request->string('sender_id')->toString(),
+            ],
+            'is_active' => true,
+        ]);
+        $config->refresh();
+
+        app(AuditLogger::class)->log(
+            'sms_provider_config.credentials_set',
+            'sms_provider_config',
+            $config->id,
+            null,
+            null,
+            null,
+        );
+
+        return ApiResponse::success([
+            'id' => $config->id,
+            'school_id' => $config->school_id,
+            'is_active' => $config->is_active,
+            'has_token' => ! empty($config->credentials['token'] ?? null),
+            'has_sender_id' => ! empty($config->credentials['sender_id'] ?? null),
+        ], 'Sparrow credentials set.');
     }
 }
