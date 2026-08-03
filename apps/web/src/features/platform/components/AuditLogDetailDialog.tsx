@@ -45,7 +45,13 @@ export function AuditLogDetailDialog({ entry, onOpenChange }: AuditLogDetailDial
               <div className="min-w-0 space-y-1">
                 <p className="text-xs font-medium text-muted-foreground">Actor</p>
                 <p className="break-words">
-                  {entry.actor.name} <span className="text-muted-foreground">({entry.actor.email})</span>
+                  {entry.actor ? (
+                    <>
+                      {entry.actor.name} <span className="text-muted-foreground">({entry.actor.email})</span>
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">System</span>
+                  )}
                 </p>
               </div>
               <div className="space-y-1">

@@ -25,12 +25,15 @@ export function buildAuditLogColumns({ onViewDetails }: BuildAuditLogColumnsArgs
     {
       id: 'actor',
       header: 'Actor',
-      cell: ({ row }) => (
-        <div>
-          <div className="font-medium">{row.original.actor.name}</div>
-          <div className="text-xs text-muted-foreground">{row.original.actor.email}</div>
-        </div>
-      ),
+      cell: ({ row }) =>
+        row.original.actor ? (
+          <div>
+            <div className="font-medium">{row.original.actor.name}</div>
+            <div className="text-xs text-muted-foreground">{row.original.actor.email}</div>
+          </div>
+        ) : (
+          <span className="text-muted-foreground">System</span>
+        ),
     },
     {
       id: 'school',
