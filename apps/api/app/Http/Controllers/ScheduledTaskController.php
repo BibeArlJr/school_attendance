@@ -6,9 +6,11 @@ use App\Models\User;
 use App\Modules\IdCard\Models\IdCard;
 use App\Modules\Import\Models\ImportBatch;
 use App\Modules\School\Models\School;
+use App\Modules\Sms\Models\SmsLog;
 use App\Modules\Student\Models\Student;
 use App\Support\Concerns\BelongsToSchool;
 use App\Support\Enums\UserRole;
+use App\Support\Models\AuditLog;
 use App\Support\Responses\ApiResponse;
 use App\Support\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
@@ -306,4 +308,53 @@ class ScheduledTaskController extends Controller
         ]);
     }
 
+    /**
+     * TEMPORARY, READ-ONLY diagnostic (correlate-failed-sms-against-
+     * credit-consumption prompt) — reconciles whether two failed
+     * production sms_logs rows ("No active SMS provider credentials
+     * configured", ~12:02/12:03pm) could have consumed real Sparrow
+     * credit. RealSparrowSmsService::send() returns from that failure
+     * branch before ever calling Http::post() (confirmed by reading the
+     * method directly), so the real question this answers is whether the
+     * numbers actually reconcile: every real (non-mock) successful send's
+     * timestamp, plus exactly when real credentials were set in this
+     * environment (the sms_provider_config.credentials_set audit
+     * action), reported together so the two failed entries' timestamps
+     * can be checked against both without guessing.
+     */
+    public function correlateFailedSms(): JsonResponse
+    {
+        $failedNoCredentials = SmsLog::withoutGlobalScope(BelongsToSchool::class)
+            ->where('status', 'failed')
+            ->where('provider_response_message', 'like', '%credentials configured%')
+            ->orderBy('sent_at')
+            ->get(['id', 'school_id', 'recipient_phone', 'provider_response_code', 'provider_response_message', 'sent_at']);
+
+        $realSends = SmsLog::withoutGlobalScope(BelongsToSchool::class)
+            ->where('status', 'sent')
+            ->where('provider_response_message', '!=', 'Mock send — no real gateway called.')
+            ->orderBy('sent_at')
+            ->get(['id', 'school_id', 'message', 'provider_response_code', 'provider_response_message', 'sent_at'])
+            ->map(fn (SmsLog $log) => [
+                'id' => $log->id,
+                'school_id' => $log->school_id,
+                'sent_at' => $log->sent_at?->toDateTimeString(),
+                'provider_response_code' => $log->provider_response_code,
+                'provider_response_message' => $log->provider_response_message,
+                'message_char_length' => mb_strlen($log->message),
+                'message_is_ascii' => mb_check_encoding($log->message, 'ASCII'),
+            ]);
+
+        $credentialsSetEvents = AuditLog::query()
+            ->where('action', 'sms_provider_config.credentials_set')
+            ->orderBy('created_at')
+            ->get(['id', 'created_at', 'entity_id']);
+
+        return ApiResponse::success([
+            'failed_no_credentials_entries' => $failedNoCredentials,
+            'real_non_mock_sends' => $realSends,
+            'real_non_mock_sends_count' => $realSends->count(),
+            'credentials_set_audit_events' => $credentialsSetEvents,
+        ]);
+    }
 }
