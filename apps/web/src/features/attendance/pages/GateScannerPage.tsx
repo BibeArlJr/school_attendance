@@ -137,6 +137,22 @@ export default function GateScannerPage() {
         <form onSubmit={handleSubmit} className="w-full">
           <div className="relative">
             <ScanLine className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
+            {/* Deliberately no .toUpperCase() (or any transformation) here —
+                investigated a report that this field "changes the case" of
+                what's typed/scanned and confirmed there is none: no CSS
+                text-transform, no JS transformation anywhere in this
+                component or the scan request path, and this input is
+                functionally identical to the Students/Barcode pages'
+                search field (shared DataTable component), which has the
+                same plain value/onChange with nothing else applied. A
+                genuine scan of a real printed card legitimately reads as
+                uppercase because id_cards.barcode_value is stored/printed
+                in uppercase by convention (case-insensitive-barcode
+                prompt) — that's correct, not a bug, and not this
+                component's concern either way: case-insensitive MATCHING
+                already happens server-side (AttendanceService::
+                processScan()), so this input submits exactly what was
+                typed/scanned, unmodified, on purpose. */}
             <Input
               ref={inputRef}
               value={barcode}
