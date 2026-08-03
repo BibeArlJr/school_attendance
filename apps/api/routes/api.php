@@ -52,6 +52,12 @@ Route::post('/tasks/diagnose-duplicate-students', [ScheduledTaskController::clas
 Route::get('/tasks/lookup-barcode', [ScheduledTaskController::class, 'lookupBarcode'])
     ->middleware(VerifyScheduledTaskSecret::class);
 
+// TEMPORARY, READ-ONLY — PART A of the diagnose-then-wipe-demo-school
+// prompt. See ScheduledTaskController::diagnoseDemoSchoolWipe()'s
+// docblock. GET, not POST: no side effects.
+Route::get('/tasks/diagnose-demo-school-wipe', [ScheduledTaskController::class, 'diagnoseDemoSchoolWipe'])
+    ->middleware(VerifyScheduledTaskSecret::class);
+
 Route::middleware(['auth:sanctum', 'can:access-dashboard'])->group(function () {
     Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
     Route::get('/dashboard/attendance-trend', [DashboardController::class, 'attendanceTrend']);

@@ -3,10 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Modules\Attendance\Models\AttendanceEvent;
+use App\Modules\Attendance\Models\AttendanceRecord;
+use App\Modules\Attendance\Models\SchoolCalendar;
+use App\Modules\Attendance\Models\SchoolConfig;
 use App\Modules\IdCard\Models\IdCard;
 use App\Modules\Import\Models\ImportBatch;
+use App\Modules\ParentGuardian\Models\ParentGuardian;
+use App\Modules\ParentGuardian\Models\StudentParentLink;
+use App\Modules\School\Models\AcademicYear;
 use App\Modules\School\Models\School;
+use App\Modules\Sms\Models\SmsLog;
+use App\Modules\Staff\Models\Staff;
 use App\Modules\Student\Models\Student;
+use App\Modules\Student\Models\StudentEnrollment;
 use App\Support\Concerns\BelongsToSchool;
 use App\Support\Enums\UserRole;
 use App\Support\Responses\ApiResponse;
@@ -306,4 +316,81 @@ class ScheduledTaskController extends Controller
         ]);
     }
 
+    /**
+     * TEMPORARY, READ-ONLY diagnostic (diagnose-then-wipe-demo-school
+     * prompt, PART A) — reports exact real counts for every category the
+     * planned wipe would touch, scoped to whichever school is named
+     * "Demo School", plus a same-shape baseline for one other real school
+     * so its counts can be re-checked unchanged after the wipe. Deletes
+     * nothing. A second endpoint (executeDemoSchoolWipe) only exists
+     * after this report is reviewed and explicitly confirmed.
+     */
+    public function diagnoseDemoSchoolWipe(): JsonResponse
+    {
+        $matches = School::query()->where('name', 'Demo School')->get(['id', 'name', 'school_code', 'is_active']);
+
+        if ($matches->count() !== 1) {
+            return ApiResponse::error(
+                'Expected exactly one school named "Demo School" — refusing to guess which one.',
+                ['matches' => $matches],
+                409,
+            );
+        }
+
+        $school = $matches->first();
+        $schoolId = $school->id;
+
+        $studentIds = Student::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $schoolId)->pluck('id');
+
+        $studentEnrollments = StudentEnrollment::query()->whereIn('student_id', $studentIds)->count();
+        $idCardsStudent = IdCard::withoutGlobalScope(BelongsToSchool::class)
+            ->where('school_id', $schoolId)->where('owner_type', 'student')->count();
+        $studentParentLinks = StudentParentLink::query()->whereIn('student_id', $studentIds)->count();
+
+        $guardianIds = ParentGuardian::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $schoolId)->pluck('id');
+        $guardianLinksToOtherSchoolStudents = StudentParentLink::query()
+            ->whereIn('parent_id', $guardianIds)
+            ->whereNotIn('student_id', function ($q) use ($schoolId) {
+                $q->select('id')->from('students')->where('school_id', $schoolId);
+            })
+            ->count();
+
+        $baseline = null;
+        $otherSchool = School::query()->where('id', '!=', $schoolId)->orderBy('id')->first(['id', 'name']);
+        if ($otherSchool) {
+            $otherStudentIds = Student::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $otherSchool->id)->pluck('id');
+            $baseline = [
+                'school_id' => $otherSchool->id,
+                'school_name' => $otherSchool->name,
+                'students' => $otherStudentIds->count(),
+                'attendance_records' => AttendanceRecord::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $otherSchool->id)->count(),
+                'sms_logs' => SmsLog::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $otherSchool->id)->count(),
+                'staff' => Staff::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $otherSchool->id)->count(),
+            ];
+        }
+
+        return ApiResponse::success([
+            'school' => $school,
+            'to_be_deleted' => [
+                'students' => $studentIds->count(),
+                'student_enrollments' => $studentEnrollments,
+                'id_cards_student_owned' => $idCardsStudent,
+                'student_parent_links' => $studentParentLinks,
+                'parent_guardians' => $guardianIds->count(),
+                'attendance_events' => AttendanceEvent::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $schoolId)->count(),
+                'attendance_records' => AttendanceRecord::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $schoolId)->count(),
+                'sms_logs' => SmsLog::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $schoolId)->count(),
+                'import_batches' => ImportBatch::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $schoolId)->count(),
+            ],
+            'guardian_links_pointing_to_other_school_students' => $guardianLinksToOtherSchoolStudents,
+            'to_be_preserved' => [
+                'staff' => Staff::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $schoolId)->count(),
+                'admin_and_guard_users' => User::query()->where('school_id', $schoolId)->whereIn('role', [UserRole::Admin, UserRole::Guard])->count(),
+                'school_configs' => SchoolConfig::query()->where('school_id', $schoolId)->count(),
+                'school_calendars' => SchoolCalendar::query()->where('school_id', $schoolId)->count(),
+                'academic_years' => AcademicYear::query()->where('school_id', $schoolId)->count(),
+            ],
+            'other_school_baseline' => $baseline,
+        ]);
+    }
 }
