@@ -9,7 +9,7 @@ interface ScanFeedbackProps {
 }
 
 const REJECTION_MESSAGES: Record<string, string> = {
-  unknown_barcode: "This barcode isn't registered to any student.",
+  unknown_barcode: "This QR code isn't registered to any student.",
   card_inactive: 'This ID card has been deactivated — issue a new card.',
   owner_inactive: 'This record is not active.',
 };

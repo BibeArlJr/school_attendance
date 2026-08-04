@@ -53,12 +53,12 @@ export default function IdCardPage() {
       </div>
       {/* print:hidden — this is guidance for the print DIALOG the person
           is about to open, not something that belongs on the physical
-          card itself (Prompt 52). The barcode is sized to render at its
-          true intended width only at 100% scale; "Fit to Page" would
+          card itself (Prompt 52). The QR code is sized to render at its
+          true intended size only at 100% scale; "Fit to Page" would
           shrink it back down, silently reintroducing the compression
           Part B just fixed. */}
       <p className="print:hidden mb-4 text-center text-xs text-muted-foreground">
-        For best barcode scan reliability, set your print dialog to{' '}
+        For best QR code scan reliability, set your print dialog to{' '}
         <strong>100% / Actual Size</strong> — do not use &quot;Fit to Page&quot;.
       </p>
 

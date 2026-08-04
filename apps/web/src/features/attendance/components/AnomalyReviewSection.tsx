@@ -11,7 +11,7 @@ import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
 import { formatDateTime12h } from '@/shared/lib/time';
 
 const RESULT_LABEL: Record<string, string> = {
-  unknown_barcode: 'Unknown barcode',
+  unknown_barcode: 'Unknown QR code',
   card_inactive: 'Card inactive',
   owner_inactive: 'Record inactive',
   matched_in: 'Entry (flagged)',

@@ -38,14 +38,14 @@ export default function BarcodePage() {
   const columns = useMemo(() => buildIdCardColumns(), []);
 
   return (
-    <PageContainer title="Barcode / ID Cards" description="Every student's ID card and barcode value.">
+    <PageContainer title="QR Code / ID Cards" description="Every student's ID card and QR code value.">
       <DataTable
         columns={columns}
         data={cardsQuery.data?.data ?? []}
         isLoading={cardsQuery.isLoading}
         searchValue={search}
         onSearchChange={handleSearchChange}
-        searchPlaceholder="Search by name or barcode"
+        searchPlaceholder="Search by name or QR code"
         pageIndex={pageIndex}
         pageCount={cardsQuery.data?.last_page ?? 1}
         onPageChange={setPageIndex}

@@ -28,7 +28,7 @@ export function ReissueCardDialog({ open, onOpenChange, studentId }: ReissueCard
           <DialogTitle>Reissue ID card?</DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">
-          This deactivates the current card — its barcode will no longer scan as valid — and
+          This deactivates the current card — its QR code will no longer scan as valid — and
           issues a brand new one. Use this for a lost or damaged card.
         </p>
         <DialogFooter>

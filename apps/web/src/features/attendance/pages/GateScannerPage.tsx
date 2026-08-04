@@ -157,7 +157,7 @@ export default function GateScannerPage() {
               ref={inputRef}
               value={barcode}
               onChange={(event) => setBarcode(event.target.value)}
-              placeholder="Scan or type barcode, press Enter"
+              placeholder="Scan or type QR code, press Enter"
               className="h-14 pl-10 text-base sm:text-lg"
               autoFocus
             />

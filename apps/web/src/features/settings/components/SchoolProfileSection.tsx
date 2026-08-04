@@ -90,7 +90,7 @@ export function SchoolProfileSection() {
           <Label htmlFor="school_code">School code</Label>
           <Input id="school_code" value={profileQuery.data.school_code ?? '—'} disabled />
           <p className="text-xs text-muted-foreground">
-            Permanent — it&apos;s embedded in every barcode already issued to a student or staff
+            Permanent — it&apos;s embedded in every QR code already issued to a student or staff
             member, so changing it here would break every card printed so far.
           </p>
         </div>

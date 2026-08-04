@@ -119,7 +119,7 @@ export default function StudentsPage() {
         isLoading={studentsQuery.isLoading}
         searchValue={search}
         onSearchChange={handleSearchChange}
-        searchPlaceholder="Search by name or barcode"
+        searchPlaceholder="Search by name or QR code"
         pageIndex={pageIndex}
         pageCount={studentsQuery.data?.last_page ?? 1}
         onPageChange={setPageIndex}

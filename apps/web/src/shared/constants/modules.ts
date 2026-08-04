@@ -5,7 +5,7 @@ import {
   UserRound,
   ClipboardCheck,
   ScanLine,
-  Barcode,
+  QrCode,
   MessageSquareText,
   BarChart3,
   Settings,
@@ -89,8 +89,8 @@ export const MODULES: ModuleDef[] = [
   },
   {
     key: 'barcode',
-    label: 'Barcode',
-    icon: Barcode,
+    label: 'QR Code',
+    icon: QrCode,
     path: ROUTES.BARCODE,
     // No `phase` — Barcode ships real content this phase, not a placeholder.
     // Widened to include teacher (read-only) — reissue is gated separately,

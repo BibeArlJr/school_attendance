@@ -57,25 +57,13 @@ export function buildIdCardColumns(): ColumnDef<IdCard>[] {
     },
     {
       accessorKey: 'barcode_value',
-      header: 'Barcode',
+      header: 'QR Code',
       cell: ({ row }) => (
         // Fixed white background regardless of theme — same reasoning as
-        // IdCardView: a barcode needs a light background + dark bars to
-        // stay scannable, in dark mode and on paper alike.
+        // IdCardView: a QR code needs a light background + dark modules
+        // to stay scannable, in dark mode and on paper alike.
         <div className="inline-block rounded bg-white p-1">
-          <BarcodeImage
-            value={row.original.barcode_value}
-            height={28}
-            fontSize={10}
-            margin={4}
-            // Quiet zone only, not a size change (Prompt 52) — this
-            // column was never compressed (the table scrolls
-            // horizontally rather than squeezing its columns), so
-            // widening the side margins doesn't risk introducing the
-            // compression bug the card view had.
-            marginLeft={40}
-            marginRight={40}
-          />
+          <BarcodeImage value={row.original.barcode_value} size={48} />
         </div>
       ),
     },
