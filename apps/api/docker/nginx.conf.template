@@ -32,6 +32,21 @@ server {
         deny all;
     }
 
+    # Must come before the extension-matching block below — a `^~`
+    # prefix match wins over a `~*` regex match regardless of source
+    # order, but keeping it visually first avoids relying on that
+    # subtlety. Real production bug found live (Prompt: persistent
+    # logo storage): /api/logos/{schoolId}/{filename} is a DYNAMIC
+    # route (SettingsController::showLogo(), proxies a file from
+    # Backblaze B2) — its filename ends in .png/.jpg/etc like a real
+    # static asset, so without this exception the block below serves
+    # it as a static file straight from disk (no try_files fallback)
+    # and 404s before ever reaching php-fpm, since no such file exists
+    # in the container's own filesystem at all.
+    location ^~ /api/logos/ {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
     location ~* \.(?:jpg|jpeg|png|gif|webp|svg|ico|css|js|woff2?)$ {
         expires 30d;
         access_log off;
