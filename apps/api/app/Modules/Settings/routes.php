@@ -4,6 +4,24 @@ use App\Modules\Settings\Http\Controllers\SettingsCalendarController;
 use App\Modules\Settings\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
 
+// Public, unauthenticated — a browser requests this as a plain
+// <img src>, which can't carry an auth header (see
+// SettingsController::showLogo()'s own docblock for why this proxies
+// through the app instead of a direct B2 URL). {schoolId} constrained
+// to digits so a malformed value 404s cleanly instead of a raw
+// TypeError from the int-typed controller parameter. Exempted from
+// throttle:api (same reasoning as /health) — this fires incidentally on
+// every page load (topbar logo, ID cards) sharing one IP-keyed budget
+// with every other unauthenticated request; a busy school's shared
+// network shouldn't be able to exhaust real API calls' rate limit just
+// by loading a logo image repeatedly. Aggressive Cache-Control on the
+// response (see showLogo()) means the browser rarely re-requests it
+// anyway.
+Route::get('/logos/{schoolId}/{filename}', [SettingsController::class, 'showLogo'])
+    ->where('schoolId', '[0-9]+')
+    ->withoutMiddleware('throttle:api')
+    ->name('logos.show');
+
 // access-settings (config-generated from config/modules.php's settings
 // entry: super_admin/admin only, no teacher/guard) — no new Gate, per
 // Prompt 23's architecture constraint. Read and write share the same

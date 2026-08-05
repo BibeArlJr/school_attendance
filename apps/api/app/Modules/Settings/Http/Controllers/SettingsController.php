@@ -15,6 +15,7 @@ use App\Support\Services\CurrentSchoolResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SettingsController extends Controller
 {
@@ -52,26 +53,35 @@ class SettingsController extends Controller
     }
 
     /**
-     * Stores under logos/{school_id}/ on the public disk (web-accessible
-     * via the storage:link symlink) and deletes the previously-stored
-     * file, if any, so re-uploading doesn't leave orphaned files behind.
-     * Only ever touches logo_url — never school_id-scoped to any other
-     * school's file, since $schoolId is always resolved from the
-     * authenticated user's own current-school context.
+     * Stores under logos/{school_id}/ on the persistent uploads disk
+     * (Backblaze B2 — config('filesystems.uploads_disk'), replacing
+     * Render's ephemeral container filesystem the 'public' disk used to
+     * point at) and deletes the previously-stored file, if any, so
+     * re-uploading doesn't leave orphaned files behind. Only ever touches
+     * logo_url — never school_id-scoped to any other school's file, since
+     * $schoolId is always resolved from the authenticated user's own
+     * current-school context.
+     *
+     * logo_url is stored as this app's own showLogo route, not a raw B2
+     * URL — the B2 bucket is deliberately private (a public bucket
+     * requires payment history on Backblaze's free tier, which the whole
+     * point of choosing B2 was to avoid), so showLogo() proxies the file
+     * through the app using its own B2 credentials instead.
      */
     public function uploadLogo(UploadSchoolLogoRequest $request): JsonResponse
     {
         $schoolId = $this->schoolResolver->resolve($request->user());
         $school = School::query()->findOrFail($schoolId);
+        $disk = config('filesystems.uploads_disk');
 
         $previousPath = $school->logo_url ? $this->storagePathFromUrl($school->logo_url) : null;
 
-        $path = $request->file('logo')->store("logos/{$schoolId}", 'public');
+        $path = $request->file('logo')->store("logos/{$schoolId}", $disk);
         $before = ['logo_url' => $school->logo_url];
-        $school->update(['logo_url' => Storage::disk('public')->url($path)]);
+        $school->update(['logo_url' => route('logos.show', ['schoolId' => $schoolId, 'filename' => basename($path)])]);
 
-        if ($previousPath && Storage::disk('public')->exists($previousPath)) {
-            Storage::disk('public')->delete($previousPath);
+        if ($previousPath && Storage::disk($disk)->exists($previousPath)) {
+            Storage::disk($disk)->delete($previousPath);
         }
 
         $this->auditLogger->log('settings.school_profile_updated', 'school', $school->id, $before, ['logo_url' => $school->logo_url], $schoolId);
@@ -79,12 +89,35 @@ class SettingsController extends Controller
         return ApiResponse::success($school->fresh(), 'Logo updated successfully.');
     }
 
+    /**
+     * Public, unauthenticated proxy for a school's logo (routes.php) —
+     * the browser requests this as a plain <img src>, same as the old
+     * /storage/logos/... symlinked path did, so it can't carry an auth
+     * header. The B2 bucket itself is private; this route is what makes
+     * the file viewable at all, fetching it from B2 with the app's own
+     * credentials and streaming it back. Long cache lifetime is safe:
+     * Laravel's store() names each upload with a fresh random filename
+     * (Prompt 8's convention, unchanged here), so a replaced logo is a
+     * new URL, never a stale cache of the old one under the same URL.
+     */
+    public function showLogo(int $schoolId, string $filename): StreamedResponse
+    {
+        $disk = Storage::disk(config('filesystems.uploads_disk'));
+        $path = "logos/{$schoolId}/{$filename}";
+
+        if (! $disk->exists($path)) {
+            abort(404);
+        }
+
+        return $disk->response($path, $filename, ['Cache-Control' => 'public, max-age=31536000, immutable']);
+    }
+
     private function storagePathFromUrl(string $url): ?string
     {
-        $marker = '/storage/';
+        $marker = '/logos/';
         $position = strpos($url, $marker);
 
-        return $position === false ? null : substr($url, $position + strlen($marker));
+        return $position === false ? null : 'logos/'.substr($url, $position + strlen($marker));
     }
 
     public function attendanceConfig(Request $request): JsonResponse
