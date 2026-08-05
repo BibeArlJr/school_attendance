@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\IdCard\Models\IdCard;
 use App\Modules\Import\Models\ImportBatch;
 use App\Modules\School\Models\School;
+use App\Modules\Staff\Models\Staff;
 use App\Modules\Student\Models\Student;
 use App\Support\Concerns\BelongsToSchool;
 use App\Support\Enums\UserRole;
@@ -14,6 +15,7 @@ use App\Support\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -304,5 +306,42 @@ class ScheduledTaskController extends Controller
                 'school_id' => $student->school_id,
             ] : null,
         ]);
+    }
+
+    /**
+     * TEMPORARY, ONE-OFF cleanup (persistent-logo-storage prompt, Part C
+     * verification) — deletes the disposable "ZZ B2 Logo Verify" test
+     * school created to verify the real B2 upload flow without touching
+     * any real customer's logo. Bypasses PlatformSchoolService::destroy()'s
+     * normal "zero real students/staff" guard ONLY for this one exact
+     * school name, since that guard correctly blocks it: the school's
+     * own auto-created admin Staff row (PlatformSchoolService::create())
+     * counts as "real staff" by that check's own design, working
+     * correctly, not a bug. Scoped by exact name match, refuses to guess
+     * if more than one exists, same defensive pattern as every other
+     * one-off admin action this session.
+     */
+    public function deleteTestSchool(): JsonResponse
+    {
+        $matches = School::query()->where('name', 'ZZ B2 Logo Verify')->get();
+
+        if ($matches->count() !== 1) {
+            return ApiResponse::error(
+                'Expected exactly one school named "ZZ B2 Logo Verify" — refusing to guess which one.',
+                ['matches' => $matches],
+                409,
+            );
+        }
+
+        $school = $matches->first();
+        $schoolId = $school->id;
+
+        DB::transaction(function () use ($school, $schoolId) {
+            Staff::withoutGlobalScope(BelongsToSchool::class)->where('school_id', $schoolId)->delete();
+            User::query()->where('school_id', $schoolId)->delete();
+            $school->delete();
+        });
+
+        return ApiResponse::success(['deleted_school_id' => $schoolId], 'Test school deleted.');
     }
 }

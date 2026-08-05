@@ -52,6 +52,11 @@ Route::post('/tasks/diagnose-duplicate-students', [ScheduledTaskController::clas
 Route::get('/tasks/lookup-barcode', [ScheduledTaskController::class, 'lookupBarcode'])
     ->middleware(VerifyScheduledTaskSecret::class);
 
+// TEMPORARY, ONE-OFF — see
+// ScheduledTaskController::deleteTestSchool()'s docblock.
+Route::post('/tasks/delete-test-school', [ScheduledTaskController::class, 'deleteTestSchool'])
+    ->middleware(VerifyScheduledTaskSecret::class);
+
 Route::middleware(['auth:sanctum', 'can:access-dashboard'])->group(function () {
     Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
     Route::get('/dashboard/attendance-trend', [DashboardController::class, 'attendanceTrend']);
