@@ -11,9 +11,12 @@ export function useUpdateSchoolProfile() {
     mutationFn: settingsApi.updateSchool,
     onSuccess: (school) => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'school'] });
-      // Keeps the SchoolThemeProvider's accent color live immediately —
-      // it only reacts to authStore.branding, not this query's cache.
-      updateOwnSchoolBranding({ primary_color: school.primary_color });
+      // Keeps the SchoolThemeProvider's accent/background live immediately
+      // — it only reacts to authStore.branding, not this query's cache.
+      updateOwnSchoolBranding({
+        primary_color: school.primary_color,
+        background_color: school.background_color,
+      });
       toast.success('School profile updated successfully.');
     },
   });

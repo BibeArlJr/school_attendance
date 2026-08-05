@@ -7,6 +7,11 @@ export const schoolProfileSchema = z.object({
     .regex(/^#[0-9A-Fa-f]{6}$/, 'Use a hex color like #2563EB')
     .optional()
     .or(z.literal('')),
+  background_color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, 'Use a hex color like #2563EB')
+    .optional()
+    .or(z.literal('')),
 });
 
 export type SchoolProfileFormValues = z.infer<typeof schoolProfileSchema>;

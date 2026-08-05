@@ -56,3 +56,35 @@ export function foregroundOklchFor(hex: string): string {
 
   return luminance > 0.6 ? '0.145 0 0' : '0.985 0 0';
 }
+
+/**
+ * Applies (or clears) a school's chosen background_color as --background,
+ * paired with a computed --foreground (reusing foregroundOklchFor, same
+ * pairing already done for --primary/--primary-foreground) so body text
+ * stays readable regardless of which color was picked. One override,
+ * applied identically in light and dark mode — same mode-agnostic
+ * precedent primary_color already established, not new behavior invented
+ * just for this field.
+ *
+ * Exported as one shared function, not inlined in a useEffect, so both
+ * SchoolThemeProvider (the committed, saved value) and the Settings
+ * page's live-preview-before-save can call the exact same apply/clear
+ * logic — a live preview that used different logic than the real one
+ * would risk showing something that doesn't match what Save actually
+ * produces.
+ */
+export function applySchoolBackground(hex: string | null): void {
+  const root = document.documentElement;
+
+  if (hex) {
+    const triple = hexToOklchTriple(hex);
+    if (triple) {
+      root.style.setProperty('--background', triple);
+      root.style.setProperty('--foreground', foregroundOklchFor(hex));
+      return;
+    }
+  }
+
+  root.style.removeProperty('--background');
+  root.style.removeProperty('--foreground');
+}

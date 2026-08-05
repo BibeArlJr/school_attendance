@@ -31,6 +31,7 @@ class UpdateSchoolProfileRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'primary_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'background_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ];
     }
 }

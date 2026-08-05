@@ -24,6 +24,7 @@ class UserResource extends JsonResource
                 'slug' => $this->school->slug,
                 'logo_url' => $this->school->logo_url,
                 'primary_color' => $this->school->primary_color,
+                'background_color' => $this->school->background_color,
             ] : null),
             // Only meaningful for role=super_admin (Prompt 24) — which
             // school's data they're currently viewing, distinct from
@@ -35,6 +36,7 @@ class UserResource extends JsonResource
                 'slug' => $this->activeSchool->slug,
                 'logo_url' => $this->activeSchool->logo_url,
                 'primary_color' => $this->activeSchool->primary_color,
+                'background_color' => $this->activeSchool->background_color,
             ] : null),
         ];
     }

@@ -6,6 +6,7 @@ export interface SchoolSummary {
   slug: string;
   logo_url: string | null;
   primary_color: string | null;
+  background_color: string | null;
 }
 
 export interface AuthUser {

@@ -4,6 +4,7 @@ import type { AuthUser, SchoolSummary } from '../types';
 export interface SchoolBranding {
   logo_url: string | null;
   primary_color: string | null;
+  background_color: string | null;
 }
 
 interface AuthState {
@@ -96,7 +97,11 @@ function brandingFromUser(user: AuthUser): SchoolBranding | null {
   const school = user.role === 'super_admin' ? user.active_school : user.school;
   if (!school) return null;
 
-  return { logo_url: school.logo_url, primary_color: school.primary_color };
+  return {
+    logo_url: school.logo_url,
+    primary_color: school.primary_color,
+    background_color: school.background_color,
+  };
 }
 
 function persistBranding(branding: SchoolBranding | null) {
@@ -163,7 +168,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       const updatedSchool = { ...currentSchool, ...patch };
       const user = { ...state.user, [key]: updatedSchool };
       localStorage.setItem(USER_KEY, JSON.stringify(user));
-      const branding = { logo_url: updatedSchool.logo_url, primary_color: updatedSchool.primary_color };
+      const branding = {
+        logo_url: updatedSchool.logo_url,
+        primary_color: updatedSchool.primary_color,
+        background_color: updatedSchool.background_color,
+      };
       persistBranding(branding);
       return { user, branding };
     });

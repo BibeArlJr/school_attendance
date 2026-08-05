@@ -4,6 +4,7 @@ export interface SchoolProfile {
   slug: string;
   logo_url: string | null;
   primary_color: string | null;
+  background_color: string | null;
   // Immutable via /settings/school — embedded in every already-issued
   // barcode (SCH001-STD-...). Always shown, never editable.
   school_code: string | null;

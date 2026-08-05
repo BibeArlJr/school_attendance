@@ -14,6 +14,7 @@ import type { ApiSuccessResponse } from '@/shared/types';
 export interface SchoolProfileInput {
   name: string;
   primary_color: string | null;
+  background_color: string | null;
 }
 
 export interface AttendanceConfigInput {

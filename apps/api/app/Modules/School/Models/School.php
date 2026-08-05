@@ -27,6 +27,7 @@ class School extends Model
         'slug',
         'logo_url',
         'primary_color',
+        'background_color',
         'contact_email',
         'contact_phone',
         'license_status',

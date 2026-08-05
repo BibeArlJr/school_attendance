@@ -6,6 +6,7 @@ export interface PlatformSchool {
   slug: string;
   logo_url: string | null;
   primary_color: string | null;
+  background_color: string | null;
   school_code: string;
   contact_email: string | null;
   contact_phone: string | null;

@@ -5,6 +5,7 @@ import { useSchoolProfile } from '../hooks/useSettingsQueries';
 import { useUpdateSchoolProfile } from '../hooks/useUpdateSchoolProfile';
 import { useUploadSchoolLogo } from '../hooks/useUploadSchoolLogo';
 import { schoolProfileSchema, type SchoolProfileFormValues } from '../schema';
+import { useAuthStore } from '@/features/auth/store/authStore';
 import { ErrorState } from '@/shared/components/feedback/ErrorState';
 import { LoadingSkeleton } from '@/shared/components/feedback/LoadingSkeleton';
 import { Button } from '@/shared/components/ui/button';
@@ -20,6 +21,7 @@ import {
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { LICENSE_EXPIRED_MESSAGE, useLicenseExpired } from '@/shared/hooks/useLicenseExpired';
+import { applySchoolBackground } from '@/shared/lib/color';
 import { extractErrorMessage } from '@/shared/lib/errors';
 
 export function SchoolProfileSection() {
@@ -34,7 +36,7 @@ export function SchoolProfileSection() {
 
   const form = useForm<SchoolProfileFormValues>({
     resolver: zodResolver(schoolProfileSchema),
-    defaultValues: { name: '', primary_color: '' },
+    defaultValues: { name: '', primary_color: '', background_color: '' },
   });
 
   useEffect(() => {
@@ -42,14 +44,42 @@ export function SchoolProfileSection() {
       form.reset({
         name: profileQuery.data.name,
         primary_color: profileQuery.data.primary_color ?? '',
+        background_color: profileQuery.data.background_color ?? '',
       });
     }
   }, [profileQuery.data, form]);
+
+  // Live preview, before Save — reuses the exact same apply function
+  // SchoolThemeProvider uses for the real, committed value (shared/lib/
+  // color.ts's applySchoolBackground), so what's previewed here is
+  // guaranteed to match what Save actually produces, not a
+  // reimplementation that could drift out of sync. On cleanup (field
+  // changes again, or this page unmounts before Save), reverts to
+  // whatever the currently-committed branding.background_color actually
+  // is — read fresh from the store at cleanup time, not a stale closure
+  // — so navigating away without saving leaves no lingering preview.
+  const previewValue = form.watch('background_color');
+  useEffect(() => {
+    // Skip until the real profile has loaded and form.reset() above has
+    // run — otherwise this fires once on mount with the form's blank
+    // default value, which would briefly clear whatever background
+    // SchoolThemeProvider already applied from the committed
+    // branding.background_color, flashing the default background before
+    // the real one reasserts a moment later.
+    if (!profileQuery.data) return;
+
+    applySchoolBackground(previewValue || null);
+
+    return () => {
+      applySchoolBackground(useAuthStore.getState().branding?.background_color ?? null);
+    };
+  }, [previewValue, profileQuery.data]);
 
   function onSubmit(values: SchoolProfileFormValues) {
     updateProfile.mutate({
       name: values.name,
       primary_color: values.primary_color || null,
+      background_color: values.background_color || null,
     });
   }
 
@@ -166,6 +196,43 @@ export function SchoolProfileSection() {
                         className="h-10 w-16 cursor-pointer rounded-md border p-1"
                       />
                       <span className="text-sm text-muted-foreground">{field.value || '#2563eb'}</span>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="background_color"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Background color</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={field.value || '#ffffff'}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        className="h-10 w-16 cursor-pointer rounded-md border p-1"
+                      />
+                      {field.value ? (
+                        <>
+                          <span className="text-sm text-muted-foreground">{field.value}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => field.onChange('')}
+                          >
+                            Reset to Default
+                          </Button>
+                        </>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">
+                          Default (follows light/dark mode)
+                        </span>
+                      )}
                     </div>
                   </FormControl>
                   <FormMessage />
