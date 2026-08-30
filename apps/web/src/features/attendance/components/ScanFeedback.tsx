@@ -18,12 +18,18 @@ function ownerName(scan: ScanResult): string | null {
   if (scan.student) {
     return `${scan.student.first_name} ${scan.student.last_name}`;
   }
+  if (scan.staff) {
+    return scan.staff.name;
+  }
   return null;
 }
 
 function ownerSubtitle(scan: ScanResult): string {
   if (scan.student?.school_class) {
     return `${scan.student.school_class.name}${scan.student.school_class.section ? ` - ${scan.student.school_class.section}` : ''}`;
+  }
+  if (scan.staff?.designation) {
+    return scan.staff.designation;
   }
   return '';
 }
@@ -81,7 +87,11 @@ export function ScanFeedback({ scan }: ScanFeedbackProps) {
         </div>
         <Badge className="mt-1 gap-1">
           <CheckCircle2 className="size-3" />
-          {scan.sms_sent ? 'SMS sent' : 'No guardian on file'}
+          {scan.sms_sent
+            ? 'SMS sent'
+            : scan.owner_type === 'staff'
+              ? 'No chairman phone on file'
+              : 'No guardian on file'}
         </Badge>
       </motion.div>
     );

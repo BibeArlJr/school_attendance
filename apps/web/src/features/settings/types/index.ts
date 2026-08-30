@@ -18,6 +18,11 @@ export interface AttendanceConfig {
   early_departure_threshold_minutes: number;
   duplicate_scan_window_seconds: number;
   working_days: number[];
+  // Single chairman phone SMS'd on every staff matched_in/matched_out
+  // scan (Rebuild Staff Module Part E) — staff have no guardian, this is
+  // its parallel. Null means "not set", scan-side notification is
+  // skipped silently, same as a student with no guardian phone on file.
+  chairman_phone: string | null;
 }
 
 export type CalendarDayType = 'working' | 'holiday' | 'half_day' | 'exam_day';
@@ -47,7 +52,11 @@ export interface License {
   grace_days: number;
 }
 
-export type SmsTemplateType = 'attendance_in' | 'attendance_out';
+export type SmsTemplateType =
+  | 'attendance_in'
+  | 'attendance_out'
+  | 'staff_attendance_in'
+  | 'staff_attendance_out';
 
 export interface SmsTemplateDescription {
   school_override_text: string | null;

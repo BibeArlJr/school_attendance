@@ -6,6 +6,7 @@ export interface IdCardListParams {
   page?: number;
   per_page?: number;
   search?: string;
+  owner_type?: 'student' | 'staff';
 }
 
 export const idCardsApi = {

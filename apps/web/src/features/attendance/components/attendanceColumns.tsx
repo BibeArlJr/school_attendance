@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import type { AttendanceRecord } from '../types';
+import type { AttendanceOwnerType, AttendanceRecord } from '../types';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
@@ -15,14 +15,17 @@ const STATUS_VARIANT: Record<AttendanceRecord['status'], 'default' | 'secondary'
 };
 
 interface BuildAttendanceColumnsOptions {
+  ownerType: AttendanceOwnerType;
   canManage: boolean;
   licenseExpired: boolean;
   onEdit: (record: AttendanceRecord) => void;
 }
 
-// Student-only (Prompt 34 Part B removed the Staff tab and the
-// owner-type branch that used to build a Name/Designation pair here).
+// Restored staff branch (Rebuild Staff Module Part D.5) — Class becomes
+// Designation for the Staff tab, same pair-of-columns shape as before
+// Prompt 34 Part B removed it.
 export function buildAttendanceColumns({
+  ownerType,
   canManage,
   licenseExpired,
   onEdit,
@@ -40,17 +43,25 @@ export function buildAttendanceColumns({
     {
       id: 'name',
       header: 'Name',
-      accessorFn: (row) => (row.student ? `${row.student.first_name} ${row.student.last_name}` : '—'),
-    },
-    {
-      id: 'class',
-      header: 'Class',
-      enableSorting: false,
       accessorFn: (row) =>
-        row.student?.school_class
-          ? `${row.student.school_class.name}${row.student.school_class.section ? ` - ${row.student.school_class.section}` : ''}`
-          : '—',
+        row.student ? `${row.student.first_name} ${row.student.last_name}` : (row.staff?.name ?? '—'),
     },
+    ownerType === 'staff'
+      ? {
+          id: 'designation',
+          header: 'Designation',
+          enableSorting: false,
+          accessorFn: (row) => row.staff?.designation ?? '—',
+        }
+      : {
+          id: 'class',
+          header: 'Class',
+          enableSorting: false,
+          accessorFn: (row) =>
+            row.student?.school_class
+              ? `${row.student.school_class.name}${row.student.school_class.section ? ` - ${row.student.school_class.section}` : ''}`
+              : '—',
+        },
     {
       accessorKey: 'in_time',
       header: 'In',

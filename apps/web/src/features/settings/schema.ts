@@ -24,6 +24,10 @@ export type SchoolProfileFormValues = z.infer<typeof schoolProfileSchema>;
 export const smsTemplatesSchema = z.object({
   attendance_in: z.string().max(1000, 'Too long'),
   attendance_out: z.string().max(1000, 'Too long'),
+  // Staff attendance SMS templates (Rebuild Staff Module Part F) — sent
+  // to the chairman phone, not a guardian, on staff matched_in/matched_out.
+  staff_attendance_in: z.string().max(1000, 'Too long'),
+  staff_attendance_out: z.string().max(1000, 'Too long'),
 });
 
 export type SmsTemplatesFormValues = z.infer<typeof smsTemplatesSchema>;
@@ -55,6 +59,11 @@ export const attendanceConfigSchema = z
         message: 'Enter a whole number between 0 and 3600',
       }),
     working_days: z.array(z.number().int().min(0).max(6)).min(1, 'Select at least one working day'),
+    // Same shape as guardian_phone (students/schema.ts) — plain optional
+    // string, no client-side regex. Real normalization happens once,
+    // server-side, at SMS-send time (RealSparrowSmsService::normalizePhone()),
+    // identically for a chairman phone and a guardian phone.
+    chairman_phone: z.string().max(50, 'Too long').optional(),
   })
   .refine((data) => data.end_time > data.start_time, {
     message: 'End time must be after start time',

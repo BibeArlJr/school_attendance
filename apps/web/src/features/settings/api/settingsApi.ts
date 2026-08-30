@@ -24,6 +24,7 @@ export interface AttendanceConfigInput {
   early_departure_threshold_minutes: number;
   duplicate_scan_window_seconds: number;
   working_days: number[];
+  chairman_phone: string | null;
 }
 
 export interface CalendarEntryInput {

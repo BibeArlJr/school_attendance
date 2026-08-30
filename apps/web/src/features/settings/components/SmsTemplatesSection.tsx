@@ -15,9 +15,14 @@ import { useLicenseExpired } from '@/shared/hooks/useLicenseExpired';
 const TYPE_LABEL: Record<SmsTemplateType, string> = {
   attendance_in: 'Gate entry (IN)',
   attendance_out: 'Gate departure (OUT)',
+  staff_attendance_in: 'Staff gate entry (IN)',
+  staff_attendance_out: 'Staff gate departure (OUT)',
 };
 
 const TYPES: SmsTemplateType[] = ['attendance_in', 'attendance_out'];
+// Sent to the chairman phone (Settings -> Attendance Rules), not a
+// guardian — staff have none (Rebuild Staff Module Part F).
+const STAFF_TYPES: SmsTemplateType[] = ['staff_attendance_in', 'staff_attendance_out'];
 
 const PLACEHOLDERS = [
   { token: '{student_name}', description: "the student's full name" },
@@ -25,7 +30,18 @@ const PLACEHOLDERS = [
   { token: '{time}', description: 'the scan time (e.g. 2:45 PM)' },
 ];
 
-const EMPTY_DRAFT: SmsTemplatesFormValues = { attendance_in: '', attendance_out: '' };
+const STAFF_PLACEHOLDERS = [
+  { token: '{staff_name}', description: "the staff member's full name" },
+  { token: '{school_name}', description: "this school's name" },
+  { token: '{time}', description: 'the scan time (e.g. 2:45 PM)' },
+];
+
+const EMPTY_DRAFT: SmsTemplatesFormValues = {
+  attendance_in: '',
+  attendance_out: '',
+  staff_attendance_in: '',
+  staff_attendance_out: '',
+};
 
 export function SmsTemplatesSection() {
   const licenseExpired = useLicenseExpired();
@@ -55,10 +71,14 @@ export function SmsTemplatesSection() {
     schoolForm.reset({
       attendance_in: templates.attendance_in.school_override_text ?? '',
       attendance_out: templates.attendance_out.school_override_text ?? '',
+      staff_attendance_in: templates.staff_attendance_in.school_override_text ?? '',
+      staff_attendance_out: templates.staff_attendance_out.school_override_text ?? '',
     });
     platformForm.reset({
       attendance_in: templates.attendance_in.platform_default_text ?? '',
       attendance_out: templates.attendance_out.platform_default_text ?? '',
+      staff_attendance_in: templates.staff_attendance_in.platform_default_text ?? '',
+      staff_attendance_out: templates.staff_attendance_out.platform_default_text ?? '',
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templatesQuery.data]);
@@ -95,9 +115,20 @@ export function SmsTemplatesSection() {
         <CardHeader>
           <CardTitle>Placeholders</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <ul className="space-y-1 text-sm">
             {PLACEHOLDERS.map((p) => (
+              <li key={p.token}>
+                <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{p.token}</code>{' '}
+                <span className="text-muted-foreground">— {p.description}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-muted-foreground">
+            Staff templates (below) use their own set instead:
+          </p>
+          <ul className="space-y-1 text-sm">
+            {STAFF_PLACEHOLDERS.map((p) => (
               <li key={p.token}>
                 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{p.token}</code>{' '}
                 <span className="text-muted-foreground">— {p.description}</span>
@@ -138,6 +169,42 @@ export function SmsTemplatesSection() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Your school&apos;s staff attendance templates</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Sent to the chairman phone (Attendance Rules tab) on every staff gate scan — staff have
+            no guardian, so there's no per-staff recipient.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {STAFF_TYPES.map((type) => (
+            <SmsTemplateEditor
+              key={type}
+              label={TYPE_LABEL[type]}
+              ownerKind="staff"
+              value={watchedSchool[type]}
+              onChange={(value) => schoolForm.setValue(type, value)}
+              onSave={() =>
+                updateTemplate.mutate({ type, templateText: schoolForm.getValues(type) })
+              }
+              onReset={() => updateTemplate.mutate({ type, templateText: '' })}
+              isSaving={updateTemplate.isPending}
+              isResetting={updateTemplate.isPending}
+              isOverridden={templates[type].is_overridden}
+              fallbackText={templates[type].platform_default_text}
+              schoolNameForPreview={schoolName}
+              licenseExpired={licenseExpired}
+              helperText={
+                templates[type].is_overridden
+                  ? 'This school uses a custom message for this event.'
+                  : "Currently sending the platform default — type your own message below to override it for this school only, or leave it blank to keep tracking the platform default."
+              }
+            />
+          ))}
+        </CardContent>
+      </Card>
+
       {isSuperAdmin && (
         <Card className="border-amber-400/60">
           <CardHeader>
@@ -149,10 +216,11 @@ export function SmsTemplatesSection() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            {TYPES.map((type) => (
+            {[...TYPES, ...STAFF_TYPES].map((type) => (
               <SmsTemplateEditor
                 key={type}
                 label={TYPE_LABEL[type]}
+                ownerKind={STAFF_TYPES.includes(type) ? 'staff' : 'student'}
                 value={watchedPlatform[type]}
                 onChange={(value) => platformForm.setValue(type, value)}
                 onSave={() =>

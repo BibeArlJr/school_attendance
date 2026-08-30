@@ -7,12 +7,14 @@ import { calculateSmsSegments } from '@/shared/lib/smsSegments';
 
 const SAMPLE_PLACEHOLDERS = {
   student_name: 'Ram Sharma',
+  staff_name: 'Sita Adhikari',
   time: '2:45 PM',
 };
 
 function interpolate(template: string, schoolName: string): string {
   return template
     .replaceAll('{student_name}', SAMPLE_PLACEHOLDERS.student_name)
+    .replaceAll('{staff_name}', SAMPLE_PLACEHOLDERS.staff_name)
     .replaceAll('{school_name}', schoolName)
     .replaceAll('{time}', SAMPLE_PLACEHOLDERS.time);
 }
@@ -38,6 +40,11 @@ interface SmsTemplateEditorProps {
   schoolNameForPreview: string;
   licenseExpired: boolean;
   helperText: string;
+  /** Which sample name the preview's "sample:" line shows — student
+   *  templates use {student_name}, staff templates use {staff_name}
+   *  (Rebuild Staff Module Part F). Defaults to student for every
+   *  existing caller. */
+  ownerKind?: 'student' | 'staff';
 }
 
 export function SmsTemplateEditor({
@@ -53,6 +60,7 @@ export function SmsTemplateEditor({
   schoolNameForPreview,
   licenseExpired,
   helperText,
+  ownerKind = 'student',
 }: SmsTemplateEditorProps) {
   const isUsingFallback = value.trim() === '' && Boolean(fallbackText);
   const textForPreview = isUsingFallback ? (fallbackText ?? '') : value;
@@ -121,7 +129,9 @@ export function SmsTemplateEditor({
       <div className="rounded-md border bg-muted/50 p-3">
         <p className="mb-1 text-xs font-medium text-muted-foreground">
           {isUsingFallback ? 'Currently sending (platform default) — ' : 'Preview — '}
-          sample: {SAMPLE_PLACEHOLDERS.student_name}, {schoolNameForPreview}, {SAMPLE_PLACEHOLDERS.time}
+          sample:{' '}
+          {ownerKind === 'staff' ? SAMPLE_PLACEHOLDERS.staff_name : SAMPLE_PLACEHOLDERS.student_name},{' '}
+          {schoolNameForPreview}, {SAMPLE_PLACEHOLDERS.time}
         </p>
         <p className="text-sm" dir="auto">
           {preview || <span className="italic text-muted-foreground">Empty message</span>}

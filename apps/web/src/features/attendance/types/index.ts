@@ -28,12 +28,8 @@ export interface ScanResult {
   needs_review: boolean;
   sms_sent: boolean;
   scanned_at: string;
-  // Never 'staff' in practice anymore (Prompt 34 Part B — the backend
-  // now rejects any staff id_card scan as an unknown barcode before an
-  // owner is ever resolved), kept as the shared AttendanceOwnerType
-  // rather than narrowed further so this interface doesn't drift from
-  // what the API can genuinely still send.
   owner_type: AttendanceOwnerType | null;
+  staff: AttendanceStaffSummary | null;
   student: AttendanceStudentSummary | null;
   record: {
     in_time: string | null;

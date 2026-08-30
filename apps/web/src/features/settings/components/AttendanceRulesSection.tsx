@@ -46,6 +46,7 @@ export function AttendanceRulesSection() {
       early_departure_threshold_minutes: '0',
       duplicate_scan_window_seconds: '0',
       working_days: [],
+      chairman_phone: '',
     },
   });
 
@@ -60,6 +61,7 @@ export function AttendanceRulesSection() {
         ),
         duplicate_scan_window_seconds: String(configQuery.data.duplicate_scan_window_seconds),
         working_days: configQuery.data.working_days,
+        chairman_phone: configQuery.data.chairman_phone ?? '',
       });
     }
   }, [configQuery.data, form]);
@@ -72,6 +74,7 @@ export function AttendanceRulesSection() {
       early_departure_threshold_minutes: Number(values.early_departure_threshold_minutes),
       duplicate_scan_window_seconds: Number(values.duplicate_scan_window_seconds),
       working_days: values.working_days,
+      chairman_phone: values.chairman_phone?.trim() || null,
     });
   }
 
@@ -207,6 +210,24 @@ export function AttendanceRulesSection() {
                       </label>
                     ))}
                   </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="chairman_phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Chairman phone (staff attendance SMS)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="98XXXXXXXX" {...field} />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Staff have no guardian — every staff in/out scan SMS goes to this single
+                    number instead. Leave blank to skip staff attendance SMS entirely.
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
