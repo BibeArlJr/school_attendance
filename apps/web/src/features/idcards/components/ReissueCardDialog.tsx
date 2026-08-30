@@ -1,4 +1,3 @@
-import { useReissueIdCard } from '../hooks/useReissueIdCard';
 import { Button } from '@/shared/components/ui/button';
 import {
   Dialog,
@@ -11,16 +10,16 @@ import {
 interface ReissueCardDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  studentId: string;
+  // Decoupled from any specific owner type (restored, Rebuild Staff
+  // Module Part G) — the caller supplies its own reissue mutation
+  // (useReissueIdCard for a student, useReissueStaffIdCard for staff),
+  // this dialog just confirms and fires it. Previously hardcoded to a
+  // student uuid + useReissueIdCard internally.
+  onConfirm: () => void;
+  isPending: boolean;
 }
 
-export function ReissueCardDialog({ open, onOpenChange, studentId }: ReissueCardDialogProps) {
-  const reissueCard = useReissueIdCard(studentId);
-
-  function confirm() {
-    void reissueCard.mutateAsync().then(() => onOpenChange(false));
-  }
-
+export function ReissueCardDialog({ open, onOpenChange, onConfirm, isPending }: ReissueCardDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -35,8 +34,8 @@ export function ReissueCardDialog({ open, onOpenChange, studentId }: ReissueCard
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button variant="destructive" onClick={confirm} disabled={reissueCard.isPending}>
-            {reissueCard.isPending ? 'Reissuing…' : 'Reissue card'}
+          <Button variant="destructive" onClick={onConfirm} disabled={isPending}>
+            {isPending ? 'Reissuing…' : 'Reissue card'}
           </Button>
         </DialogFooter>
       </DialogContent>

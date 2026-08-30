@@ -28,4 +28,18 @@ export const idCardsApi = {
     );
     return data.data;
   },
+
+  // Restored (Rebuild Staff Module Part G) — same shape as the student
+  // pair above, hitting the staff-specific endpoints instead.
+  async getForStaff(staffUuid: string): Promise<IdCard> {
+    const { data } = await apiClient.get<ApiSuccessResponse<IdCard>>(`/staff/${staffUuid}/id-card`);
+    return data.data;
+  },
+
+  async reissueForStaff(staffUuid: string): Promise<IdCard> {
+    const { data } = await apiClient.post<ApiSuccessResponse<IdCard>>(
+      `/staff/${staffUuid}/id-card/reissue`,
+    );
+    return data.data;
+  },
 };

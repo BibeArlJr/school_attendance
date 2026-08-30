@@ -19,6 +19,10 @@ const ImportPage = lazy(() => import('@/features/students/pages/ImportPage'));
 const ImportReviewPage = lazy(() => import('@/features/students/pages/ImportReviewPage'));
 const UsersPage = lazy(() => import('@/features/users/pages/UsersPage'));
 const UserDetailPage = lazy(() => import('@/features/users/pages/UserDetailPage'));
+const StaffPage = lazy(() => import('@/features/staff/pages/StaffPage'));
+const StaffDetailPage = lazy(() => import('@/features/staff/pages/StaffDetailPage'));
+const StaffImportPage = lazy(() => import('@/features/staff/pages/StaffImportPage'));
+const StaffImportReviewPage = lazy(() => import('@/features/staff/pages/StaffImportReviewPage'));
 const ParentsPage = lazy(() => import('@/features/parents/pages/ParentsPage'));
 const ParentDetailPage = lazy(() => import('@/features/parents/pages/ParentDetailPage'));
 const BarcodePage = lazy(() => import('@/features/idcards/pages/BarcodePage'));
@@ -148,6 +152,22 @@ export const router = createBrowserRouter([
               {
                 path: `${ROUTES.LEGACY_TEACHERS}/:id`,
                 element: <LegacyUserDetailRedirect />,
+              },
+              {
+                path: ROUTES.STAFF,
+                element: withSuspense(withRoleGuard(staffModule, <StaffPage />)),
+              },
+              {
+                path: ROUTES.STAFF_DETAIL,
+                element: withSuspense(withRoleGuard(staffModule, <StaffDetailPage />)),
+              },
+              {
+                path: ROUTES.STAFF_IMPORT,
+                element: withSuspense(withRoleGuard(staffModule, <StaffImportPage />)),
+              },
+              {
+                path: ROUTES.STAFF_IMPORT_BATCH,
+                element: withSuspense(withRoleGuard(staffModule, <StaffImportReviewPage />)),
               },
               {
                 path: ROUTES.PARENTS,

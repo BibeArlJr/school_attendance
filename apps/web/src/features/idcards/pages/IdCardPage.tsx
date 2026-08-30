@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { IdCardView } from '../components/IdCardView';
 import { ReissueCardDialog } from '../components/ReissueCardDialog';
+import { useReissueIdCard } from '../hooks/useReissueIdCard';
 import { useStudentIdCard } from '../hooks/useStudentIdCard';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { EmptyState } from '@/shared/components/feedback/EmptyState';
@@ -19,6 +20,7 @@ export default function IdCardPage() {
   const schoolLogoUrl = useAuthStore((state) => state.branding?.logo_url);
   const canReissue = useCan(['super_admin', 'admin']);
   const [reissueOpen, setReissueOpen] = useState(false);
+  const reissueCard = useReissueIdCard(studentId);
 
   if (cardQuery.isLoading) {
     return (
@@ -65,7 +67,12 @@ export default function IdCardPage() {
       <IdCardView card={card} schoolName={schoolName} schoolLogoUrl={schoolLogoUrl} />
 
       {canReissue && (
-        <ReissueCardDialog open={reissueOpen} onOpenChange={setReissueOpen} studentId={studentId} />
+        <ReissueCardDialog
+          open={reissueOpen}
+          onOpenChange={setReissueOpen}
+          isPending={reissueCard.isPending}
+          onConfirm={() => reissueCard.mutate(undefined, { onSuccess: () => setReissueOpen(false) })}
+        />
       )}
     </PageContainer>
   );

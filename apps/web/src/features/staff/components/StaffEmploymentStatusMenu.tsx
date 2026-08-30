@@ -1,0 +1,64 @@
+import { MoreHorizontal, Trash2 } from 'lucide-react';
+import { useUpdateStaffEmploymentStatus } from '../hooks/useUpdateStaffEmploymentStatus';
+import type { Staff, StaffEmploymentStatus } from '../types';
+import { Button } from '@/shared/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu';
+import { LICENSE_EXPIRED_MESSAGE } from '@/shared/hooks/useLicenseExpired';
+
+const TRANSITIONS: { status: StaffEmploymentStatus; label: string }[] = [
+  { status: 'active', label: 'Mark as Active' },
+  { status: 'on_leave', label: 'Mark as On Leave' },
+  { status: 'resigned', label: 'Mark as Resigned' },
+];
+
+interface StaffEmploymentStatusMenuProps {
+  staff: Staff;
+  licenseExpired: boolean;
+  onDeleteRequest: (staff: Staff) => void;
+}
+
+export function StaffEmploymentStatusMenu({
+  staff,
+  licenseExpired,
+  onDeleteRequest,
+}: StaffEmploymentStatusMenuProps) {
+  const updateStatus = useUpdateStaffEmploymentStatus();
+  const availableTransitions = TRANSITIONS.filter((t) => t.status !== staff.employment_status);
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          disabled={licenseExpired}
+          title={licenseExpired ? LICENSE_EXPIRED_MESSAGE : undefined}
+          aria-label={`Change employment status for ${staff.name}`}
+        >
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {availableTransitions.map((transition) => (
+          <DropdownMenuItem
+            key={transition.status}
+            onClick={() => updateStatus.mutate({ id: staff.uuid, employmentStatus: transition.status })}
+          >
+            {transition.label}
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive" onClick={() => onDeleteRequest(staff)}>
+          <Trash2 className="size-4" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
