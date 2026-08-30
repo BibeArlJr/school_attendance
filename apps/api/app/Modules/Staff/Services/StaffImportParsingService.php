@@ -35,11 +35,24 @@ class StaffImportParsingService
         'teacher status' => 'designation',
         'teacher rank' => 'rank',
         'sheet roll no' => 'sheet_roll_no',
+        // Both spellings mapped — the real uploaded export (Teacher_
+        // Information_Report...xlsx) has this column mistyped "Adress"
+        // (single d), confirmed against the actual file, not a typo in
+        // this codebase. Kept alongside the correct spelling rather than
+        // "fixing" the map to match a spelling the real data doesn't use.
         'address' => 'address',
+        'adress' => 'address',
         'level' => 'level',
     ];
 
     private const REQUIRED_FIELDS = ['name'];
+
+    /** How many leading rows to scan for a real header row before giving
+     *  up on a sheet. The real uploaded file has a blank row 1 (a report
+     *  title row from the source system's export, confirmed against the
+     *  actual file) with the real headers on row 2 — this can't assume
+     *  row 1 the way the student parser's simpler source files allow. */
+    private const MAX_HEADER_SCAN_ROWS = 5;
 
     public function parse(UploadedFile $file, int $schoolId, int $uploadedById): ImportBatch
     {
@@ -84,20 +97,36 @@ class StaffImportParsingService
                 continue;
             }
 
-            $headerRow = $sheet->rangeToArray("A1:{$highestCol}1", null, true, false)[0];
-            $columnMap = $this->mapHeaders($headerRow);
+            $headerRowNumber = null;
+            $columnMap = [];
+            $lastScannedRow = min(self::MAX_HEADER_SCAN_ROWS, $highestRow);
+            for ($candidateRow = 1; $candidateRow <= $lastScannedRow; $candidateRow++) {
+                $candidateHeaderRow = $sheet->rangeToArray("A{$candidateRow}:{$highestCol}{$candidateRow}", null, true, false)[0];
+                $candidateMap = $this->mapHeaders($candidateHeaderRow);
 
-            if (count(array_intersect(self::REQUIRED_FIELDS, array_keys($columnMap))) < count(self::REQUIRED_FIELDS)) {
+                if (count(array_intersect(self::REQUIRED_FIELDS, array_keys($candidateMap))) >= count(self::REQUIRED_FIELDS)) {
+                    $headerRowNumber = $candidateRow;
+                    $columnMap = $candidateMap;
+                    $headerRow = $candidateHeaderRow;
+
+                    break;
+                }
+            }
+
+            if ($headerRowNumber === null) {
                 $skippedSheets[] = ['sheet_name' => $sheetName, 'reason' => 'no recognizable header row'];
 
                 continue;
             }
 
             $fieldToColumn = $columnMap;
-            $dataRows = $sheet->rangeToArray("A2:{$highestCol}{$highestRow}", null, true, false);
+            $firstDataRow = $headerRowNumber + 1;
+            $dataRows = $firstDataRow > $highestRow
+                ? []
+                : $sheet->rangeToArray("A{$firstDataRow}:{$highestCol}{$highestRow}", null, true, false);
 
             foreach ($dataRows as $offset => $row) {
-                $rowNumber = $offset + 2;
+                $rowNumber = $offset + $firstDataRow;
 
                 $isBlank = collect($row)->every(fn ($value) => $value === null || trim((string) $value) === '');
                 if ($isBlank) {
