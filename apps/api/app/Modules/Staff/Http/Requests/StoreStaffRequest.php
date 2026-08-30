@@ -18,15 +18,14 @@ class StoreStaffRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            // Prompt 26 generalized teacher-only creation to also cover
-            // guard and admin; Prompt 34 removes teacher entirely as a
-            // creatable role (existing teacher accounts are deactivated,
-            // not deleted — see StaffEmploymentStatus::Resigned). admin
-            // stays so a school isn't permanently limited to the single
-            // admin auto-created at school-creation time (Prompt 24).
-            'role' => ['required', 'in:guard,admin'],
+            'mobile' => ['nullable', 'string', 'max:50'],
+            'dob_bs' => ['nullable', 'string', 'max:20'],
+            'address' => ['nullable', 'string', 'max:255'],
+            'citizenship_number' => ['nullable', 'string', 'max:100'],
             'designation' => ['nullable', 'string', 'max:255'],
+            'rank' => ['nullable', 'string', 'max:255'],
+            'sheet_roll_no' => ['nullable', 'string', 'max:100'],
+            'level' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

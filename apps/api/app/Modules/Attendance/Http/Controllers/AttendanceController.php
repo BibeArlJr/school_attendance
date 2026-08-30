@@ -65,8 +65,14 @@ class AttendanceController extends Controller
         $query = AttendanceRecord::query()
             ->where('school_id', $schoolId)
             ->where('owner_type', $ownerType)
-            ->where('date', $date)
-            ->with($ownerType === 'student' ? 'owner.schoolClass' : 'owner.user');
+            ->where('date', $date);
+
+        // Staff has no relation worth eager-loading here — name/
+        // designation are plain columns on the Staff row itself, unlike
+        // Student's schoolClass, which is a real relation.
+        if ($ownerType === 'student') {
+            $query->with('owner.schoolClass');
+        }
 
         if ($status = $request->query('status')) {
             $query->where('status', $status);
@@ -101,9 +107,7 @@ class AttendanceController extends Controller
             } else {
                 $query->whereHasMorph('owner', [Staff::class], function ($inner) use ($search) {
                     $inner->where('designation', 'ilike', "%{$search}%")
-                        ->orWhereHas('user', function ($userQuery) use ($search) {
-                            $userQuery->where('name', 'ilike', "%{$search}%");
-                        });
+                        ->orWhere('name', 'ilike', "%{$search}%");
                 });
             }
         }
@@ -196,14 +200,11 @@ class AttendanceController extends Controller
             $query = Staff::query()
                 ->where('school_id', $schoolId)
                 ->where('employment_status', StaffEmploymentStatus::Active)
-                ->whereNotIn('id', $recordedOwnerIds)
-                ->with('user');
+                ->whereNotIn('id', $recordedOwnerIds);
 
             if ($search = trim((string) $request->query('search', ''))) {
                 $query->where('designation', 'ilike', "%{$search}%")
-                    ->orWhereHas('user', function ($userQuery) use ($search) {
-                        $userQuery->where('name', 'ilike', "%{$search}%");
-                    });
+                    ->orWhere('name', 'ilike', "%{$search}%");
             }
 
             $query->orderBy('id');
@@ -238,7 +239,7 @@ class AttendanceController extends Controller
             ] : null,
             'staff' => $ownerType === 'staff' ? [
                 'id' => $owner->id,
-                'name' => $owner->user->name,
+                'name' => $owner->name,
                 'designation' => $owner->designation,
             ] : null,
         ]);
@@ -258,9 +259,10 @@ class AttendanceController extends Controller
             // resolvedOwner.schoolClass would throw calling ::schoolClass()
             // on a Staff instance, which has no such relation.
             ->with([
+                // Staff has nothing worth eager-loading — name/
+                // designation are plain columns on the row itself.
                 'resolvedOwner' => fn ($morphTo) => $morphTo->morphWith([
                     Student::class => ['schoolClass'],
-                    Staff::class => ['user'],
                 ]),
                 'gateDevice',
                 'guardUser',

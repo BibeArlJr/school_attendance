@@ -8,6 +8,7 @@ use App\Modules\School\Models\AcademicYear;
 use App\Modules\School\Models\School;
 use App\Modules\Staff\Models\Staff;
 use App\Modules\Student\Models\Student;
+use App\Modules\Users\Models\UserAccount;
 use App\Support\Concerns\BelongsToSchool;
 use App\Support\Enums\UserRole;
 use App\Support\Exceptions\DeleteBlockedException;
@@ -69,15 +70,16 @@ class PlatformSchoolService
                 'email_verified_at' => now(),
             ]);
 
-            // Real bug found in production: this method predates Staff
-            // Management (Prompt 8) and never created a matching `staff`
-            // row for the admin it creates — StaffController::index()
-            // queries the `staff` table directly, so every school's
-            // original platform-console-created admin was a real,
-            // logged-in-capable account that silently never appeared in
-            // its own Staff Management list. Same shape as
-            // StaffService::create()'s own Staff::create() call.
-            Staff::create([
+            // Real bug found in production (predates the Staff -> Users
+            // rename too): this method never created a matching
+            // user_accounts row for the admin it creates —
+            // UserController::index() queries that table directly, so
+            // every school's original platform-console-created admin
+            // was a real, logged-in-capable account that silently never
+            // appeared in its own Users list. Same shape as
+            // UserAccountService::create()'s own UserAccount::create()
+            // call.
+            UserAccount::create([
                 'school_id' => $school->id,
                 'user_id' => $admin->id,
                 'designation' => null,
@@ -107,13 +109,17 @@ class PlatformSchoolService
      *    confirmation (deactivate, THEN delete) rather than one action
      *    that both suspends and destroys at once.
      * 2. Zero real students or staff on record — checked directly
-     *    against the Student/Staff tables, NOT the `staff_count` figure
+     *    against the Student/Staff (HR-domain personnel, not
+     *    UserAccount) tables, NOT the `staff_count` figure
      *    PlatformSchoolController::index() returns for display (that
      *    counts every User row with role admin/teacher/guard, which
      *    always includes the one admin account auto-created at creation
      *    time — using that here would make every school permanently
      *    undeletable from the moment it's created, even one created by
-     *    pure accident seconds ago).
+     *    pure accident seconds ago). UserAccount is deliberately not
+     *    checked here at all for the same reason — every school always
+     *    has at least one (its auto-created admin), so it would be an
+     *    equally always-true, always-blocking check.
      *
      * If both gates pass, the school row is deleted and every table with
      * a real FK to schools.id cascades at the database level (verified

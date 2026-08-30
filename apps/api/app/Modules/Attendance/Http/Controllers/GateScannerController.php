@@ -77,6 +77,11 @@ class GateScannerController extends Controller
                     'section' => $owner->schoolClass->section,
                 ] : null,
             ] : null,
+            'staff' => $ownerType === 'staff' && $owner ? [
+                'id' => $owner->id,
+                'name' => $owner->name,
+                'designation' => $owner->designation,
+            ] : null,
             'record' => $record ? [
                 'in_time' => $record->in_time,
                 'out_time' => $record->out_time,

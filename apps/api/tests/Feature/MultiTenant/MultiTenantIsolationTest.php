@@ -73,15 +73,29 @@ class MultiTenantIsolationTest extends TestCase
         $this->assertDatabaseHas('students', ['id' => $student->id, 'first_name' => $student->first_name]);
     }
 
+    public function test_user_account_cross_school_access_is_404_for_show_update_and_destroy(): void
+    {
+        $account = $this->makeUserAccount($this->schoolB);
+        $this->actingAsAdminA();
+
+        $this->getJson("/api/users/{$account->uuid}")->assertNotFound();
+        $this->putJson("/api/users/{$account->uuid}", [
+            'name' => 'Hacked',
+            'email' => 'hacked-'.uniqid().'@test.example',
+        ])->assertNotFound();
+        $this->deleteJson("/api/users/{$account->uuid}")->assertNotFound();
+
+        $this->assertDatabaseHas('user_accounts', ['id' => $account->id]);
+    }
+
     public function test_staff_cross_school_access_is_404_for_show_update_and_destroy(): void
     {
-        $staff = $this->makeStaff($this->schoolB);
+        $staff = $this->makeStaffMember($this->schoolB);
         $this->actingAsAdminA();
 
         $this->getJson("/api/staff/{$staff->uuid}")->assertNotFound();
         $this->putJson("/api/staff/{$staff->uuid}", [
             'name' => 'Hacked',
-            'email' => 'hacked-'.uniqid().'@test.example',
         ])->assertNotFound();
         $this->deleteJson("/api/staff/{$staff->uuid}")->assertNotFound();
 
@@ -256,11 +270,11 @@ class MultiTenantIsolationTest extends TestCase
         ]);
     }
 
-    public function test_create_staff_ignores_a_smuggled_school_id_and_stamps_the_real_one(): void
+    public function test_create_user_account_ignores_a_smuggled_school_id_and_stamps_the_real_one(): void
     {
         $this->actingAsAdminA();
 
-        $response = $this->postJson('/api/staff', [
+        $response = $this->postJson('/api/users', [
             'school_id' => $this->schoolB->id, // smuggled — must be ignored
             'name' => 'New Guard',
             'email' => 'new-guard-'.uniqid().'@test.example',
@@ -269,6 +283,25 @@ class MultiTenantIsolationTest extends TestCase
 
         $userId = User::query()->where('email', 'like', 'new-guard-%')->latest('id')->value('id');
         $this->assertDatabaseHas('users', ['id' => $userId, 'school_id' => $this->schoolA->id]);
+    }
+
+    public function test_create_staff_ignores_a_smuggled_school_id_and_stamps_the_real_one(): void
+    {
+        $this->actingAsAdminA();
+
+        $response = $this->postJson('/api/staff', [
+            'school_id' => $this->schoolB->id, // smuggled — must be ignored
+            'name' => 'New Teacher',
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('staff', [
+            'id' => $response->json('data.id'),
+            'school_id' => $this->schoolA->id,
+        ]);
+        $this->assertDatabaseMissing('staff', [
+            'id' => $response->json('data.id'),
+            'school_id' => $this->schoolB->id,
+        ]);
     }
 
     // --- Gate Scanner: cross-school barcode is cleanly rejected ---

@@ -17,6 +17,11 @@ class ImportBatch extends Model
     protected $fillable = [
         'school_id',
         'file_name',
+        // 'student' or 'staff' — which entity this batch's rows resolve
+        // to (Part H of the rebuild-staff prompt). Default 'student' at
+        // the DB level covers every batch created before this column
+        // existed.
+        'entity_type',
         'uploaded_by',
         'uploaded_at',
         'total_rows',

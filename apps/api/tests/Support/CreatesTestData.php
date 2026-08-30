@@ -14,6 +14,7 @@ use App\Modules\School\Models\School;
 use App\Modules\School\Models\SchoolClass;
 use App\Modules\Staff\Models\Staff;
 use App\Modules\Student\Models\Student;
+use App\Modules\Users\Models\UserAccount;
 use App\Support\Enums\CalendarDayType;
 use App\Support\Enums\GuardianRelation;
 use App\Support\Enums\IdCardStatus;
@@ -117,14 +118,40 @@ trait CreatesTestData
         ]);
     }
 
-    protected function makeStaff(School $school, ?User $user = null, array $overrides = []): Staff
+    /**
+     * Renamed from makeStaff — this creates a UserAccount (login-adjacent
+     * profile for an admin/guard User), not a real HR-domain Staff
+     * member. See makeStaffMember() below for that.
+     */
+    protected function makeUserAccount(School $school, ?User $user = null, array $overrides = []): UserAccount
     {
         $user ??= $this->makeUser($school, UserRole::Guard);
 
-        return Staff::forceCreate([
+        return UserAccount::forceCreate([
             'school_id' => $school->id,
             'user_id' => $user->id,
             'designation' => $overrides['designation'] ?? null,
+            'employment_status' => $overrides['employment_status'] ?? StaffEmploymentStatus::Active,
+        ]);
+    }
+
+    /**
+     * Real HR-domain personnel record — deliberately no user/login
+     * involved, matching the Staff model's own design (no user_id).
+     */
+    protected function makeStaffMember(School $school, array $overrides = []): Staff
+    {
+        return Staff::forceCreate([
+            'school_id' => $school->id,
+            'name' => $overrides['name'] ?? 'Test Staff '.Str::random(6),
+            'mobile' => $overrides['mobile'] ?? null,
+            'dob_bs' => $overrides['dob_bs'] ?? null,
+            'address' => $overrides['address'] ?? null,
+            'citizenship_number' => $overrides['citizenship_number'] ?? null,
+            'designation' => $overrides['designation'] ?? 'Teacher',
+            'rank' => $overrides['rank'] ?? null,
+            'sheet_roll_no' => $overrides['sheet_roll_no'] ?? null,
+            'level' => $overrides['level'] ?? null,
             'employment_status' => $overrides['employment_status'] ?? StaffEmploymentStatus::Active,
         ]);
     }

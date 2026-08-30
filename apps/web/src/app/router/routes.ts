@@ -7,12 +7,26 @@ export const ROUTES = {
   STUDENTS_IMPORT_BATCH: '/students/import/:batchId',
   STUDENT_DETAIL: '/students/:id',
   STUDENT_ID_CARD: '/students/:id/id-card',
-  // Renamed from /teachers (Prompt 34 Part D) — the old path still
-  // resolves, see LEGACY_TEACHERS below and its redirect in router.tsx.
-  STAFF: '/staff',
-  STAFF_DETAIL: '/staff/:id',
+  // Renamed from /staff (Staff -> Users rename). Unlike the earlier
+  // /teachers -> /staff rename, the OLD /staff URL can NOT redirect to
+  // /users here — /staff is simultaneously the real, canonical URL the
+  // NEW HR-domain Staff module below needs (that's the entire point of
+  // freeing up the name), so the same path can't be both "a dead
+  // redirect source" and "a real page" at once. A bookmark to the old
+  // /staff (Users) page now lands on the new Staff (personnel) module
+  // instead of a dead link or an infinite redirect — the closer of the
+  // two possible outcomes to "still a real, working page," not a true
+  // equivalent. Reported as a deliberate, unavoidable trade-off.
+  USERS: '/users',
+  USER_DETAIL: '/users/:id',
   // Kept only as a redirect source, never rendered directly.
   LEGACY_TEACHERS: '/teachers',
+  // New HR-domain personnel module — genuinely independent of Users
+  // above (see app/Modules/Staff on the backend).
+  STAFF: '/staff',
+  STAFF_DETAIL: '/staff/:id',
+  STAFF_IMPORT: '/staff/import',
+  STAFF_IMPORT_BATCH: '/staff/import/:batchId',
   PARENTS: '/parents',
   PARENT_DETAIL: '/parents/:id',
   ATTENDANCE: '/attendance',
@@ -36,10 +50,9 @@ export const ROUTES = {
   PLATFORM_AUDIT_LOG: '/platform/audit-log',
 } as const;
 
-// Students/Staff/Parents/Classes are all route-bound by uuid now
-// (Prompt 16) — these always take the uuid string, never the internal
-// numeric id. Import batches are unaffected (out of Prompt 16's scope)
-// and stay numeric.
+// Students/Users/Staff/Parents/Classes are all route-bound by uuid now
+// — these always take the uuid string, never the internal numeric id.
+// Import batches are unaffected and stay numeric.
 export function studentDetailPath(uuid: string): string {
   return `/students/${uuid}`;
 }
@@ -56,6 +69,14 @@ export function studentImportBatchPath(batchId: number | string): string {
   return `/students/import/${batchId}`;
 }
 
+export function userDetailPath(uuid: string): string {
+  return `/users/${uuid}`;
+}
+
 export function staffDetailPath(uuid: string): string {
   return `/staff/${uuid}`;
+}
+
+export function staffImportBatchPath(batchId: number | string): string {
+  return `/staff/import/${batchId}`;
 }

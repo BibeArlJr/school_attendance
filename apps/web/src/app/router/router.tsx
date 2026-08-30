@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, Outlet, useParams } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
 import { RoleGuard } from './RoleGuard';
-import { ROUTES, staffDetailPath } from './routes';
+import { ROUTES, userDetailPath } from './routes';
 import { LoadingSkeleton } from '@/shared/components/feedback/LoadingSkeleton';
 import { AppShell } from '@/shared/components/layout/AppShell';
 import { RouteErrorBoundary } from '@/shared/components/RouteErrorBoundary';
@@ -17,8 +17,8 @@ const ClassesPage = lazy(() => import('@/features/students/pages/ClassesPage'));
 const StudentDetailPage = lazy(() => import('@/features/students/pages/StudentDetailPage'));
 const ImportPage = lazy(() => import('@/features/students/pages/ImportPage'));
 const ImportReviewPage = lazy(() => import('@/features/students/pages/ImportReviewPage'));
-const StaffPage = lazy(() => import('@/features/staff/pages/StaffPage'));
-const StaffDetailPage = lazy(() => import('@/features/staff/pages/StaffDetailPage'));
+const UsersPage = lazy(() => import('@/features/users/pages/UsersPage'));
+const UserDetailPage = lazy(() => import('@/features/users/pages/UserDetailPage'));
 const ParentsPage = lazy(() => import('@/features/parents/pages/ParentsPage'));
 const ParentDetailPage = lazy(() => import('@/features/parents/pages/ParentDetailPage'));
 const BarcodePage = lazy(() => import('@/features/idcards/pages/BarcodePage'));
@@ -37,12 +37,12 @@ function withSuspense(element: React.ReactNode) {
   return <Suspense fallback={<LoadingSkeleton className="p-6" />}>{element}</Suspense>;
 }
 
-// /teachers/:id used the same uuid /staff/:id does — this preserves a
-// bookmarked/shared link to a specific staff member, not just a generic
-// bounce to the list (Prompt 34 Part D).
-function LegacyStaffDetailRedirect() {
+// /teachers/:id used the same uuid /users/:id does — this preserves a
+// bookmarked/shared link to a specific account, not just a generic
+// bounce to the list.
+function LegacyUserDetailRedirect() {
   const { id } = useParams<{ id: string }>();
-  return <Navigate to={id ? staffDetailPath(id) : ROUTES.STAFF} replace />;
+  return <Navigate to={id ? userDetailPath(id) : ROUTES.USERS} replace />;
 }
 
 function withRoleGuard(module: (typeof MODULES)[number], element: React.ReactNode) {
@@ -55,6 +55,7 @@ function withRoleGuard(module: (typeof MODULES)[number], element: React.ReactNod
 
 const dashboardModule = MODULES.find((module) => module.key === 'dashboard')!;
 const studentsModule = MODULES.find((module) => module.key === 'students')!;
+const usersModule = MODULES.find((module) => module.key === 'users')!;
 const staffModule = MODULES.find((module) => module.key === 'staff')!;
 const parentsModule = MODULES.find((module) => module.key === 'parents')!;
 const barcodeModule = MODULES.find((module) => module.key === 'barcode')!;
@@ -127,23 +128,26 @@ export const router = createBrowserRouter([
                 element: withSuspense(withRoleGuard(studentsModule, <ImportReviewPage />)),
               },
               {
-                path: ROUTES.STAFF,
-                element: withSuspense(withRoleGuard(staffModule, <StaffPage />)),
+                path: ROUTES.USERS,
+                element: withSuspense(withRoleGuard(usersModule, <UsersPage />)),
               },
               {
-                path: ROUTES.STAFF_DETAIL,
-                element: withSuspense(withRoleGuard(staffModule, <StaffDetailPage />)),
+                path: ROUTES.USER_DETAIL,
+                element: withSuspense(withRoleGuard(usersModule, <UserDetailPage />)),
               },
               {
-                // Prompt 34 Part D: /teachers renamed to /staff — this keeps
-                // any existing bookmark/history entry working instead of a
-                // dead link.
+                // /teachers renamed to /staff, then /staff (Users) renamed
+                // to /users — this keeps any existing bookmark/history
+                // entry working instead of a dead link. (The later /staff
+                // -> /users rename could NOT similarly redirect /staff
+                // itself, since /staff is now the new HR-domain Staff
+                // module's own real URL — see routes.ts's USERS comment.)
                 path: ROUTES.LEGACY_TEACHERS,
-                element: <Navigate to={ROUTES.STAFF} replace />,
+                element: <Navigate to={ROUTES.USERS} replace />,
               },
               {
                 path: `${ROUTES.LEGACY_TEACHERS}/:id`,
-                element: <LegacyStaffDetailRedirect />,
+                element: <LegacyUserDetailRedirect />,
               },
               {
                 path: ROUTES.PARENTS,

@@ -17,6 +17,12 @@ class UpdateAttendanceConfigRequest extends FormRequest
     public function rules(): array
     {
         return [
+            // Same loose validation as guardian phone (StoreParentGuardianRequest)
+            // — no format/regex enforcement, matching this codebase's
+            // existing convention exactly. Real normalization happens
+            // only at SMS-send time (RealSparrowSmsService::normalizePhone()),
+            // never at rest.
+            'chairman_phone' => ['nullable', 'string', 'max:50'],
             'start_time' => ['required', 'date_format:H:i:s,H:i'],
             'end_time' => ['required', 'date_format:H:i:s,H:i', 'after:start_time'],
             'late_threshold_minutes' => ['required', 'integer', 'min:0', 'max:240'],

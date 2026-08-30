@@ -17,6 +17,7 @@ class SchoolConfig extends Model
 
     protected $fillable = [
         'school_id',
+        'chairman_phone',
         'start_time',
         'end_time',
         'late_threshold_minutes',

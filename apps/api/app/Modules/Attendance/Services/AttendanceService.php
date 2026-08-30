@@ -9,6 +9,7 @@ use App\Modules\Attendance\Models\SchoolCalendar;
 use App\Modules\Attendance\Models\SchoolConfig;
 use App\Modules\IdCard\Models\IdCard;
 use App\Modules\Sms\Services\SmsTemplateResolver;
+use App\Modules\Staff\Models\Staff;
 use App\Modules\Student\Models\Student;
 use App\Support\Contracts\SmsServiceInterface;
 use App\Support\Enums\AttendanceEventResult;
@@ -18,6 +19,7 @@ use App\Support\Enums\CalendarDayType;
 use App\Support\Enums\IdCardStatus;
 use App\Support\Enums\RecordDayType;
 use App\Support\Enums\SmsTemplateType;
+use App\Support\Enums\StaffEmploymentStatus;
 use App\Support\Enums\StudentStatus;
 use App\Support\Services\NepalTime;
 use Carbon\Carbon;
@@ -28,13 +30,17 @@ use Throwable;
 /**
  * The scan-processing state machine. All business logic for a barcode
  * scan lives here, not in the controller — see Prompt 7's architecture
- * constraint. Prompt 8 generalized identity resolution and the
- * notification step to also handle owner_type = 'staff'; Prompt 34
- * reverses that — a scanned barcode only ever resolves against student
- * id_cards now (any lingering staff id_cards row is historical data,
- * treated exactly like an unrecognized barcode below). The IN/OUT/
- * duplicate/late/anomaly logic itself was never forked on owner type and
- * needed no further changes.
+ * constraint. Identity resolution and the notification step both branch
+ * on owner_type = 'student'|'staff' — the IN/OUT/duplicate/late/anomaly
+ * logic itself never forks on owner type at all, only identity
+ * resolution (isOwnerActive) and notification (which phone gets
+ * texted) do.
+ *
+ * Staff notification has no per-owner "guardian" equivalent — it goes
+ * to the single chairman_phone configured on school_configs instead
+ * (Part E of the rebuild-staff prompt). Same "never blocks attendance
+ * recording, log and move on" contract as the student path: no
+ * chairman_phone configured is not an error, just nothing to notify.
  *
  * "Outside the scheduled window" (step 3's needs_review flag on an
  * otherwise-valid IN) isn't given an exact number in the spec, so this
@@ -86,16 +92,6 @@ class AttendanceService
         $idCard = IdCard::query()->where('school_id', $schoolId)->where('barcode_value', $barcodeValue)->first();
 
         if (! $idCard) {
-            $event = $this->logEvent($schoolId, $barcodeValue, null, null, $gateDeviceId, $guardUserId, $now, AttendanceEventResult::UnknownBarcode, true);
-
-            return new ScanOutcome($event);
-        }
-
-        // Staff attendance tracking was removed (Prompt 34 Part B) — any
-        // lingering staff id_cards row (historical data, never deleted)
-        // is treated exactly like an unrecognized barcode, not processed
-        // as a staff scan and not surfaced to the guard as a known owner.
-        if ($idCard->owner_type === 'staff') {
             $event = $this->logEvent($schoolId, $barcodeValue, null, null, $gateDeviceId, $guardUserId, $now, AttendanceEventResult::UnknownBarcode, true);
 
             return new ScanOutcome($event);
@@ -204,20 +200,25 @@ class AttendanceService
 
             $event = $this->logEvent($schoolId, $barcodeValue, $ownerType, $owner->id, $gateDeviceId, $guardUserId, $now, $result, $eventNeedsReview);
 
-            // Notification step: $owner is always a Student past the
-            // staff-card rejection above (Prompt 34 Part B).
+            // Notification step: which phone gets texted branches on
+            // owner type — a student's primary guardian, or (staff has
+            // no guardian concept) the school's one chairman_phone.
             $smsSent = false;
             if (in_array($result, [AttendanceEventResult::MatchedIn, AttendanceEventResult::MatchedOut], true)) {
-                $smsSent = $this->sendParentNotification($owner, $result, $nepalNow, $schoolId, $record->id);
+                $smsSent = $owner instanceof Student
+                    ? $this->sendParentNotification($owner, $result, $nepalNow, $schoolId, $record->id)
+                    : $this->sendChairmanNotification($owner, $result, $nepalNow, $schoolId, $record->id);
             }
 
             return new ScanOutcome($event, $owner, $record, $smsSent);
         });
     }
 
-    private function isOwnerActive(Student $owner): bool
+    private function isOwnerActive(Student|Staff $owner): bool
     {
-        return $owner->status === StudentStatus::Active;
+        return $owner instanceof Student
+            ? $owner->status === StudentStatus::Active
+            : $owner->employment_status === StaffEmploymentStatus::Active;
     }
 
     private function computeStatus(AttendanceRecord $record, CalendarDayType $calendarDayType): AttendanceRecordStatus
@@ -337,6 +338,71 @@ class AttendanceService
         // record because a notification attempt blew up.
         try {
             $this->smsService->send($primaryLink->parentGuardian->phone, $message, $schoolId, $recordId);
+        } catch (Throwable $e) {
+            Log::error('SMS notification threw unexpectedly', [
+                'school_id' => $schoolId,
+                'attendance_record_id' => $recordId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Staff has no per-owner "guardian" concept — every staff
+     * matched_in/matched_out goes to the same school-wide chairman_phone
+     * (school_configs, Part E) instead of a per-student lookup. Same
+     * "never blocks attendance recording" contract as
+     * sendParentNotification: no chairman_phone configured is logged and
+     * skipped, not an error.
+     */
+    private function sendChairmanNotification(
+        Staff $staff,
+        AttendanceEventResult $result,
+        Carbon $nepalNow,
+        int $schoolId,
+        ?int $recordId,
+    ): bool {
+        $chairmanPhone = SchoolConfig::query()->find($schoolId)?->chairman_phone;
+
+        if (! $chairmanPhone) {
+            // No chairman phone configured for this school — nothing to
+            // notify, not an error condition. Still worth a log line
+            // (unlike the student "no guardian" case) since this is a
+            // school-wide gap that affects every staff scan, not just
+            // one student's own missing setup.
+            Log::info('No chairman_phone configured — skipping staff attendance notification', [
+                'school_id' => $schoolId,
+            ]);
+
+            return false;
+        }
+
+        $school = $staff->school;
+        $templateType = $result === AttendanceEventResult::MatchedIn
+            ? SmsTemplateType::StaffAttendanceIn
+            : SmsTemplateType::StaffAttendanceOut;
+
+        $message = $this->templateResolver->render($schoolId, $templateType, [
+            'staff_name' => $staff->name,
+            'school_name' => $school->name,
+            'time' => $nepalNow->format('g:i A'),
+        ]);
+
+        if ($message === null) {
+            Log::error('No SMS template resolved for staff attendance notification', [
+                'school_id' => $schoolId,
+                'type' => $templateType->value,
+            ]);
+
+            return false;
+        }
+
+        try {
+            $this->smsService->send($chairmanPhone, $message, $schoolId, $recordId);
         } catch (Throwable $e) {
             Log::error('SMS notification threw unexpectedly', [
                 'school_id' => $schoolId,

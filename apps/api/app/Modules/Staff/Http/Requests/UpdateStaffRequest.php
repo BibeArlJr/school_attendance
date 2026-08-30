@@ -3,7 +3,6 @@
 namespace App\Modules\Staff\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateStaffRequest extends FormRequest
 {
@@ -19,13 +18,14 @@ class UpdateStaffRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => [
-                'required',
-                'email',
-                'max:255',
-                Rule::unique('users', 'email')->ignore($this->route('staff')->user_id),
-            ],
+            'mobile' => ['nullable', 'string', 'max:50'],
+            'dob_bs' => ['nullable', 'string', 'max:20'],
+            'address' => ['nullable', 'string', 'max:255'],
+            'citizenship_number' => ['nullable', 'string', 'max:100'],
             'designation' => ['nullable', 'string', 'max:255'],
+            'rank' => ['nullable', 'string', 'max:255'],
+            'sheet_roll_no' => ['nullable', 'string', 'max:100'],
+            'level' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

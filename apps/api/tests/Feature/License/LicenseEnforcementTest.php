@@ -88,7 +88,7 @@ class LicenseEnforcementTest extends TestCase
                 'duplicate_scan_window_seconds' => 30,
                 'working_days' => [0, 1, 2, 3, 4, 5],
             ]),
-            'user creation' => fn () => $this->postJson('/api/staff', [
+            'user creation' => fn () => $this->postJson('/api/users', [
                 'name' => 'New Staff',
                 'email' => 'new-staff-'.uniqid().'@test.example',
                 'role' => 'guard',
@@ -253,7 +253,7 @@ class LicenseEnforcementTest extends TestCase
         $readResponse->assertStatus(403);
         $this->assertSame('school_suspended', $readResponse->json('errors.code'));
 
-        $writeResponse = $this->postJson('/api/staff', [
+        $writeResponse = $this->postJson('/api/users', [
             'name' => 'Blocked', 'email' => 'blocked-'.uniqid().'@test.example', 'role' => 'guard',
         ]);
         $writeResponse->assertStatus(403);

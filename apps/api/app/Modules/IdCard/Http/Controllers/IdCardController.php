@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\IdCardResource;
 use App\Modules\IdCard\Models\IdCard;
 use App\Modules\IdCard\Services\IdCardService;
+use App\Modules\Staff\Models\Staff;
 use App\Modules\Student\Models\Student;
 use App\Support\Responses\ApiResponse;
 use App\Support\Services\CurrentSchoolResolver;
@@ -21,22 +22,30 @@ class IdCardController extends Controller
     }
 
     /**
-     * One row per student — their current (latest) card, whatever its
+     * One row per owner — their current (latest) card, whatever its
      * status — not a full historical log of every past reissue.
+     * owner_type defaults to 'student' (unchanged behavior for every
+     * existing caller that doesn't pass it) — 'staff' is the only other
+     * accepted value.
      */
     public function index(Request $request): JsonResponse
     {
         $schoolId = $this->schoolResolver->resolve($request->user());
+        $ownerType = $request->query('owner_type', 'student');
 
         $latestIdsPerOwner = IdCard::query()
             ->selectRaw('MAX(id) as id')
             ->where('school_id', $schoolId)
-            ->where('owner_type', 'student')
+            ->where('owner_type', $ownerType)
             ->groupBy('owner_id');
 
-        $query = IdCard::query()
-            ->whereIn('id', $latestIdsPerOwner)
-            ->with(['owner.schoolClass', 'owner.currentEnrollment', 'owner.primaryParentLink.parentGuardian']);
+        $query = IdCard::query()->whereIn('id', $latestIdsPerOwner);
+
+        // Staff has no relation worth eager-loading beyond the owner
+        // itself — name/designation are plain columns on the row.
+        if ($ownerType === 'student') {
+            $query->with(['owner.schoolClass', 'owner.currentEnrollment', 'owner.primaryParentLink.parentGuardian']);
+        }
 
         if ($search = trim((string) $request->query('search', ''))) {
             // ILIKE is already case-insensitive at the query-engine level,
@@ -47,12 +56,19 @@ class IdCardController extends Controller
             // case, by policy, not by accident of which operator happens
             // to be in use.
             $normalizedSearch = strtoupper($search);
-            $query->where(function ($outer) use ($search, $normalizedSearch) {
-                $outer->where('barcode_value', 'ilike', "%{$normalizedSearch}%")
-                    ->orWhereHasMorph('owner', [Student::class], function ($inner) use ($search) {
+            $query->where(function ($outer) use ($search, $normalizedSearch, $ownerType) {
+                $outer->where('barcode_value', 'ilike', "%{$normalizedSearch}%");
+
+                if ($ownerType === 'student') {
+                    $outer->orWhereHasMorph('owner', [Student::class], function ($inner) use ($search) {
                         $inner->where('first_name', 'ilike', "%{$search}%")
                             ->orWhere('last_name', 'ilike', "%{$search}%");
                     });
+                } else {
+                    $outer->orWhereHasMorph('owner', [Staff::class], function ($inner) use ($search) {
+                        $inner->where('name', 'ilike', "%{$search}%");
+                    });
+                }
             });
         }
 

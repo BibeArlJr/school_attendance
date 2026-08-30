@@ -91,7 +91,11 @@ class AppServiceProvider extends ServiceProvider
         );
 
         // IdCard/AttendanceEvent/AttendanceRecord owner_type stores these
-        // short aliases, not fully-qualified class names.
+        // short aliases, not fully-qualified class names. 'staff' points
+        // at the HR-domain personnel model (App\Modules\Staff) — the
+        // unrelated login-account concept the old `staff` table used to
+        // back is UserAccount now (App\Modules\Users), never a
+        // polymorphic owner type at all, so it has no entry here.
         Relation::morphMap([
             'student' => Student::class,
             'staff' => Staff::class,

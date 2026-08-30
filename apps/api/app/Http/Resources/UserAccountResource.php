@@ -1,0 +1,31 @@
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+// Never returns the raw User model — per the standing convention (Prompt
+// 4-Patch), only the specific safe fields needed here.
+class UserAccountResource extends JsonResource
+{
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        $user = $this->user;
+
+        return [
+            'id' => $this->id,
+            'uuid' => $this->uuid,
+            'user_id' => $this->user_id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role->value,
+            'is_active' => $user->is_active,
+            'designation' => $this->designation,
+            'employment_status' => $this->employment_status->value,
+        ];
+    }
+}

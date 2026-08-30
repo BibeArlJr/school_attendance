@@ -5,8 +5,6 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-// Never returns the raw User model — per the standing convention (Prompt
-// 4-Patch), only the specific safe fields needed here.
 class StaffResource extends JsonResource
 {
     /**
@@ -14,18 +12,20 @@ class StaffResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $user = $this->user;
-
         return [
             'id' => $this->id,
             'uuid' => $this->uuid,
-            'user_id' => $this->user_id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $user->role->value,
-            'is_active' => $user->is_active,
+            'name' => $this->name,
+            'mobile' => $this->mobile,
+            'dob_bs' => $this->dob_bs,
+            'address' => $this->address,
+            'citizenship_number' => $this->citizenship_number,
             'designation' => $this->designation,
+            'rank' => $this->rank,
+            'sheet_roll_no' => $this->sheet_roll_no,
+            'level' => $this->level,
             'employment_status' => $this->employment_status->value,
+            'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
 }

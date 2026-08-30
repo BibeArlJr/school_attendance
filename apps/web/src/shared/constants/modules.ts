@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   GraduationCap,
+  Contact,
   Users,
   UserRound,
   ClipboardCheck,
@@ -51,16 +52,26 @@ export const MODULES: ModuleDef[] = [
     allowedRoles: ['super_admin', 'admin', 'teacher'],
   },
   {
-    // Prompt 26 generalized this page to manage both teacher and guard
-    // staff accounts (a unified list with a role column/filter, not a
-    // separate Guards page); Prompt 34 finishes the rename this label
-    // already anticipated — key/path/Gate are now 'staff' throughout,
-    // matching apps/api/config/modules.php.
+    // Real HR-domain personnel (citizenship number, address, etc.) —
+    // genuinely independent of Users below, same as the two are
+    // independent on the backend (App\Modules\Staff vs
+    // App\Modules\Users). admin/super_admin only, no teacher/guard
+    // access, matching the sensitivity of the personal data involved —
+    // same single-Gate tier as Parents.
     key: 'staff',
     label: 'Staff',
-    icon: Users,
+    icon: Contact,
     path: ROUTES.STAFF,
-    // No `phase` — this ships real content, not a placeholder.
+    allowedRoles: ['super_admin', 'admin'],
+  },
+  {
+    // Renamed from 'staff' — this manages Admin/Guard LOGIN accounts
+    // only, same function as before, just no longer sharing a name
+    // with the real HR-domain Staff module above.
+    key: 'users',
+    label: 'Users',
+    icon: Users,
+    path: ROUTES.USERS,
     allowedRoles: ['super_admin', 'admin'],
   },
   {

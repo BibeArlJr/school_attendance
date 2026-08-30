@@ -198,25 +198,70 @@ class AttendanceStateMachineTest extends TestCase
     }
 
     /**
-     * Regression test for Prompt 34 Part B: staff attendance tracking was
-     * removed, but any lingering staff id_cards row (historical data,
-     * never deleted) must still be rejected exactly like an unrecognized
-     * barcode — never processed as a staff scan, never surfacing a known
-     * owner to the guard.
+     * Staff attendance was reintroduced (rebuild-staff prompt) — a staff
+     * barcode now runs through the exact same state machine a student's
+     * does: identity resolves to a real owner, a record is created, and
+     * it's genuinely tracked, not treated as an unknown barcode.
      */
-    public function test_staff_barcode_is_rejected_exactly_like_unknown_barcode(): void
+    public function test_staff_scan_matches_in_and_creates_correct_record(): void
     {
-        $staffUser = $this->makeUser($this->school, \App\Support\Enums\UserRole::Guard);
-        $staff = $this->makeStaff($this->school, $staffUser);
-        $staffCard = $this->makeIdCard($this->school, $staff, 'staff', 'BC-STAFF-LEFTOVER');
+        $staff = $this->makeStaffMember($this->school);
+        $staffCard = $this->makeIdCard($this->school, $staff, 'staff', 'BC-STAFF-001');
 
         $outcome = $this->scanAt('2026-08-10 08:05:00', $staffCard->barcode_value);
 
-        $this->assertSame(AttendanceEventResult::UnknownBarcode, $outcome->event->result);
-        $this->assertTrue($outcome->event->needs_review);
-        $this->assertNull($outcome->owner, 'never surfaced as a known owner to the guard');
+        $this->assertSame(AttendanceEventResult::MatchedIn, $outcome->event->result);
+        $this->assertNotNull($outcome->record);
+        $this->assertSame('staff', $outcome->record->owner_type);
+        $this->assertSame($staff->id, $outcome->record->owner_id);
+        $this->assertSame('08:05:00', $outcome->record->in_time);
+        $this->assertNull($outcome->record->out_time);
+        $this->assertFalse($outcome->record->late);
+        $this->assertSame(AttendanceRecordStatus::Present, $outcome->record->status);
+    }
+
+    /**
+     * A resigned staff member's card is rejected via OwnerInactive — same
+     * "owner exists but isn't active" branch a deactivated student
+     * already hits, not the unknown-barcode path.
+     */
+    public function test_resigned_staff_scan_is_rejected_as_owner_inactive(): void
+    {
+        $staff = $this->makeStaffMember($this->school, ['employment_status' => \App\Support\Enums\StaffEmploymentStatus::Resigned]);
+        $staffCard = $this->makeIdCard($this->school, $staff, 'staff', 'BC-STAFF-RESIGNED');
+
+        $outcome = $this->scanAt('2026-08-10 08:05:00', $staffCard->barcode_value);
+
+        $this->assertSame(\App\Support\Enums\AttendanceEventResult::OwnerInactive, $outcome->event->result);
         $this->assertNull($outcome->record);
-        $this->assertSame(0, AttendanceRecord::query()->count());
+    }
+
+    /**
+     * Staff has no guardian — the notification goes to the school's
+     * chairman_phone (school_configs) instead. No chairman_phone
+     * configured must skip silently (never block the scan itself), same
+     * "notification is a side effect" contract the student path has.
+     */
+    public function test_staff_notification_goes_to_chairman_phone_not_a_guardian(): void
+    {
+        $staff = $this->makeStaffMember($this->school);
+        $staffCard = $this->makeIdCard($this->school, $staff, 'staff', 'BC-STAFF-CHAIRMAN');
+
+        // No chairman_phone configured yet (makeSchoolConfig's default) —
+        // the scan must still succeed, just with no notification sent.
+        $noPhoneOutcome = $this->scanAt('2026-08-10 08:05:00', $staffCard->barcode_value);
+        $this->assertNotNull($noPhoneOutcome->record);
+        $this->assertFalse($noPhoneOutcome->smsSent);
+
+        \App\Modules\Attendance\Models\SchoolConfig::query()->find($this->school->id)->update(['chairman_phone' => '9800000099']);
+
+        $mock = $this->mock(SmsServiceInterface::class);
+        $mock->shouldReceive('send')
+            ->once()
+            ->with('9800000099', \Mockery::type('string'), $this->school->id, \Mockery::type('int'));
+
+        $outOutcome = $this->scanAt('2026-08-10 15:35:00', $staffCard->barcode_value);
+        $this->assertTrue($outOutcome->smsSent);
     }
 
     public function test_scan_outside_scheduled_hours_still_creates_record_but_flags_needs_review(): void

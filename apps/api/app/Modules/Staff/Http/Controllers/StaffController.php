@@ -7,7 +7,7 @@ use App\Http\Resources\IdCardResource;
 use App\Http\Resources\StaffResource;
 use App\Modules\IdCard\Services\IdCardService;
 use App\Modules\Staff\Http\Requests\StoreStaffRequest;
-use App\Modules\Staff\Http\Requests\UpdateEmploymentStatusRequest;
+use App\Modules\Staff\Http\Requests\UpdateStaffEmploymentStatusRequest;
 use App\Modules\Staff\Http\Requests\UpdateStaffRequest;
 use App\Modules\Staff\Models\Staff;
 use App\Modules\Staff\Services\StaffService;
@@ -30,14 +30,13 @@ class StaffController extends Controller
     {
         $schoolId = $this->schoolResolver->resolve($request->user());
 
-        $query = Staff::query()->where('school_id', $schoolId)->with('user');
+        $query = Staff::query()->where('school_id', $schoolId);
 
         if ($search = trim((string) $request->query('search', ''))) {
-            $query->where(function ($outer) use ($search) {
-                $outer->where('designation', 'ilike', "%{$search}%")
-                    ->orWhereHas('user', function ($inner) use ($search) {
-                        $inner->where('name', 'ilike', "%{$search}%");
-                    });
+            $query->where(function ($inner) use ($search) {
+                $inner->where('name', 'ilike', "%{$search}%")
+                    ->orWhere('designation', 'ilike', "%{$search}%")
+                    ->orWhere('citizenship_number', 'ilike', "%{$search}%");
             });
         }
 
@@ -45,15 +44,8 @@ class StaffController extends Controller
             $query->where('employment_status', $employmentStatus);
         }
 
-        // Prompt 26: this list now covers both teacher and guard staff —
-        // an optional role filter narrows it back down for callers that
-        // only want one (e.g. the class-teacher picker).
-        if ($role = $request->query('role')) {
-            $query->whereHas('user', fn ($inner) => $inner->where('role', $role));
-        }
-
         $staff = $query
-            ->orderBy('id')
+            ->orderBy('name')
             ->paginate((int) $request->query('per_page', 15))
             ->withQueryString();
 
@@ -66,17 +58,14 @@ class StaffController extends Controller
     {
         $schoolId = $this->schoolResolver->resolve($request->user());
 
-        $result = $this->staffService->create($request->validated(), $schoolId);
+        $staff = $this->staffService->create($request->validated(), $schoolId);
 
-        return ApiResponse::success([
-            'staff' => new StaffResource($result['staff']),
-            'temporary_password' => $result['temporary_password'],
-        ], 'Staff member created successfully.', 201);
+        return ApiResponse::success(new StaffResource($staff), 'Staff member created successfully.', 201);
     }
 
     public function show(Staff $staff): JsonResponse
     {
-        return ApiResponse::success(new StaffResource($staff->load('user')));
+        return ApiResponse::success(new StaffResource($staff));
     }
 
     public function update(UpdateStaffRequest $request, Staff $staff): JsonResponse
@@ -86,21 +75,11 @@ class StaffController extends Controller
         return ApiResponse::success(new StaffResource($staff), 'Staff member updated successfully.');
     }
 
-    public function updateEmploymentStatus(UpdateEmploymentStatusRequest $request, Staff $staff): JsonResponse
+    public function updateEmploymentStatus(UpdateStaffEmploymentStatusRequest $request, Staff $staff): JsonResponse
     {
         $staff = $this->staffService->updateEmploymentStatus($staff, $request->validated('employment_status'));
 
         return ApiResponse::success(new StaffResource($staff), 'Employment status updated successfully.');
-    }
-
-    public function resetPassword(Staff $staff): JsonResponse
-    {
-        $temporaryPassword = $this->staffService->resetPassword($staff);
-
-        return ApiResponse::success(
-            ['temporary_password' => $temporaryPassword],
-            'Password reset successfully.',
-        );
     }
 
     public function idCard(Staff $staff): JsonResponse
@@ -111,7 +90,7 @@ class StaffController extends Controller
             return ApiResponse::error('No ID card found for this staff member.', null, 404);
         }
 
-        return ApiResponse::success(new IdCardResource($card->load('owner.user')));
+        return ApiResponse::success(new IdCardResource($card->load('owner')));
     }
 
     public function reissueIdCard(Staff $staff): JsonResponse
@@ -119,7 +98,7 @@ class StaffController extends Controller
         $card = $this->idCardService->reissueForStaff($staff);
 
         return ApiResponse::success(
-            new IdCardResource($card->load('owner.user')),
+            new IdCardResource($card->load('owner')),
             'ID card reissued successfully.',
         );
     }

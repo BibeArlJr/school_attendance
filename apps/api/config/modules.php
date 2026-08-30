@@ -12,11 +12,18 @@
 return [
     'dashboard' => ['super_admin', 'admin', 'teacher', 'guard'],
     'students' => ['super_admin', 'admin', 'teacher'],
-    // Module key renamed from 'teachers' (Prompt 34 Part D) — this now
-    // manages guard/admin accounts only, teacher is no longer creatable
+    // Renamed from 'staff' (Prompt: Rebuild Staff Module) — this key
+    // still manages guard/admin LOGIN accounts only, same as before;
+    // it's just no longer called "staff" now that a real, separate
+    // HR-domain 'staff' module exists below. teacher is not creatable
     // here (existing teacher accounts stay, deactivated — see
-    // StaffEmploymentStatus::Resigned). The allowed-viewer role list is
-    // unrelated and unchanged.
+    // StaffEmploymentStatus::Resigned).
+    'users' => ['super_admin', 'admin'],
+    // New HR-domain personnel module (Prompt: Rebuild Staff Module) —
+    // genuine employee records (citizenship number, address, etc.), not
+    // login accounts. admin/super_admin only, same single-Gate tier as
+    // Parents — no teacher/guard access, matching the sensitivity of
+    // the personal data involved.
     'staff' => ['super_admin', 'admin'],
     'parents' => ['super_admin', 'admin'],
     'attendance' => ['super_admin', 'admin', 'teacher', 'guard'],

@@ -32,11 +32,10 @@ class DashboardController extends Controller
 
         return ApiResponse::success([
             'total_students' => Student::query()->where('school_id', $schoolId)->where('status', StudentStatus::Active)->count(),
-            // Renamed from total_teachers — the teacher role/staff-attendance
-            // concept was removed when Staff Management consolidated to
-            // Guard/Admin only (Prompt 34); this count itself was already
-            // correct (all active Staff, not filtered to any nonexistent
-            // role), only the key/label were stale leftovers.
+            // Real HR-domain Staff (Prompt: Rebuild Staff Module) — not
+            // to be confused with UserAccount (admin/guard login
+            // accounts, App\Modules\Users), which this metric never
+            // counted even before the rename that freed up this name.
             'total_staff' => Staff::query()->where('school_id', $schoolId)->where('employment_status', StaffEmploymentStatus::Active)->count(),
             'present_today' => $counts['present'],
             'absent_today' => $counts['absent'],
