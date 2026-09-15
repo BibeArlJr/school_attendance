@@ -27,6 +27,10 @@ export interface ImportProposedData {
   address: string | null;
   guardian_name: string | null;
   guardian_phone: string | null;
+  // Raw text from a "Section"/"Sec." column, when the file has one —
+  // null for files without it (e.g. the original ECD-style fixture),
+  // which is also what a blank cell in that column parses to.
+  section: string | null;
   duplicate_matches: ImportDuplicateMatch[];
 }
 

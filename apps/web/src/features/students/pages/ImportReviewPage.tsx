@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { GradeGroupCard, suggestClassName } from '../components/GradeGroupCard';
+import { GradeGroupCard, suggestClassName, suggestSectionFromRows } from '../components/GradeGroupCard';
 import { ImportRowsTable } from '../components/ImportRowsTable';
 import { ImportSummaryCards } from '../components/ImportSummaryCards';
 import { useClasses } from '../hooks/useClasses';
@@ -81,11 +81,19 @@ export default function ImportReviewPage() {
   // Recomputed off `decisions` too: once a group is bulk-applied its rows
   // are no longer 'pending', so the card for that grade disappears on
   // its own without extra bookkeeping.
+  //
+  // Grouped by grade level AND section together, not grade alone — two
+  // rows at the same grade but different sections (e.g. Grade 11 /
+  // Education vs Grade 11 / Science) are genuinely different classes and
+  // must never be bundled into one card offering one shared "create new
+  // class" action. A row with no section value at all groups under that
+  // grade's own no-section bucket, same as every row did before Section
+  // support existed.
   const gradeGroups = useMemo(() => {
     if (!batch) {
       return [];
     }
-    const byGrade = new Map<number, typeof batch.rows>();
+    const bySectionKey = new Map<string, { gradeLevel: number; section: string | null; rows: typeof batch.rows }>();
     for (const row of batch.rows) {
       const gradeLevel = row.proposed_data.inferred_grade_level;
       if (!row.flags.includes('unrecognized_class') || gradeLevel === null) {
@@ -94,16 +102,25 @@ export default function ImportReviewPage() {
       if ((decisions[row.id]?.resolution ?? 'pending') !== 'pending') {
         continue;
       }
-      const existing = byGrade.get(gradeLevel) ?? [];
-      existing.push(row);
-      byGrade.set(gradeLevel, existing);
+      const rawSection = row.proposed_data.section?.trim() || null;
+      const normalizedSection = rawSection ? rawSection.toLowerCase().replace(/\s+/g, ' ') : '';
+      const key = `${gradeLevel}|${normalizedSection}`;
+      const existing = bySectionKey.get(key);
+      if (existing) {
+        existing.rows.push(row);
+      } else {
+        bySectionKey.set(key, { gradeLevel, section: rawSection, rows: [row] });
+      }
     }
-    return Array.from(byGrade.entries())
-      .map(([gradeLevel, rows]) => ({ gradeLevel, rows }))
-      .sort((a, b) => a.gradeLevel - b.gradeLevel);
+    return Array.from(bySectionKey.entries())
+      .map(([key, group]) => ({ key, ...group }))
+      .sort((a, b) => a.gradeLevel - b.gradeLevel || a.key.localeCompare(b.key));
   }, [batch, decisions]);
 
-  function handleApplyGroup(rowIds: number[], patch: { classId?: number; newClassName?: string }) {
+  function handleApplyGroup(
+    rowIds: number[],
+    patch: { classId?: number; newClassName?: string; newClassSection?: string },
+  ) {
     setDecisions((prev) => {
       const next = { ...prev };
       for (const rowId of rowIds) {
@@ -112,6 +129,7 @@ export default function ImportReviewPage() {
           resolution: 'accept',
           classId: patch.classId,
           newClassName: patch.newClassName,
+          newClassSection: patch.newClassSection,
         };
       }
       return next;
@@ -128,12 +146,14 @@ export default function ImportReviewPage() {
       const next = { ...prev };
       for (const group of gradeGroups) {
         const newClassName = suggestClassName(group.rows, classesQuery.data ?? [], group.gradeLevel);
+        const newClassSection = suggestSectionFromRows(group.rows) || undefined;
         for (const row of group.rows) {
           next[row.id] = {
             ...next[row.id],
             resolution: 'accept',
             classId: undefined,
             newClassName,
+            newClassSection,
           };
         }
       }
@@ -182,6 +202,7 @@ export default function ImportReviewPage() {
         resolution: resolution as 'accept' | 'skip',
         class_id: decision?.classId,
         new_class_name: decision?.newClassName,
+        new_class_section: decision?.newClassSection,
         first_name: decision?.firstName,
         last_name: decision?.lastName,
       }));
@@ -310,7 +331,8 @@ export default function ImportReviewPage() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-medium text-muted-foreground">
                 Resolve by grade — {gradeGroups.reduce((sum, group) => sum + group.rows.length, 0)} rows across{' '}
-                {gradeGroups.length} grade{gradeGroups.length === 1 ? '' : 's'} can be resolved at once
+                {gradeGroups.length} group{gradeGroups.length === 1 ? '' : 's'} (grade + section) can be resolved at
+                once
               </h3>
               <Button size="sm" onClick={handleResolveAllGroups}>
                 Create all missing classes and resolve all groups
@@ -318,8 +340,9 @@ export default function ImportReviewPage() {
             </div>
             {gradeGroups.map((group) => (
               <GradeGroupCard
-                key={group.gradeLevel}
+                key={group.key}
                 gradeLevel={group.gradeLevel}
+                section={group.section}
                 rows={group.rows}
                 classes={classesQuery.data ?? []}
                 onApply={handleApplyGroup}

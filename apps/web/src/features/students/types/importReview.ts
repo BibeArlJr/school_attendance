@@ -4,6 +4,7 @@ export interface LocalRowDecision {
   resolution: 'pending' | 'accept' | 'skip';
   classId?: number;
   newClassName?: string;
+  newClassSection?: string;
   firstName?: string;
   lastName?: string;
 }

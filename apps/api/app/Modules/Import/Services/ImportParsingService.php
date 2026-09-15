@@ -43,6 +43,8 @@ class ImportParsingService
         'address' => 'address',
         'contact' => 'guardian_phone',
         'phone no' => 'guardian_phone',
+        'section' => 'section',
+        'sec' => 'section',           // "Sec." normalizes to "sec"
         // "Photo No." normalizes to "photo no" — deliberately absent from
         // this map, so it's discarded rather than mapped to anything.
     ];
@@ -71,7 +73,7 @@ class ImportParsingService
         // first-created section for that grade is the reasonable default.
         $existingClasses = SchoolClass::query()->where('school_id', $schoolId)
             ->orderBy('id')
-            ->get(['id', 'name', 'grade_level']);
+            ->get(['id', 'name', 'section', 'grade_level']);
 
         /** @var array<string, list<array<string, mixed>>> $seenNames */
         $seenNames = [];
@@ -133,10 +135,11 @@ class ImportParsingService
                 $address = isset($fieldToColumn['address']) ? trim((string) ($row[$fieldToColumn['address']] ?? '')) : null;
                 $guardianName = isset($fieldToColumn['guardian_name']) ? trim((string) ($row[$fieldToColumn['guardian_name']] ?? '')) : null;
                 $guardianPhone = isset($fieldToColumn['guardian_phone']) ? trim((string) ($row[$fieldToColumn['guardian_phone']] ?? '')) : null;
+                $section = isset($fieldToColumn['section']) ? trim((string) ($row[$fieldToColumn['section']] ?? '')) : null;
 
                 $flags = [];
 
-                $classMatch = $this->resolveClass($rawClassName, $existingClasses);
+                $classMatch = $this->resolveClass($rawClassName, $section ?: null, $existingClasses);
                 if ($classMatch['class_id'] === null) {
                     $flags[] = 'unrecognized_class';
                 }
@@ -165,6 +168,7 @@ class ImportParsingService
                         'address' => $address,
                         'guardian_name' => $guardianName,
                         'guardian_phone' => $guardianPhone,
+                        'section' => $section ?: null,
                         'duplicate_matches' => $duplicateMatches,
                     ],
                     'flags' => $flags,
@@ -210,6 +214,27 @@ class ImportParsingService
     private function normalizeName(string $name): string
     {
         return strtolower(trim(preg_replace('/\s+/', ' ', $name)));
+    }
+
+    /**
+     * A row with no Section value (null/blank — no Section column in
+     * this file, or this cell is empty) matches any candidate class
+     * regardless of that class's own section, preserving today's
+     * grade/name-only behavior exactly. A row that DOES carry a Section
+     * value only matches a class whose section normalizes to the same
+     * text — a class with a blank/different section is a different
+     * class, even at the same grade level.
+     */
+    private function sectionsMatch(?string $classSection, ?string $rowSection): bool
+    {
+        $normalizedRowSection = $rowSection !== null ? $this->normalizeName($rowSection) : '';
+        if ($normalizedRowSection === '') {
+            return true;
+        }
+
+        $normalizedClassSection = $classSection !== null ? $this->normalizeName($classSection) : '';
+
+        return $normalizedClassSection === $normalizedRowSection;
     }
 
     /**
@@ -289,15 +314,25 @@ class ImportParsingService
      * Only if all three fail does the row get flagged unrecognized_class
      * with no usable suggestion at all.
      *
+     * Passes 1 and 2 both additionally require the row's own Section
+     * value (when the row has one) to match the candidate class's
+     * section — a grade/name match against a class with a DIFFERENT
+     * section is not the same class and must not auto-resolve (e.g. an
+     * existing "Eleven" class with no section must not swallow a row
+     * that's genuinely Grade 11 / Education). A row with no Section
+     * value at all (file has no Section column, or this cell is blank)
+     * matches on name/grade_level alone, exactly as before this existed
+     * — see sectionsMatch().
+     *
      * @param  Collection<int, SchoolClass>  $existingClasses
      * @return array{class_id: ?int, suggested_class_id: ?int, suggested_class_name: ?string, inferred_grade_level: ?int}
      */
-    private function resolveClass(string $rawClassName, Collection $existingClasses): array
+    private function resolveClass(string $rawClassName, ?string $section, Collection $existingClasses): array
     {
         $normalized = $this->normalizeName($rawClassName);
 
         foreach ($existingClasses as $class) {
-            if ($this->normalizeName($class->name) === $normalized) {
+            if ($this->normalizeName($class->name) === $normalized && $this->sectionsMatch($class->section, $section)) {
                 return [
                     'class_id' => $class->id,
                     'suggested_class_id' => null,
@@ -314,7 +349,10 @@ class ImportParsingService
             // 0, that loose comparison would wrongly match any class
             // whose grade_level is still null. Strict comparison here
             // avoids that collision.
-            $gradeMatch = $existingClasses->first(fn (SchoolClass $class) => $class->grade_level === $inferredGradeLevel);
+            $gradeMatch = $existingClasses->first(
+                fn (SchoolClass $class) => $class->grade_level === $inferredGradeLevel
+                    && $this->sectionsMatch($class->section, $section),
+            );
             if ($gradeMatch !== null) {
                 return [
                     'class_id' => $gradeMatch->id,

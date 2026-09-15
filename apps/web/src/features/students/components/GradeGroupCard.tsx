@@ -65,16 +65,51 @@ export function suggestClassName(rows: ImportBatchRow[], classes: SchoolClass[],
   return suggestClassNameFromRows(rows) ?? suggestClassNameFallback(classes, gradeLevel);
 }
 
-interface GradeGroupCardProps {
-  gradeLevel: number;
-  rows: ImportBatchRow[];
-  classes: SchoolClass[];
-  onApply: (rowIds: number[], patch: { classId?: number; newClassName?: string }) => void;
+/**
+ * Same "most common raw text among the group's rows" convention as
+ * suggestClassNameFromRows, applied to the Section column instead —
+ * only ever non-empty when the group's own key already required a
+ * shared, non-empty section (see ImportReviewPage's grouping), so this
+ * is really just recovering that group's original-casing display text,
+ * not making a new decision.
+ */
+export function suggestSectionFromRows(rows: ImportBatchRow[]): string {
+  const counts = new Map<string, { count: number; original: string }>();
+  for (const row of rows) {
+    const raw = row.proposed_data.section?.trim();
+    if (!raw) {
+      continue;
+    }
+    const key = raw.toLowerCase().replace(/\s+/g, ' ');
+    const existing = counts.get(key);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      counts.set(key, { count: 1, original: raw });
+    }
+  }
+
+  let best: { count: number; original: string } | null = null;
+  for (const entry of counts.values()) {
+    if (!best || entry.count > best.count) {
+      best = entry;
+    }
+  }
+  return best?.original ?? '';
 }
 
-export function GradeGroupCard({ gradeLevel, rows, classes, onApply }: GradeGroupCardProps) {
+interface GradeGroupCardProps {
+  gradeLevel: number;
+  section: string | null;
+  rows: ImportBatchRow[];
+  classes: SchoolClass[];
+  onApply: (rowIds: number[], patch: { classId?: number; newClassName?: string; newClassSection?: string }) => void;
+}
+
+export function GradeGroupCard({ gradeLevel, section, rows, classes, onApply }: GradeGroupCardProps) {
   const [existingClassId, setExistingClassId] = useState<string | undefined>(undefined);
   const [newClassName, setNewClassName] = useState(() => suggestClassName(rows, classes, gradeLevel));
+  const [newClassSection, setNewClassSection] = useState(() => suggestSectionFromRows(rows));
 
   const rowIds = rows.map((row) => row.id);
 
@@ -82,7 +117,8 @@ export function GradeGroupCard({ gradeLevel, rows, classes, onApply }: GradeGrou
     <Card>
       <CardHeader>
         <CardTitle className="text-base">
-          {rows.length} row{rows.length === 1 ? '' : 's'} → Grade {gradeLevel} (no matching class)
+          {rows.length} row{rows.length === 1 ? '' : 's'} → Grade {gradeLevel}
+          {section ? ` - ${section}` : ''} (no matching class)
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-wrap items-end gap-6">
@@ -116,16 +152,29 @@ export function GradeGroupCard({ gradeLevel, rows, classes, onApply }: GradeGrou
         <div className="flex items-end gap-2">
           <div>
             <p className="mb-1 text-xs text-muted-foreground">Or create a new class</p>
-            <Input
-              value={newClassName}
-              onChange={(event) => setNewClassName(event.target.value)}
-              className="h-8 w-44"
-            />
+            <div className="flex gap-1">
+              <Input
+                value={newClassName}
+                onChange={(event) => setNewClassName(event.target.value)}
+                className="h-8 w-28"
+              />
+              <Input
+                value={newClassSection}
+                onChange={(event) => setNewClassSection(event.target.value)}
+                placeholder="Section (optional)"
+                className="h-8 w-32"
+              />
+            </div>
           </div>
           <Button
             size="sm"
             disabled={!newClassName.trim()}
-            onClick={() => onApply(rowIds, { newClassName: newClassName.trim() })}
+            onClick={() =>
+              onApply(rowIds, {
+                newClassName: newClassName.trim(),
+                newClassSection: newClassSection.trim() || undefined,
+              })
+            }
           >
             Create and apply to all
           </Button>

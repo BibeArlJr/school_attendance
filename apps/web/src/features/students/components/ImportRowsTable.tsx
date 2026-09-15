@@ -55,12 +55,13 @@ export function ImportRowsTable({ rows, classes, decisions, onDecisionChange }: 
   // "Create it?") versus a name that couldn't be matched or parsed at all
   // (genuinely ambiguous, no hint to offer beyond a fuzzy string guess).
   function classHint(row: ImportBatchRow): string | null {
-    const { suggested_class_name, inferred_grade_level } = row.proposed_data;
+    const { suggested_class_name, inferred_grade_level, section } = row.proposed_data;
     if (suggested_class_name) {
       return `Did you mean "${suggested_class_name}"?`;
     }
     if (inferred_grade_level !== null) {
-      return `This looks like Grade ${inferred_grade_level} — no matching class exists yet. Create it?`;
+      const gradeLabel = section ? `Grade ${inferred_grade_level} / ${section}` : `Grade ${inferred_grade_level}`;
+      return `This looks like ${gradeLabel} — no matching class exists yet. Create it?`;
     }
     return null;
   }
@@ -122,7 +123,10 @@ export function ImportRowsTable({ rows, classes, decisions, onDecisionChange }: 
                         )}
                       </div>
                     ) : (
-                      <span className="text-sm">{row.proposed_data.class_name_raw}</span>
+                      <span className="text-sm">
+                        {row.proposed_data.class_name_raw}
+                        {row.proposed_data.section ? ` - ${row.proposed_data.section}` : ''}
+                      </span>
                     )}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm">{row.proposed_data.dob_bs ?? '—'}</TableCell>
