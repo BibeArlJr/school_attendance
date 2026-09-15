@@ -7,6 +7,9 @@ export interface IdCardListParams {
   per_page?: number;
   search?: string;
   owner_type?: 'student' | 'staff';
+  // Only applies to owner_type 'student' — Staff has no class concept
+  // (same guard as AttendanceRecordListParams' class_id).
+  class_id?: number;
 }
 
 export const idCardsApi = {

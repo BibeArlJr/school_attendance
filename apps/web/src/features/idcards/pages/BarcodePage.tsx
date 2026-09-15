@@ -7,9 +7,17 @@ import { useIdCards } from '../hooks/useIdCards';
 import { exportIdCardsCsv } from '../lib/exportIdCardsCsv';
 import type { IdCard, IdCardOwnerType } from '../types';
 import { ROUTES } from '@/app/router/routes';
+import { useClasses } from '@/features/students/hooks/useClasses';
 import { DataTable } from '@/shared/components/data-table/DataTable';
 import { PageContainer } from '@/shared/components/layout/PageContainer';
 import { Button } from '@/shared/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select';
 
 const PER_PAGE = 10;
 
@@ -20,7 +28,13 @@ export default function BarcodePage() {
   const [ownerType, setOwnerType] = useState<IdCardOwnerType>('student');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  // Same class-filter pattern as StudentsPage/AttendancePage — 'all' is
+  // the unfiltered default, and it only ever applies to the Students tab
+  // (Staff has no class concept — see the class_id line below).
+  const [classFilter, setClassFilter] = useState('all');
   const [pageIndex, setPageIndex] = useState(0);
+
+  const classesQuery = useClasses();
 
   useEffect(() => {
     const id = setTimeout(() => setDebouncedSearch(search), 300);
@@ -32,11 +46,19 @@ export default function BarcodePage() {
     setPageIndex(0);
   }
 
+  function handleClassFilterChange(value: string) {
+    setClassFilter(value);
+    setPageIndex(0);
+  }
+
+  const classId = ownerType === 'student' && classFilter !== 'all' ? Number(classFilter) : undefined;
+
   const cardsQuery = useIdCards({
     owner_type: ownerType,
     page: pageIndex + 1,
     per_page: PER_PAGE,
     search: debouncedSearch || undefined,
+    class_id: classId,
   });
 
   const columns = useMemo(() => buildIdCardColumns(ownerType), [ownerType]);
@@ -95,6 +117,7 @@ export default function BarcodePage() {
               owner_type: ownerType,
               per_page: total,
               search: debouncedSearch || undefined,
+              class_id: classId,
             });
             return result.data;
           },
@@ -115,6 +138,24 @@ export default function BarcodePage() {
             </>
           ),
         }}
+        filters={
+          ownerType === 'student' ? (
+            <Select value={classFilter} onValueChange={handleClassFilterChange}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="All classes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All classes</SelectItem>
+                {classesQuery.data?.map((schoolClass) => (
+                  <SelectItem key={schoolClass.id} value={String(schoolClass.id)}>
+                    {schoolClass.name}
+                    {schoolClass.section ? ` - ${schoolClass.section}` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : undefined
+        }
       />
     </PageContainer>
   );

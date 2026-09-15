@@ -47,6 +47,14 @@ class IdCardController extends Controller
             $query->with(['owner.schoolClass', 'owner.currentEnrollment', 'owner.primaryParentLink.parentGuardian']);
         }
 
+        // class_id only applies to students — Staff has no class concept
+        // (same guard as AttendanceController's identical filter).
+        if ($ownerType === 'student' && ($classId = $request->query('class_id'))) {
+            $query->whereHasMorph('owner', [Student::class], function ($inner) use ($classId) {
+                $inner->where('class_id', $classId);
+            });
+        }
+
         if ($search = trim((string) $request->query('search', ''))) {
             // ILIKE is already case-insensitive at the query-engine level,
             // so this doesn't change matching behavior — but explicit
