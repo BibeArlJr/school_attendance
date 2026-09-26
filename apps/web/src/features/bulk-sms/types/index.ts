@@ -62,3 +62,42 @@ export interface BulkSmsUploadConfirmRow {
   // anything computed client-side during preview.
   phone: string;
 }
+
+// Stage 2 — the module's own, separate Sparrow credential + single-
+// recipient test-send. Never App\Modules\Sms's attendance credential/
+// SmsLog on the backend, and nothing here ever selects a saved contact
+// or an upload — see BulkSmsTestSendSection's own docblock.
+
+export interface BulkSmsProviderConfigInfo {
+  configured: boolean;
+  is_active: boolean;
+  sender_id: string | null;
+  // Never the full token — last-4-chars form only (e.g. "••••2345").
+  masked_token: string | null;
+  updated_at: string | null;
+}
+
+export interface BulkSmsCredits {
+  configured: boolean;
+  credits_available: number;
+  credits_consumed: number;
+  // true when BULK_SMS_DRIVER isn't 'real' — this is a simulated
+  // balance, not Sparrow's real one.
+  mock: boolean;
+  error: string | null;
+  driver: 'mock' | 'real';
+}
+
+export type BulkSmsSendLogStatus = 'sent' | 'failed' | 'mock';
+
+export interface BulkSmsSendLog {
+  id: number;
+  recipient: string;
+  message: string;
+  segment_count: number;
+  status: BulkSmsSendLogStatus;
+  provider_response_code: number | null;
+  provider_response_message: string | null;
+  attempted_at: string | null;
+  sent_at: string | null;
+}

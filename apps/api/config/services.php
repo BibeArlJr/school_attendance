@@ -43,6 +43,18 @@ return [
         'driver' => env('SMS_DRIVER', 'mock'),
     ],
 
+    // Bulk SMS module's own kill switch — completely independent of
+    // 'sms.driver' above. 'mock': BulkSparrowSmsService never makes a
+    // real HTTP request to Sparrow, under any circumstance, including
+    // the credit check. 'real' is required before a test-send (or any
+    // future bulk send) can actually reach Sparrow. The bulk token
+    // itself is never here — see bulk_sms_provider_configs (encrypted
+    // DB storage), same convention as 'sms' above but a fully separate
+    // table.
+    'bulk_sms' => [
+        'driver' => env('BULK_SMS_DRIVER', 'mock'),
+    ],
+
     // Shared secret for POST /api/tasks/* (Prompt 55 Part E) — Render's
     // Cron Jobs aren't free-tier eligible, so scheduled commands run via
     // an external cron-ping service (or a GitHub Actions scheduled
