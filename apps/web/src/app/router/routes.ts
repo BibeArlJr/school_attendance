@@ -48,6 +48,12 @@ export const ROUTES = {
   // is platform-operator infrastructure, not a per-school module either
   // (Prompt 43).
   PLATFORM_AUDIT_LOG: '/platform/audit-log',
+  // Generic bulk-SMS contact-management + composer foundation — same
+  // platform-admin tier and same "reached via the Topbar's school
+  // switcher, not the Sidebar" placement as the two routes above. One
+  // route with tabs (Contacts / Compose Message), not two separate
+  // routes — see BulkSmsPage.tsx's own docblock for why.
+  BULK_SMS: '/bulk-sms',
 } as const;
 
 // Students/Users/Staff/Parents/Classes are all route-bound by uuid now
