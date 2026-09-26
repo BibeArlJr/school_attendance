@@ -152,4 +152,26 @@ class BulkSmsContactDeduplicationTest extends TestCase
             \Illuminate\Support\Facades\Schema::hasColumn('bulk_sms_contacts', 'phone_raw'),
         );
     }
+
+    public function test_upload_preview_recognizes_a_bare_number_header_with_trailing_space(): void
+    {
+        $this->actingAsSuperAdmin();
+
+        // Real single-column contact list: only a "Number " header (note
+        // the trailing space, as in the actual uploaded file that
+        // exposed this) — no Name column at all.
+        $file = UploadedFile::fake()->createWithContent(
+            'contacts.csv',
+            "Number \n9841234567\n",
+        );
+
+        $response = $this->postJson('/api/bulk-sms/uploads/preview', ['file' => $file])->assertOk();
+
+        $response->assertJsonPath('data.skipped_sheets', []);
+        $response->assertJsonPath('data.total_rows', 1);
+        $response->assertJsonPath('data.valid_rows', 1);
+        $response->assertJsonPath('data.rows.0.status', 'valid');
+        $response->assertJsonPath('data.rows.0.phone_normalized', '9841234567');
+        $response->assertJsonPath('data.rows.0.name', null);
+    }
 }

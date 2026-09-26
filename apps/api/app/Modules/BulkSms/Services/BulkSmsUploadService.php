@@ -37,6 +37,12 @@ class BulkSmsUploadService
         'mobile number' => 'phone',
         'contact' => 'phone',
         'contact number' => 'phone',
+        'contact no' => 'phone',
+        // A real single-column contact list's only header — no other
+        // synonym above covers a bare "Number".
+        'number' => 'phone',
+        'cell' => 'phone',
+        'cell number' => 'phone',
     ];
 
     public function __construct(
