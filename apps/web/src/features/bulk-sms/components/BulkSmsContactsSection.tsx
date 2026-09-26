@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { bulkSmsContactsApi } from '../api/bulkSmsContactsApi';
 import { useBulkSmsContacts } from '../hooks/useBulkSmsContacts';
 import { useDeleteBulkSmsContact } from '../hooks/useDeleteBulkSmsContact';
 import type { BulkSmsContact } from '../types';
@@ -9,6 +10,7 @@ import { BulkSmsUploadButton } from './BulkSmsUploadButton';
 import { DataTable } from '@/shared/components/data-table/DataTable';
 import { DeleteConfirmDialog } from '@/shared/components/DeleteConfirmDialog';
 import { Button } from '@/shared/components/ui/button';
+import { useBulkDelete } from '@/shared/hooks/useBulkDelete';
 import { extractErrorMessage } from '@/shared/lib/errors';
 
 const PER_PAGE = 10;
@@ -23,6 +25,11 @@ export function BulkSmsContactsSection() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const deleteContact = useDeleteBulkSmsContact();
+  const { bulkDelete } = useBulkDelete<BulkSmsContact>({
+    queryKey: ['bulk-sms', 'contacts'],
+    deleteFn: bulkSmsContactsApi.delete,
+    getLabel: (contact) => contact.name ?? contact.phone,
+  });
 
   useEffect(() => {
     const id = setTimeout(() => setDebouncedSearch(search), 300);
@@ -74,6 +81,21 @@ export function BulkSmsContactsSection() {
         onPageChange={setPageIndex}
         totalCount={contactsQuery.data?.total}
         emptyTitle="No contacts yet — add one manually or upload a file"
+        selection={{
+          onDeleteSelected: (rows) => bulkDelete(rows, (contact) => contact.uuid),
+          entityLabelPlural: 'contacts',
+          fetchAllMatching: async () => {
+            const total = contactsQuery.data?.total ?? 0;
+            if (total === 0) {
+              return [];
+            }
+            const result = await bulkSmsContactsApi.list({
+              per_page: total,
+              search: debouncedSearch || undefined,
+            });
+            return result.data;
+          },
+        }}
         actions={
           <>
             <BulkSmsUploadButton onImported={() => contactsQuery.refetch()} />
